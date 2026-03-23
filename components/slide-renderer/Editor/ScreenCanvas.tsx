@@ -61,7 +61,7 @@ export function ScreenCanvas() {
   return (
     <div className="relative h-full w-full overflow-hidden select-none" ref={canvasRef}>
       <div
-        className="absolute inset-0 rounded-lg overflow-hidden transition-transform duration-700"
+        className="absolute rounded-lg overflow-hidden transition-transform duration-700"
         style={{
           ...(zoomTarget && zoomGeometry
             ? {
