@@ -428,10 +428,10 @@ export function Roundtable({
   }, [playbackSpeed, setPlaybackSpeed]);
 
   return (
-    <div className="h-[192px] w-full flex flex-col relative z-10 border-t border-gray-100 dark:border-gray-800 bg-white/60 dark:bg-gray-800/60 backdrop-blur-md">
+    <div className="h-[192px] w-full flex flex-col relative z-10 border-t border-sky-200/70 bg-white/85 backdrop-blur-sm">
       {/* ── Toolbar strip — merged from CanvasArea ── */}
       <CanvasToolbar
-        className="shrink-0 h-8 px-3 border-b border-gray-100/40 dark:border-gray-700/30"
+        className="shrink-0 h-8 px-3 border-b border-sky-200/70"
         currentSceneIndex={currentSceneIndex}
         scenesCount={scenesCount}
         engineState={
@@ -467,12 +467,12 @@ export function Roundtable({
       {/* ── Interaction area — three-column layout ── */}
       <div className="flex-1 flex items-stretch min-h-0">
         {/* Left: Teacher identity */}
-        <div className="w-[90px] shrink-0 flex flex-col border-r border-gray-100/50 dark:border-gray-700/50 bg-white/40 dark:bg-gray-900/40 overflow-visible relative">
+        <div className="w-[90px] shrink-0 flex flex-col border-r border-sky-100/70 bg-white/40 overflow-visible relative">
           {/* Decorative Element (Top) */}
-          <div className="absolute top-0 inset-x-0 h-16 bg-gradient-to-b from-purple-50/50 dark:from-purple-900/10 to-transparent pointer-events-none" />
+          <div className="absolute top-0 inset-x-0 h-16 bg-gradient-to-b from-sky-50/50 to-transparent pointer-events-none" />
           <div className="absolute top-3 inset-x-0 flex flex-col items-center justify-center gap-1 opacity-10 pointer-events-none">
-            <BookOpen size={20} className="text-purple-900 dark:text-purple-100" />
-            <div className="w-8 h-0.5 bg-purple-900 dark:bg-purple-100 rounded-full" />
+            <BookOpen size={20} className="text-sky-700" />
+            <div className="w-8 h-0.5 bg-sky-700 rounded-full" />
           </div>
 
           {/* Main Content */}
@@ -495,12 +495,12 @@ export function Roundtable({
                         className={cn(
                           'absolute inset-0 rounded-full border-2 transition-all duration-500',
                           activeRole === 'teacher'
-                            ? 'border-purple-500 dark:border-purple-400 shadow-[0_0_12px_rgba(168,85,247,0.4)]'
-                            : 'border-gray-200 dark:border-gray-700 group-hover:border-purple-300 dark:group-hover:border-purple-600',
+                            ? 'border-sky-500 shadow-[0_0_12px_rgba(56,189,248,0.3)]'
+                            : 'border-sky-200 group-hover:border-sky-300',
                         )}
                       />
 
-                      <div className="w-10 h-10 rounded-full bg-white dark:bg-gray-800 overflow-hidden relative z-10 shadow-sm border border-gray-50 dark:border-gray-700">
+                      <div className="w-10 h-10 rounded-full overflow-hidden relative z-10">
                         <img
                           src={teacherAvatar}
                           alt="Teacher"
@@ -509,7 +509,7 @@ export function Roundtable({
                       </div>
 
                       {activeRole === 'teacher' && (
-                        <div className="absolute -right-0.5 top-0.5 w-4 h-4 bg-green-500 dark:bg-green-400 rounded-full border-2 border-white dark:border-gray-800 flex items-center justify-center z-20">
+                        <div className="absolute -right-0.5 top-0.5 w-4 h-4 bg-green-500 rounded-full border-2 border-white flex items-center justify-center z-20">
                           <div className="w-1 h-1 bg-white rounded-full animate-pulse" />
                         </div>
                       )}
@@ -517,10 +517,10 @@ export function Roundtable({
 
                     <span
                       className={cn(
-                        'max-w-[80px] truncate px-2 py-0.5 rounded-full text-[10px] font-bold tracking-wider uppercase border shadow-sm transition-all duration-300 bg-white/90 dark:bg-gray-800/90',
+                        'max-w-[80px] truncate px-2 py-0.5 rounded-full text-[10px] font-bold tracking-wider uppercase border shadow-sm transition-all duration-300 bg-white/90',
                         activeRole === 'teacher' && !speakingStudent
-                          ? 'text-purple-600 dark:text-purple-400 border-purple-200 dark:border-purple-700'
-                          : 'text-gray-400 dark:text-gray-500 border-gray-100 dark:border-gray-700 group-hover:text-purple-500 dark:group-hover:text-purple-400 group-hover:border-purple-200 dark:group-hover:border-purple-600',
+                          ? 'text-sky-700 border-sky-300'
+                          : 'text-slate-400 border-sky-100 group-hover:text-sky-600 group-hover:border-sky-200',
                       )}
                     >
                       {teacherName}
@@ -539,7 +539,7 @@ export function Roundtable({
                     return (
                       <>
                         <div className="flex items-center gap-2">
-                          <div className="w-8 h-8 rounded-full overflow-hidden shrink-0 bg-gray-100 dark:bg-gray-800">
+                          <div className="w-8 h-8 rounded-full overflow-hidden shrink-0 bg-slate-100">
                             <img
                               src={teacherAvatar}
                               alt={teacherName}
@@ -559,7 +559,7 @@ export function Roundtable({
                           </div>
                         </div>
                         {teacherConfig?.persona && (
-                          <p className="text-xs text-muted-foreground mt-2 leading-relaxed whitespace-pre-line">
+                          <p className="text-xs text-slate-500 mt-2 leading-relaxed whitespace-pre-line">
                             {teacherConfig.persona}
                           </p>
                         )}
@@ -627,7 +627,7 @@ export function Roundtable({
                 if (isRecording) stopRecording();
               }
             }}
-            className="relative w-full h-full rounded-[2.5rem] bg-gradient-to-b from-white/40 to-white/80 dark:from-gray-800/40 dark:to-gray-800/80 backdrop-blur-xl border border-white/50 dark:border-gray-700/50 shadow-[0_20px_60px_-15px_rgba(0,0,0,0.05),inset_0_1px_0_0_rgba(255,255,255,0.9)] dark:shadow-[0_20px_60px_-15px_rgba(0,0,0,0.3)] flex flex-col justify-center px-6 overflow-hidden group transition-all duration-700 cursor-default"
+            className="relative w-full h-full   flex flex-col justify-center px-6 overflow-hidden group transition-all duration-700 cursor-default"
           >
             {/* Text input box */}
             <AnimatePresence>
@@ -645,7 +645,7 @@ export function Roundtable({
                   onClick={(e) => e.stopPropagation()}
                   className="absolute inset-x-6 bottom-4 z-20 flex items-center justify-end"
                 >
-                  <div className="relative w-fit max-w-[85%] sm:max-w-[65%] min-w-[200px] sm:min-w-[300px] bg-white/90 dark:bg-gray-800/90 backdrop-blur-md p-2 pr-2 rounded-2xl rounded-br-none shadow-2xl border border-purple-200 dark:border-purple-700 flex items-end gap-2 ring-1 ring-purple-100/50 dark:ring-purple-800/50">
+                  <div className="relative w-fit max-w-[85%] sm:max-w-[65%] min-w-[200px] sm:min-w-[300px] bg-white/90 backdrop-blur-sm p-2 pr-2 rounded-2xl rounded-br-none shadow-md border border-sky-200 flex items-end gap-2 ring-1 ring-sky-100/50">
                     <div className="pl-4 flex-1 py-1 min-w-0">
                       <textarea
                         value={inputValue}
@@ -659,7 +659,7 @@ export function Roundtable({
                         placeholder={t('roundtable.inputPlaceholder')}
                         autoFocus
                         rows={1}
-                        className="w-full resize-none bg-transparent border-none focus:ring-0 focus:outline-none outline-none shadow-none ring-0 text-gray-700 dark:text-gray-200 text-sm placeholder:text-gray-400 dark:placeholder:text-gray-500 min-h-[40px] max-h-[120px]"
+                        className="w-full resize-none bg-transparent border-none focus:ring-0 focus:outline-none outline-none shadow-none ring-0 text-slate-700 text-sm placeholder:text-slate-400 min-h-[40px] max-h-[120px]"
                         style={{ fieldSizing: 'content' } as Record<string, string>}
                       />
                     </div>
@@ -669,8 +669,8 @@ export function Roundtable({
                       className={cn(
                         'p-2.5 text-white rounded-xl transition shadow-md mb-0.5 shrink-0',
                         isSendCooldown
-                          ? 'bg-gray-400 dark:bg-gray-600 cursor-not-allowed shadow-gray-200 dark:shadow-gray-900/50'
-                          : 'bg-purple-600 hover:bg-purple-700 dark:bg-purple-500 dark:hover:bg-purple-600 shadow-purple-200 dark:shadow-purple-900/50',
+                          ? 'bg-slate-400 cursor-not-allowed shadow-slate-200'
+                          : 'bg-sky-600 hover:bg-sky-700 shadow-sky-200',
                       )}
                     >
                       {isSendCooldown ? (
@@ -699,7 +699,7 @@ export function Roundtable({
                   className="absolute right-4 top-1/2 -translate-y-1/2 z-30 flex items-center gap-4 pr-2 pointer-events-none"
                 >
                   <div className="flex flex-col-reverse items-end gap-1 mr-[-10px] relative z-20">
-                    <div className="flex items-center gap-0.5 h-8 px-2 py-1.5 bg-white/80 dark:bg-gray-800/80 backdrop-blur-md rounded-xl border border-purple-100 dark:border-purple-800 shadow-sm">
+                    <div className="flex items-center gap-0.5 h-8 px-2 py-1.5 bg-white/80 backdrop-blur-sm rounded-xl border border-sky-200 shadow-sm">
                       {[...Array(12)].map((_, i) => (
                         <motion.div
                           key={i}
@@ -713,14 +713,14 @@ export function Roundtable({
                             delay: i * 0.05,
                             ease: 'easeInOut',
                           }}
-                          className="w-1 bg-gradient-to-t from-purple-500 to-indigo-600 dark:from-purple-400 dark:to-indigo-500 rounded-full"
+                          className="w-1 bg-gradient-to-t from-sky-500 to-orange-500 rounded-full"
                         />
                       ))}
                     </div>
                     <motion.div
                       initial={{ opacity: 0, x: 10 }}
                       animate={{ opacity: 1, x: 0 }}
-                      className="text-[10px] font-bold tracking-widest text-purple-600 dark:text-purple-400 uppercase bg-white/90 dark:bg-gray-800/90 backdrop-blur-sm px-2 py-0.5 rounded-full shadow-sm border border-purple-100/50 dark:border-purple-800/50 mr-1"
+                      className="text-[10px] font-bold tracking-widest text-orange-600 uppercase bg-white/90 backdrop-blur-sm px-2 py-0.5 rounded-full shadow-sm border border-orange-200/50 mr-1"
                     >
                       {isProcessing ? t('roundtable.processing') : t('roundtable.listening')}
                     </motion.div>
@@ -730,12 +730,12 @@ export function Roundtable({
                     className="pointer-events-auto relative group cursor-pointer"
                     onClick={handleToggleVoice}
                   >
-                    <div className="relative w-16 h-16 rounded-full bg-gradient-to-br from-purple-600 to-indigo-700 dark:from-purple-500 dark:to-indigo-600 shadow-[0_4px_20px_rgba(147,51,234,0.3)] flex items-center justify-center z-20 group-hover:scale-105 transition-transform duration-300 border border-white/20 dark:border-white/10">
+                    <div className="relative w-16 h-16 rounded-full bg-gradient-to-br from-orange-500 to-amber-600 shadow-[0_4px_20px_rgba(251,146,60,0.25)] flex items-center justify-center z-20 group-hover:scale-105 transition-transform duration-300 border border-white/20">
                       <Mic className="w-6 h-6 text-white" />
                     </div>
-                    <div className="absolute inset-0 rounded-full border-2 border-purple-500 dark:border-purple-400 opacity-40 animate-[ping_2s_ease-in-out_infinite] z-10" />
-                    <div className="absolute inset-0 rounded-full border border-indigo-400 dark:border-indigo-300 opacity-20 animate-[ping_3s_ease-in-out_infinite_0.5s] z-10" />
-                    <div className="absolute inset-0 bg-purple-600 dark:bg-purple-500 blur-2xl opacity-20 group-hover:opacity-40 transition-opacity z-0" />
+                    <div className="absolute inset-0 rounded-full border-2 border-orange-400 opacity-40 animate-[ping_2s_ease-in-out_infinite] z-10" />
+                    <div className="absolute inset-0 rounded-full border border-amber-300 opacity-20 animate-[ping_3s_ease-in-out_infinite_0.5s] z-10" />
+                    <div className="absolute inset-0 bg-orange-500 blur-2xl opacity-20 group-hover:opacity-40 transition-opacity z-0" />
                   </div>
                 </motion.div>
               )}
@@ -748,7 +748,7 @@ export function Roundtable({
                   initial={{ opacity: 0, scale: 0.9 }}
                   animate={{ opacity: 1, scale: 1 }}
                   exit={{ opacity: 0, scale: 0.9 }}
-                  className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-20 flex items-center gap-2 px-4 py-2 bg-white/90 dark:bg-gray-800/90 backdrop-blur-md rounded-full shadow-sm border border-gray-100 dark:border-gray-700"
+                  className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-20 flex items-center gap-2 px-4 py-2 bg-white/90 backdrop-blur-sm rounded-full shadow-sm border border-sky-100"
                 >
                   <div className="flex gap-1">
                     <motion.div
@@ -758,7 +758,7 @@ export function Roundtable({
                         duration: 1.2,
                         delay: 0,
                       }}
-                      className="w-1.5 h-1.5 rounded-full bg-purple-500"
+                      className="w-1.5 h-1.5 rounded-full bg-sky-500"
                     />
                     <motion.div
                       animate={{ opacity: [0.3, 1, 0.3] }}
@@ -767,7 +767,7 @@ export function Roundtable({
                         duration: 1.2,
                         delay: 0.2,
                       }}
-                      className="w-1.5 h-1.5 rounded-full bg-purple-500"
+                      className="w-1.5 h-1.5 rounded-full bg-sky-500"
                     />
                     <motion.div
                       animate={{ opacity: [0.3, 1, 0.3] }}
@@ -776,10 +776,10 @@ export function Roundtable({
                         duration: 1.2,
                         delay: 0.4,
                       }}
-                      className="w-1.5 h-1.5 rounded-full bg-purple-500"
+                      className="w-1.5 h-1.5 rounded-full bg-sky-500"
                     />
                   </div>
-                  <span className="text-[10px] text-gray-400 dark:text-gray-500 font-medium">
+                  <span className="text-xs font-medium text-sky-600">
                     {t('roundtable.thinking')}
                   </span>
                 </motion.div>
@@ -802,9 +802,7 @@ export function Roundtable({
                     <div
                       className={cn(
                         'absolute w-24 h-24 rounded-full blur-2xl',
-                        asrEnabled
-                          ? 'bg-amber-400/[0.08] dark:bg-amber-500/[0.06]'
-                          : 'bg-purple-400/[0.08] dark:bg-purple-500/[0.06]',
+                        asrEnabled ? 'bg-amber-400/[0.08]' : 'bg-sky-400/[0.08]',
                       )}
                     />
 
@@ -818,9 +816,7 @@ export function Roundtable({
                       }}
                       className={cn(
                         'absolute w-11 h-11 rounded-full border',
-                        asrEnabled
-                          ? 'border-amber-400/50 dark:border-amber-500/35'
-                          : 'border-purple-400/50 dark:border-purple-500/35',
+                        asrEnabled ? 'border-amber-400/50' : 'border-sky-400/50',
                       )}
                     />
                     {/* Expanding ripple 2 */}
@@ -834,9 +830,7 @@ export function Roundtable({
                       }}
                       className={cn(
                         'absolute w-11 h-11 rounded-full border',
-                        asrEnabled
-                          ? 'border-amber-300/40 dark:border-amber-400/25'
-                          : 'border-purple-300/40 dark:border-purple-400/25',
+                        asrEnabled ? 'border-amber-300/40' : 'border-sky-300/40',
                       )}
                     />
 
@@ -856,8 +850,8 @@ export function Roundtable({
                       className={cn(
                         'relative w-11 h-11 rounded-full flex items-center justify-center shadow-lg cursor-pointer hover:shadow-xl active:scale-95 z-10 bg-gradient-to-br',
                         asrEnabled
-                          ? 'from-amber-400 to-orange-500 dark:from-amber-500 dark:to-orange-600 shadow-amber-400/30 dark:shadow-amber-600/20 hover:shadow-amber-400/40 dark:hover:shadow-amber-600/30'
-                          : 'from-purple-400 to-indigo-500 dark:from-purple-500 dark:to-indigo-600 shadow-purple-400/30 dark:shadow-purple-600/20 hover:shadow-purple-400/40 dark:hover:shadow-purple-600/30',
+                          ? 'from-amber-400 to-orange-500 shadow-amber-400/30 hover:shadow-amber-400/40'
+                          : 'from-sky-400 to-blue-500 shadow-sky-400/30 hover:shadow-sky-400/40',
                       )}
                     >
                       {asrEnabled ? (
@@ -884,7 +878,7 @@ export function Roundtable({
                             delay: i * 0.08,
                             ease: 'easeInOut',
                           }}
-                          className="w-[2.5px] h-full origin-center rounded-full bg-amber-400/70 dark:bg-amber-500/60"
+                          className="w-[2.5px] h-full origin-center rounded-full bg-amber-400/70"
                         />
                       ))}
                     </div>
@@ -903,7 +897,7 @@ export function Roundtable({
                             delay: i * 0.12,
                             ease: 'easeInOut',
                           }}
-                          className="w-[2.5px] h-full origin-center rounded-full bg-purple-400/60 dark:bg-purple-500/50"
+                          className="w-[2.5px] h-full origin-center rounded-full bg-sky-400/60"
                         />
                       ))}
                     </div>
@@ -919,9 +913,7 @@ export function Roundtable({
                     }}
                     className={cn(
                       'text-[10px] font-medium tracking-wider',
-                      asrEnabled
-                        ? 'text-amber-600/70 dark:text-amber-400/60'
-                        : 'text-purple-600/70 dark:text-purple-400/60',
+                      asrEnabled ? 'text-amber-600/70' : 'text-sky-600/70',
                     )}
                   >
                     {t('roundtable.yourTurn')}
@@ -1152,7 +1144,7 @@ export function Roundtable({
         </div>
 
         {/* Right: Participants area */}
-        <div className="w-[140px] shrink-0 flex flex-col py-3 border-l border-gray-100/50 dark:border-gray-700/50 bg-gray-50/30 dark:bg-gray-900/30 overflow-visible">
+        <div className="w-[140px] shrink-0 flex flex-col py-3 border-l border-sky-100/70 bg-sky-50/30 overflow-visible relative">
           {/* Companion agent avatars — horizontal row, scrollable on overflow, arrows on hover */}
           <div className="flex-none relative group/scroll">
             {/* Left arrow */}
@@ -1163,9 +1155,9 @@ export function Roundtable({
                   behavior: 'smooth',
                 });
               }}
-              className="absolute left-0 top-0 bottom-0 w-5 z-10 flex items-center justify-center bg-gradient-to-r from-gray-50/90 dark:from-gray-900/90 to-transparent opacity-0 group-hover/scroll:opacity-100 transition-opacity cursor-pointer"
+              className="absolute left-0 top-0 bottom-0 w-5 z-10 flex items-center justify-center bg-gradient-to-r from-sky-50/90 to-transparent opacity-0 group-hover/scroll:opacity-100 transition-opacity cursor-pointer"
             >
-              <ChevronLeft className="w-3.5 h-3.5 text-gray-400" />
+              <ChevronLeft className="w-3.5 h-3.5 text-slate-400" />
             </button>
 
             <div
@@ -1241,11 +1233,11 @@ export function Roundtable({
                               className={cn(
                                 'absolute inset-0 rounded-full border-2 transition-all duration-300',
                                 isSpeaking
-                                  ? 'border-purple-500 dark:border-purple-400 shadow-[0_0_8px_rgba(168,85,247,0.4)]'
-                                  : 'border-white dark:border-gray-700',
+                                  ? 'border-sky-500 shadow-[0_0_8px_rgba(56,189,248,0.4)]'
+                                  : 'border-white',
                               )}
                             />
-                            <div className="absolute inset-0.5 rounded-full bg-gray-100 dark:bg-gray-800 overflow-hidden">
+                            <div className="absolute inset-0.5 rounded-full bg-slate-100 overflow-hidden">
                               <img
                                 src={student.avatar}
                                 alt={student.name}
@@ -1254,13 +1246,13 @@ export function Roundtable({
                             </div>
                             {/* Speaking indicator */}
                             {isSpeaking && (
-                              <div className="absolute -right-0.5 -top-0.5 w-3 h-3 bg-green-500 rounded-full border border-white dark:border-gray-800 z-20 flex items-center justify-center">
+                              <div className="absolute -right-0.5 -top-0.5 w-3 h-3 bg-green-500 rounded-full border border-white z-20 flex items-center justify-center">
                                 <div className="w-1 h-1 bg-white rounded-full animate-pulse" />
                               </div>
                             )}
                             {/* Loading indicator (Issue 5) */}
                             {isThinkingAgent && (
-                              <div className="absolute inset-0 rounded-full border-2 border-purple-400 border-t-transparent animate-spin z-20" />
+                              <div className="absolute inset-0 rounded-full border-2 border-sky-400 border-t-transparent animate-spin z-20" />
                             )}
                           </div>
                         </HoverCardTrigger>
@@ -1270,7 +1262,7 @@ export function Roundtable({
                           className="w-64 p-3 max-h-[300px] overflow-y-auto"
                         >
                           <div className="flex items-center gap-2">
-                            <div className="w-8 h-8 rounded-full overflow-hidden shrink-0 bg-gray-100 dark:bg-gray-800">
+                            <div className="w-8 h-8 rounded-full overflow-hidden shrink-0 bg-slate-100">
                               <img
                                 src={student.avatar}
                                 alt={student.name}
@@ -1292,7 +1284,7 @@ export function Roundtable({
                             </div>
                           </div>
                           {hasDescription && (
-                            <p className="text-xs text-muted-foreground mt-2 leading-relaxed whitespace-pre-line">
+                            <p className="text-xs text-slate-500 mt-2 leading-relaxed whitespace-pre-line">
                               {description}
                             </p>
                           )}
@@ -1312,9 +1304,9 @@ export function Roundtable({
                   behavior: 'smooth',
                 });
               }}
-              className="absolute right-0 top-0 bottom-0 w-5 z-10 flex items-center justify-center bg-gradient-to-l from-gray-50/90 dark:from-gray-900/90 to-transparent opacity-0 group-hover/scroll:opacity-100 transition-opacity cursor-pointer"
+              className="absolute right-0 top-0 bottom-0 w-5 z-10 flex items-center justify-center bg-gradient-to-l from-sky-50/90 to-transparent opacity-0 group-hover/scroll:opacity-100 transition-opacity cursor-pointer"
             >
-              <ChevronRight className="w-3.5 h-3.5 text-gray-400" />
+              <ChevronRight className="w-3.5 h-3.5 text-slate-400" />
             </button>
 
             {/* ProactiveCard for student/non-teacher agents — rendered via portal */}
@@ -1347,7 +1339,7 @@ export function Roundtable({
           </div>
 
           {/* Divider */}
-          <div className="mx-auto my-1.5 w-8 h-px bg-gray-200 dark:bg-gray-700 opacity-50 shrink-0" />
+          <div className="mx-auto my-1.5 w-8 h-px bg-sky-200 opacity-50 shrink-0" />
 
           {/* User avatar + interaction buttons */}
           <div className="flex-1 flex items-center justify-center gap-3 px-2 min-h-0">
@@ -1369,7 +1361,7 @@ export function Roundtable({
                           delay: i * 0.12,
                           ease: 'easeInOut',
                         }}
-                        className="w-[4px] h-[4px] rounded-full bg-purple-400 dark:bg-purple-400"
+                        className="w-[4px] h-[4px] rounded-full bg-sky-400"
                       />
                     ))}
                   </div>
@@ -1385,10 +1377,10 @@ export function Roundtable({
                     className={cn(
                       'w-8 h-8 rounded-full border flex items-center justify-center transition-all active:scale-95 shadow-sm',
                       !asrEnabled
-                        ? 'bg-gray-100 dark:bg-gray-800/50 text-gray-300 dark:text-gray-600 border-gray-200 dark:border-gray-700 cursor-not-allowed'
+                        ? 'bg-slate-100 text-slate-300 border-slate-200 cursor-not-allowed'
                         : isVoiceOpen
-                          ? 'bg-purple-600 dark:bg-purple-500 border-purple-600 dark:border-purple-500 text-white shadow-purple-200 dark:shadow-purple-800'
-                          : 'bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 text-gray-400 dark:text-gray-500 hover:bg-purple-50 dark:hover:bg-purple-900/20 hover:text-purple-600 dark:hover:text-purple-400 hover:border-purple-200 dark:hover:border-purple-700',
+                          ? 'bg-orange-500 border-orange-500 text-white shadow-orange-200'
+                          : 'bg-white border-slate-200 text-slate-400 hover:bg-orange-50 hover:text-orange-600 hover:border-orange-200',
                     )}
                   >
                     {asrEnabled ? (
@@ -1405,8 +1397,8 @@ export function Roundtable({
                     className={cn(
                       'w-8 h-8 rounded-full border flex items-center justify-center transition-all active:scale-95 shadow-sm',
                       isInputOpen
-                        ? 'bg-purple-600 dark:bg-purple-500 border-purple-600 dark:border-purple-500 text-white shadow-purple-200 dark:shadow-purple-800'
-                        : 'bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 text-gray-400 dark:text-gray-500 hover:bg-purple-50 dark:hover:bg-purple-900/20 hover:text-purple-600 dark:hover:text-purple-400 hover:border-purple-200 dark:hover:border-purple-700',
+                        ? 'bg-sky-600 border-sky-600 text-white shadow-sky-200'
+                        : 'bg-white border-slate-200 text-slate-400 hover:bg-sky-50 hover:text-sky-600 hover:border-sky-200',
                     )}
                   >
                     <MessageSquare className="w-3.5 h-3.5" />
@@ -1435,22 +1427,20 @@ export function Roundtable({
                   className={cn(
                     'absolute inset-0 rounded-full border-2 transition-all duration-300',
                     isCueUser
-                      ? 'border-amber-500 dark:border-amber-400 shadow-[0_0_12px_rgba(245,158,11,0.4)] animate-pulse'
+                      ? 'border-amber-500 shadow-[0_0_12px_rgba(245,158,11,0.4)] animate-pulse'
                       : activeRole === 'user' || isInputOpen
-                        ? 'border-purple-600 dark:border-purple-400 shadow-[0_0_8px_rgba(168,85,247,0.3)]'
-                        : 'border-white dark:border-gray-700 group-hover:border-purple-200 dark:group-hover:border-purple-600',
+                        ? 'border-sky-600 shadow-[0_0_8px_rgba(56,189,248,0.3)]'
+                        : 'border-white group-hover:border-sky-200',
                   )}
                 />
-                <div className="w-14 h-14 rounded-full bg-gray-50 dark:bg-gray-800 overflow-hidden relative z-10 shadow-sm border border-gray-50 dark:border-gray-700 text-2xl">
+                <div className="w-14 h-14 rounded-full bg-slate-50 overflow-hidden relative z-10 shadow-sm border border-slate-50 text-2xl">
                   <AvatarDisplay src={userAvatar} alt="You" />
                 </div>
-                <div className="absolute top-0 right-0 w-5 h-5 bg-white dark:bg-gray-800 rounded-full flex items-center justify-center shadow-md border border-gray-100 dark:border-gray-700 z-20">
+                <div className="absolute top-0 right-0 w-5 h-5 bg-white rounded-full flex items-center justify-center shadow-md border border-slate-100 z-20">
                   <div
                     className={cn(
                       'w-1.5 h-1.5 rounded-full',
-                      isInputOpen || isCueUser
-                        ? 'bg-purple-500 animate-pulse'
-                        : 'bg-gray-300 dark:bg-gray-600',
+                      isInputOpen || isCueUser ? 'bg-sky-500 animate-pulse' : 'bg-slate-300',
                     )}
                   />
                 </div>

@@ -328,12 +328,12 @@ function InteractiveWhiteboardCanvas({
   return (
     <div
       ref={canvasRef}
-      className="relative bg-white shadow-2xl rounded-lg overflow-hidden select-none"
+      className="absolute left-1/2 top-1/2 bg-white overflow-hidden select-none"
       style={{
-        width: canvasWidth,
-        height: canvasHeight,
-        transform: `scale(${containerScale})`,
-        transformOrigin: 'top left',
+        width: '100%',
+        height: '100%',
+        transform: `translate(-50%, -50%) scale(${containerScale})`,
+        transformOrigin: 'center',
         cursor: isPanning ? 'grabbing' : canPan ? 'grab' : undefined,
       }}
       onPointerDown={handlePointerDown}

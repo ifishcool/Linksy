@@ -155,8 +155,12 @@ export function SceneSidebar({
                   }
                 }}
                 className={cn(
-                  'group relative rounded-xl transition-all duration-200 cursor-pointer flex flex-col gap-2 p-2.5',
-                  isActive ? 'bg-sky-100/70 ring-1 ring-sky-300' : 'hover:bg-sky-50/80',
+                  'group relative rounded-xl transition-all duration-200 cursor-pointer flex flex-col gap-2 p-2.5 border border-transparent hover:border-sky-300',
+                  isActive
+                    ? 'bg-sky-100/80 ring-1 ring-sky-300'
+                    : index % 2 === 0
+                      ? 'bg-white/60'
+                      : 'bg-sky-50/50',
                 )}
               >
                 {/* Scene Header */}
@@ -327,8 +331,10 @@ export function SceneSidebar({
                     }
                   }}
                   className={cn(
-                    'group relative rounded-xl flex flex-col gap-2 p-2.5 transition-all duration-200',
-                    isFailed ? 'opacity-100 cursor-default' : 'cursor-pointer hover:bg-sky-50/80',
+                    'group relative rounded-xl flex flex-col gap-2 p-2.5 transition-all duration-200 border border-transparent hover:border-sky-300',
+                    isFailed
+                      ? 'opacity-100 cursor-default bg-white/60'
+                      : 'cursor-pointer bg-sky-50/40',
                     !isFailed && !isActive && 'opacity-60',
                     isActive && !isFailed && 'bg-sky-100/70 ring-1 ring-sky-300 opacity-100',
                   )}

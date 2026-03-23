@@ -88,15 +88,15 @@ export function Whiteboard({ isOpen, onClose }: WhiteboardProps) {
               y: 16,
               transition: { duration: 0.5, ease: [0.4, 0, 0.2, 1] },
             }}
-            className="absolute inset-4 pointer-events-auto bg-white/95 dark:bg-gray-800/95 backdrop-blur-2xl rounded-3xl shadow-[0_32px_80px_-20px_rgba(0,0,0,0.25)] border-2 border-purple-200/60 dark:border-purple-700/60 flex flex-col overflow-hidden z-[120] ring-4 ring-purple-100/40 dark:ring-purple-800/40"
+            className="absolute inset-0 pointer-events-auto backdrop-blur-sm  border-sky-200/70 flex flex-col overflow-hidden z-[120]"
           >
             {/* Header */}
-            <div className="h-14 px-6 border-b border-gray-100 dark:border-gray-700 flex items-center justify-between shrink-0 bg-white/50 dark:bg-gray-800/50">
+            <div className="h-14 px-6 border-b border-sky-100 flex items-center justify-between shrink-0 bg-white/60">
               <div className="flex items-center gap-3">
-                <div className="w-8 h-8 rounded-xl bg-purple-100 dark:bg-purple-900/30 flex items-center justify-center text-purple-600 dark:text-purple-400">
+                <div className="w-8 h-8 rounded-xl bg-sky-100 flex items-center justify-center text-sky-700">
                   <PencilLine className="w-4 h-4" />
                 </div>
-                <span className="font-bold text-gray-800 dark:text-gray-200 tracking-tight">
+                <span className="font-bold text-slate-800 tracking-tight">
                   {t('whiteboard.title')}
                 </span>
               </div>
@@ -107,7 +107,7 @@ export function Whiteboard({ isOpen, onClose }: WhiteboardProps) {
                   onClick={handleClear}
                   disabled={isClearing || elementCount === 0}
                   whileTap={{ scale: 0.9 }}
-                  className="p-2 text-gray-400 dark:text-gray-500 hover:text-red-500 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors disabled:opacity-40 disabled:pointer-events-none"
+                  className="p-2 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors disabled:opacity-40 disabled:pointer-events-none"
                   title={t('whiteboard.clear')}
                 >
                   <motion.div
@@ -123,21 +123,21 @@ export function Whiteboard({ isOpen, onClose }: WhiteboardProps) {
                   type="button"
                   onClick={() => setHistoryOpen(!historyOpen)}
                   whileTap={{ scale: 0.9 }}
-                  className="relative p-2 text-gray-400 dark:text-gray-500 hover:text-purple-500 dark:hover:text-purple-400 hover:bg-purple-50 dark:hover:bg-purple-900/20 rounded-lg transition-colors"
+                  className="relative p-2 text-slate-400 hover:text-sky-600 hover:bg-sky-50 rounded-lg transition-colors"
                   title={t('whiteboard.history')}
                 >
                   <History className="w-4 h-4" />
                   {snapshotCount > 0 && (
-                    <span className="absolute -top-0.5 -right-0.5 min-w-[16px] h-4 px-1 rounded-full bg-purple-500 text-white text-[10px] font-bold flex items-center justify-center">
+                    <span className="absolute -top-0.5 -right-0.5 min-w-[16px] h-4 px-1 rounded-full bg-sky-600 text-white text-[10px] font-bold flex items-center justify-center">
                       {snapshotCount}
                     </span>
                   )}
                 </motion.button>
-                <div className="w-px h-4 bg-gray-200 dark:bg-gray-700 mx-1" />
+                <div className="w-px h-4 bg-sky-200 mx-1" />
                 <button
                   type="button"
                   onClick={onClose}
-                  className="p-2 text-gray-400 dark:text-gray-500 hover:text-gray-800 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
+                  className="p-2 text-slate-400 hover:text-slate-800 hover:bg-slate-100 rounded-lg transition-colors"
                   title={t('whiteboard.minimize')}
                 >
                   <Minimize2 className="w-5 h-5" />
@@ -146,7 +146,7 @@ export function Whiteboard({ isOpen, onClose }: WhiteboardProps) {
             </div>
 
             {/* Whiteboard Content Area */}
-            <div className="flex-1 relative bg-[radial-gradient(#e5e7eb_1px,transparent_1px)] dark:bg-[radial-gradient(#374151_1px,transparent_1px)] [background-size:24px_24px] overflow-hidden">
+            <div className="flex-1 relative bg-[radial-gradient(#e2e8f0_1px,transparent_1px)] [background-size:24px_24px] overflow-hidden">
               <WhiteboardCanvas />
 
               {/* History panel */}
