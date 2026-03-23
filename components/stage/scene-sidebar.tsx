@@ -137,10 +137,7 @@ export function SceneSidebar({
         </div>
 
         {/* Scenes List */}
-        <div
-          data-testid="scene-list"
-          className="flex-1 overflow-y-auto overflow-x-hidden p-2 space-y-2 scrollbar-hide pt-1"
-        >
+        <div className="flex-1 overflow-y-auto overflow-x-hidden px-3 pb-3 space-y-3 scrollbar-hide pt-1.5">
           {scenes.map((scene, index) => {
             const isActive = currentSceneId === scene.id;
             const Icon = getSceneTypeIcon(scene.type);
