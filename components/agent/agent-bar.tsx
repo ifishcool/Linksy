@@ -740,74 +740,76 @@ export function AgentBar() {
                 <div className="max-h-56 overflow-y-auto -mx-0.5">
                   {agents
                     .filter((a) => a.role !== 'teacher')
-                    .map((agent) => {
-                      const isSelected = selectedAgentIds.includes(agent.id);
-                      return (
-                        <div
-                          key={agent.id}
-                          onClick={() => toggleAgent(agent.id)}
-                          className={cn(
-                            'w-full flex items-center gap-3 px-3 py-2 text-left transition-colors cursor-pointer rounded-lg',
-                            isSelected ? 'bg-sky-100/80' : 'hover:bg-sky-50/60',
-                          )}
-                        >
-                          <Checkbox checked={isSelected} className="pointer-events-none" />
-                          <div
-                            className={cn(
-                              'size-8 rounded-full overflow-hidden shrink-0 ring-1',
-                              isSelected ? 'ring-sky-300' : 'ring-slate-200',
-                            )}
-                          >
-                            <img
-                              src={agent.avatar}
-                              alt={getAgentName(agent)}
-                              className="size-full object-cover"
-                            />
-                          </div>
-                          <div className="flex-1 min-w-0">
-                            <div className="text-sm font-medium flex items-center gap-1.5">
-                              {getAgentName(agent)}
-                              <span className="text-[10px] text-muted-foreground/50 font-normal">
-                                {getAgentRole(agent)}
-                              </span>
-                            </div>
-                            {(() => {
-                              const descKey = `settings.agentDescriptions.${agent.id}`;
-                              const desc = t(descKey);
-                              return desc !== descKey ? (
-                                <p className="text-xs text-muted-foreground/60 mt-0.5 leading-relaxed">
-                                  {desc}
-                                </p>
-                              ) : null;
-                            })()}
-                          </div>
-                        </div>
-                      );
-                    })}
+                    .map((agent, idx) => renderAgentRow(agent, idx + 1, false))}
                 </div>
               ) : (
-                /* Auto-generate mode */
-                <div className="flex flex-col items-center pt-6 pb-2 gap-8">
-                  <div className="size-14 rounded-full bg-sky-100 flex items-center justify-center border border-sky-200">
-                    <Shuffle className="size-7 text-orange-500" />
+                <div className="flex flex-col items-center pt-6 pb-3 gap-4">
+                  <div className="relative flex items-center justify-center">
+                    <div className="absolute size-10 rounded-full bg-violet-400/10 dark:bg-violet-400/15 animate-ping [animation-duration:3s]" />
+                    <div className="absolute size-12 rounded-full bg-violet-400/5 dark:bg-violet-400/10 animate-pulse [animation-duration:2.5s]" />
+                    <Shuffle className="relative size-5 text-violet-400 dark:text-violet-500" />
                   </div>
-                  <p className="text-xs text-slate-500 text-center">
-                    {t('settings.agentModeAutoDesc')}
-                  </p>
+                  <div className="flex-1" />
+                  <div className="text-center space-y-1">
+                    <p className="text-[11px] text-muted-foreground/60">
+                      {t('settings.agentModeAutoDesc')}
+                    </p>
+                    <p className="text-[10px] text-muted-foreground/40">
+                      {t('agentBar.voiceAutoAssign')}
+                    </p>
+                  </div>
                 </div>
               )}
 
-              {/* Max turns — always visible */}
-              <div className="pt-2.5 mt-2.5 border-t border-sky-100 flex items-center gap-3">
-                <span className="text-xs text-slate-500 shrink-0">{t('settings.maxTurns')}</span>
-                <Input
-                  type="number"
-                  min="1"
-                  max="20"
-                  value={maxTurns}
-                  onChange={(e) => setMaxTurns(e.target.value)}
-                  className="w-16 h-7 text-xs border-sky-200"
-                />
+              {/* Max turns — compact stepper */}
+              <div className="flex items-center gap-1.5 px-2 py-1 mt-1 border-t border-border/30">
+                <MessageSquare className="size-3 text-muted-foreground/40 shrink-0" />
+                <span className="text-[11px] text-muted-foreground/50 flex-1">
+                  {t('settings.maxTurns')}
+                </span>
+                <div className="flex items-center rounded-full bg-muted/50 h-5 shrink-0">
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      const v = Math.max(1, parseInt(maxTurns || '1') - 1);
+                      setMaxTurns(String(v));
+                    }}
+                    className="size-5 flex items-center justify-center text-muted-foreground/60 hover:text-foreground transition-colors rounded-full hover:bg-muted"
+                  >
+                    <Minus className="size-2.5" />
+                  </button>
+                  <input
+                    type="text"
+                    inputMode="numeric"
+                    value={maxTurns}
+                    onChange={(e) => {
+                      const raw = e.target.value.replace(/\D/g, '');
+                      if (!raw) {
+                        setMaxTurns('');
+                        return;
+                      }
+                      const v = Math.min(20, Math.max(1, parseInt(raw)));
+                      setMaxTurns(String(v));
+                    }}
+                    onBlur={() => {
+                      if (!maxTurns || parseInt(maxTurns) < 1) setMaxTurns('1');
+                    }}
+                    onClick={(e) => e.stopPropagation()}
+                    className="w-5 h-5 text-[11px] font-medium tabular-nums text-center bg-transparent outline-none border-none"
+                  />
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      const v = Math.min(20, parseInt(maxTurns || '1') + 1);
+                      setMaxTurns(String(v));
+                    }}
+                    className="size-5 flex items-center justify-center text-muted-foreground/60 hover:text-foreground transition-colors rounded-full hover:bg-muted"
+                  >
+                    <Plus className="size-2.5" />
+                  </button>
+                </div>
               </div>
             </div>
           </motion.div>

@@ -16,6 +16,8 @@ import { ActionEngine } from '@/lib/action/engine';
 import { createAudioPlayer } from '@/lib/utils/audio-player';
 import { useDiscussionTTS } from '@/lib/hooks/use-discussion-tts';
 import type { AudioIndicatorState } from '@/components/roundtable/audio-indicator';
+import { useDiscussionTTS } from '@/lib/hooks/use-discussion-tts';
+import type { AudioIndicatorState } from '@/components/roundtable/audio-indicator';
 import type { Action, DiscussionAction, SpeechAction } from '@/lib/types/action';
 import { cn } from '@/lib/utils';
 // Playback state persistence removed — refresh always starts from the beginning
@@ -114,12 +116,35 @@ export function Stage({
   const selectedAgentIds = useSettingsStore((s) => s.selectedAgentIds);
   const ttsMuted = useSettingsStore((s) => s.ttsMuted);
   const ttsEnabled = useSettingsStore((s) => s.ttsEnabled);
+  const ttsMuted = useSettingsStore((s) => s.ttsMuted);
+  const ttsEnabled = useSettingsStore((s) => s.ttsEnabled);
 
   // Generate participants from selected agents
   const participants = useMemo(
     () => agentsToParticipants(selectedAgentIds, t),
     [selectedAgentIds, t],
   );
+
+  // Resolved AgentConfig array for hooks that need full agent objects
+  // Subscribe to the agents record so voiceConfig changes trigger re-resolution
+  const agentsRecord = useAgentRegistry((s) => s.agents);
+  const selectedAgents = useMemo(
+    () => selectedAgentIds.map((id) => agentsRecord[id]).filter((a): a is AgentConfig => a != null),
+    [agentsRecord, selectedAgentIds],
+  );
+
+  // Discussion TTS: audio indicator state
+  const [audioIndicatorState, setAudioIndicatorState] = useState<AudioIndicatorState>('idle');
+  const [audioAgentId, setAudioAgentId] = useState<string | null>(null);
+
+  const discussionTTS = useDiscussionTTS({
+    enabled: ttsEnabled && !ttsMuted,
+    agents: selectedAgents,
+    onAudioStateChange: (agentId, state) => {
+      setAudioAgentId(agentId);
+      setAudioIndicatorState(state);
+    },
+  });
 
   // Resolved AgentConfig array for hooks that need full agent objects
   // Subscribe to the agents record so voiceConfig changes trigger re-resolution
@@ -261,7 +286,11 @@ export function Stage({
     // Stop any in-flight discussion TTS audio
     discussionTTS.cleanup();
 
+    // Stop any in-flight discussion TTS audio
+    discussionTTS.cleanup();
+
     resetLiveState();
+  }, [chatSessionType, resetLiveState, discussionTTS]);
   }, [chatSessionType, resetLiveState, discussionTTS]);
 
   // Shared stop-discussion handler (used by both Roundtable and Canvas toolbar)
@@ -375,6 +404,9 @@ export function Stage({
     // Stop any in-flight discussion TTS audio on scene switch
     discussionTTS.cleanup();
 
+    // Stop any in-flight discussion TTS audio on scene switch
+    discussionTTS.cleanup();
+
     // Reset all roundtable/live state so scenes are fully isolated
     resetSceneState();
 
@@ -464,6 +496,8 @@ export function Stage({
           discussionAbortRef.current = null;
         }
         setDiscussionTrigger(null);
+        // Stop any in-flight discussion TTS audio
+        discussionTTS.cleanup();
         // Stop any in-flight discussion TTS audio
         discussionTTS.cleanup();
         // Clear roundtable state (idempotent — may already be cleared by doSessionCleanup)
@@ -1060,121 +1094,108 @@ export function Stage({
 
         {/* Roundtable Area */}
         {mode === 'playback' && (
-          <div
-            className={cn(
-              'transition-opacity duration-300',
-              !isPresenting && 'shrink-0',
-              isPresenting && 'absolute inset-x-0 bottom-0 z-20',
-            )}
-          >
-            <Roundtable
-              mode={mode}
-              initialParticipants={participants}
-              playbackView={playbackView}
-              currentSpeech={liveSpeech}
-              lectureSpeech={lectureSpeech}
-              idleText={firstSpeechText}
-              playbackCompleted={playbackCompleted}
-              discussionRequest={discussionRequest}
-              engineMode={engineMode}
-              isStreaming={chatIsStreaming}
-              audioIndicatorState={audioIndicatorState}
-              audioAgentId={audioAgentId}
-              sessionType={
-                chatSessionType === 'qa'
-                  ? 'qa'
-                  : chatSessionType === 'discussion'
-                    ? 'discussion'
-                    : undefined
+          <Roundtable
+            mode={mode}
+            initialParticipants={participants}
+            playbackView={playbackView}
+            currentSpeech={liveSpeech}
+            lectureSpeech={lectureSpeech}
+            idleText={firstSpeechText}
+            playbackCompleted={playbackCompleted}
+            discussionRequest={discussionRequest}
+            engineMode={engineMode}
+            isStreaming={chatIsStreaming}
+            audioIndicatorState={audioIndicatorState}
+            audioAgentId={audioAgentId}
+            sessionType={
+              chatSessionType === 'qa'
+                ? 'qa'
+                : chatSessionType === 'discussion'
+                  ? 'discussion'
+                  : undefined
+            }
+            speakingAgentId={speakingAgentId}
+            speechProgress={speechProgress}
+            showEndFlash={showEndFlash}
+            endFlashSessionType={endFlashSessionType}
+            thinkingState={thinkingState}
+            isCueUser={isCueUser}
+            isTopicPending={isTopicPending}
+            onMessageSend={(msg) => {
+              // Clear soft-paused state — user is continuing the topic
+              if (isTopicPending) {
+                setIsTopicPending(false);
+                setLiveSpeech(null);
+                setSpeakingAgentId(null);
               }
-              speakingAgentId={speakingAgentId}
-              speechProgress={speechProgress}
-              showEndFlash={showEndFlash}
-              endFlashSessionType={endFlashSessionType}
-              thinkingState={thinkingState}
-              isCueUser={isCueUser}
-              isTopicPending={isTopicPending}
-              onMessageSend={(msg) => {
-                // Clear soft-paused state — user is continuing the topic
-                if (isTopicPending) {
-                  setIsTopicPending(false);
-                  setLiveSpeech(null);
-                  setSpeakingAgentId(null);
-                }
-                // User interrupts during playback — handleUserInterrupt triggers
-                // onUserInterrupt callback which already calls sendMessage, so skip
-                // the direct sendMessage below to avoid sending twice.
-                // Include 'paused' because onInputActivate pauses the engine before
-                // the user finishes typing — without this the interrupt position
-                // would never be saved and resuming after QA skips to the next sentence.
-                if (
-                  engineRef.current &&
-                  (engineMode === 'playing' || engineMode === 'live' || engineMode === 'paused')
-                ) {
-                  engineRef.current.handleUserInterrupt(msg);
-                } else {
-                  chatAreaRef.current?.sendMessage(msg);
-                }
-                // Auto-switch to chat tab when user sends a message
-                chatAreaRef.current?.switchToTab('chat');
-                setIsCueUser(false);
-                // Immediately mark streaming for synchronized stop button
-                setChatIsStreaming(true);
-                setChatSessionType(chatSessionType || 'qa');
-                // Optimistic thinking: show thinking dots immediately so there's
-                // no blank gap between userMessage expiry and the SSE thinking event.
-                // The real SSE event will overwrite this with the same or updated value.
-                setThinkingState({ stage: 'director' });
-              }}
-              onDiscussionStart={() => {
-                // User clicks "Join" on ProactiveCard
-                engineRef.current?.confirmDiscussion();
-              }}
-              onDiscussionSkip={() => {
-                // User clicks "Skip" on ProactiveCard
-                engineRef.current?.skipDiscussion();
-              }}
-              onStopDiscussion={handleStopDiscussion}
-              onInputActivate={async () => {
-                // Soft-pause QA/Discussion if streaming (opening input = implicit pause)
-                if (chatIsStreaming) {
-                  await doSoftPause();
-                }
-                // Also pause playback engine
-                if (engineRef.current && (engineMode === 'playing' || engineMode === 'live')) {
-                  engineRef.current.pause();
-                }
-              }}
-              onResumeTopic={doResumeTopic}
-              onPlayPause={handlePlayPause}
-              isDiscussionPaused={isDiscussionPaused}
-              onDiscussionPause={() => {
-                chatAreaRef.current?.pauseActiveLiveBuffer();
-                setIsDiscussionPaused(true);
-              }}
-              onDiscussionResume={() => {
-                chatAreaRef.current?.resumeActiveLiveBuffer();
-                setIsDiscussionPaused(false);
-              }}
-              totalActions={totalActions}
-              currentActionIndex={0}
-              currentSceneIndex={currentSceneIndex}
-              scenesCount={totalScenesCount}
-              whiteboardOpen={whiteboardOpen}
-              sidebarCollapsed={sidebarCollapsed}
-              chatCollapsed={chatAreaCollapsed}
-              onToggleSidebar={() => setSidebarCollapsed(!sidebarCollapsed)}
-              onToggleChat={() => setChatAreaCollapsed(!chatAreaCollapsed)}
-              onPrevSlide={handlePreviousScene}
-              onNextSlide={handleNextScene}
-              onWhiteboardClose={handleWhiteboardToggle}
-              isPresenting={isPresenting}
-              controlsVisible={controlsVisible}
-              onTogglePresentation={togglePresentation}
-              onPresentationInteractionChange={setIsPresentationInteractionActive}
-              fullscreenContainerRef={stageRef}
-            />
-          </div>
+              // User interrupts during playback — handleUserInterrupt triggers
+              // onUserInterrupt callback which already calls sendMessage, so skip
+              // the direct sendMessage below to avoid sending twice.
+              // Include 'paused' because onInputActivate pauses the engine before
+              // the user finishes typing — without this the interrupt position
+              // would never be saved and resuming after QA skips to the next sentence.
+              if (
+                engineRef.current &&
+                (engineMode === 'playing' || engineMode === 'live' || engineMode === 'paused')
+              ) {
+                engineRef.current.handleUserInterrupt(msg);
+              } else {
+                chatAreaRef.current?.sendMessage(msg);
+              }
+              // Auto-switch to chat tab when user sends a message
+              chatAreaRef.current?.switchToTab('chat');
+              setIsCueUser(false);
+              // Immediately mark streaming for synchronized stop button
+              setChatIsStreaming(true);
+              setChatSessionType(chatSessionType || 'qa');
+              // Optimistic thinking: show thinking dots immediately so there's
+              // no blank gap between userMessage expiry and the SSE thinking event.
+              // The real SSE event will overwrite this with the same or updated value.
+              setThinkingState({ stage: 'director' });
+            }}
+            onDiscussionStart={() => {
+              // User clicks "Join" on ProactiveCard
+              engineRef.current?.confirmDiscussion();
+            }}
+            onDiscussionSkip={() => {
+              // User clicks "Skip" on ProactiveCard
+              engineRef.current?.skipDiscussion();
+            }}
+            onStopDiscussion={handleStopDiscussion}
+            onInputActivate={async () => {
+              // Soft-pause QA/Discussion if streaming (opening input = implicit pause)
+              if (chatIsStreaming) {
+                await doSoftPause();
+              }
+              // Also pause playback engine
+              if (engineRef.current && (engineMode === 'playing' || engineMode === 'live')) {
+                engineRef.current.pause();
+              }
+            }}
+            onResumeTopic={doResumeTopic}
+            onPlayPause={handlePlayPause}
+            isDiscussionPaused={isDiscussionPaused}
+            onDiscussionPause={() => {
+              chatAreaRef.current?.pauseActiveLiveBuffer();
+              setIsDiscussionPaused(true);
+            }}
+            onDiscussionResume={() => {
+              chatAreaRef.current?.resumeActiveLiveBuffer();
+              setIsDiscussionPaused(false);
+            }}
+            totalActions={totalActions}
+            currentActionIndex={0}
+            currentSceneIndex={currentSceneIndex}
+            scenesCount={totalScenesCount}
+            whiteboardOpen={whiteboardOpen}
+            sidebarCollapsed={sidebarCollapsed}
+            chatCollapsed={chatAreaCollapsed}
+            onToggleSidebar={() => setSidebarCollapsed(!sidebarCollapsed)}
+            onToggleChat={() => setChatAreaCollapsed(!chatAreaCollapsed)}
+            onPrevSlide={handlePreviousScene}
+            onNextSlide={handleNextScene}
+            onWhiteboardClose={handleWhiteboardToggle}
+          />
         )}
       </div>
 
@@ -1228,6 +1249,8 @@ export function Stage({
           setIsCueUser(true);
         }}
         onStopSession={doSessionCleanup}
+        onSegmentSealed={discussionTTS.handleSegmentSealed}
+        shouldHoldAfterReveal={discussionTTS.shouldHold}
         onSegmentSealed={discussionTTS.handleSegmentSealed}
         shouldHoldAfterReveal={discussionTTS.shouldHold}
       />
