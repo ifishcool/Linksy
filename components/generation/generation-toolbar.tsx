@@ -109,43 +109,47 @@ export function GenerationToolbar({
 
   // ─── Pill button helper ─────────────────────────────
   const pillCls =
-    'inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-medium transition-all cursor-pointer select-none whitespace-nowrap border';
-  const pillMuted = `${pillCls} border-border/50 text-muted-foreground/70 hover:text-foreground hover:bg-muted/60`;
-  const pillActive = `${pillCls} border-violet-200/60 dark:border-violet-700/50 bg-violet-100 dark:bg-violet-900/30 text-violet-700 dark:text-violet-300`;
+    'inline-flex h-8 items-center gap-1.5 rounded-full px-3 text-xs font-medium transition-all cursor-pointer select-none whitespace-nowrap border';
+  const pillMuted = `${pillCls} border-slate-200 bg-white/85 text-slate-600 hover:text-slate-800 hover:bg-white`;
+  const pillActive = `${pillCls} border-sky-200 bg-sky-100 text-sky-700`;
+  const pillLanguage = `${pillCls} border-sky-400 bg-sky-500 text-white hover:bg-sky-600`;
+  const showModelControl = false;
+  const showMediaControl = false;
 
   return (
-    <div className="flex items-center gap-1 flex-wrap">
+    <div className="flex items-center gap-1.5 flex-nowrap overflow-x-auto scrollbar-hide pr-1">
       {/* ── Model selector ── */}
-      {configuredProviders.length > 0 ? (
-        <ModelSelectorPopover
-          configuredProviders={configuredProviders}
-          currentProviderId={currentProviderId}
-          currentModelId={currentModelId}
-          currentProviderConfig={currentProviderConfig}
-          setModel={setModel}
-          t={t}
-        />
-      ) : (
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <button
-              onClick={() => onSettingsOpen('providers')}
-              className={cn(
-                pillCls,
-                'text-amber-600 dark:text-amber-400 animate-pulse',
-                'bg-amber-50 dark:bg-amber-950/30 hover:bg-amber-100 dark:hover:bg-amber-950/50',
-              )}
-            >
-              <Bot className="size-3.5" />
-              <span>{t('toolbar.configureProvider')}</span>
-            </button>
-          </TooltipTrigger>
-          <TooltipContent>{t('toolbar.configureProviderHint')}</TooltipContent>
-        </Tooltip>
-      )}
+      {showModelControl &&
+        (configuredProviders.length > 0 ? (
+          <ModelSelectorPopover
+            configuredProviders={configuredProviders}
+            currentProviderId={currentProviderId}
+            currentModelId={currentModelId}
+            currentProviderConfig={currentProviderConfig}
+            setModel={setModel}
+            t={t}
+          />
+        ) : (
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <button
+                onClick={() => onSettingsOpen('providers')}
+                className={cn(
+                  pillCls,
+                  'text-amber-600 dark:text-amber-400 animate-pulse',
+                  'bg-amber-50 dark:bg-amber-950/30 hover:bg-amber-100 dark:hover:bg-amber-950/50',
+                )}
+              >
+                <Bot className="size-3.5" />
+                <span>{t('toolbar.configureProvider')}</span>
+              </button>
+            </TooltipTrigger>
+            <TooltipContent>{t('toolbar.configureProviderHint')}</TooltipContent>
+          </Tooltip>
+        ))}
 
       {/* ── Separator ── */}
-      <div className="w-px h-4 bg-border/60 mx-1" />
+      {showModelControl && <div className="w-px h-5 bg-slate-200/80 mx-0.5" />}
 
       {/* ── PDF (parser + upload) combined Popover ── */}
       <Popover>
@@ -362,7 +366,7 @@ export function GenerationToolbar({
         <TooltipTrigger asChild>
           <button
             onClick={() => onLanguageChange(language === 'zh-CN' ? 'en-US' : 'zh-CN')}
-            className={pillMuted}
+            className={pillLanguage}
           >
             <Globe className="size-3.5" />
             <span>{language === 'zh-CN' ? '中文' : 'EN'}</span>
@@ -372,10 +376,10 @@ export function GenerationToolbar({
       </Tooltip>
 
       {/* ── Separator ── */}
-      <div className="w-px h-4 bg-border/60 mx-1" />
+      {showMediaControl && <div className="w-px h-5 bg-slate-200/80 mx-0.5" />}
 
       {/* ── Media popover ── */}
-      <MediaPopover onSettingsOpen={onSettingsOpen} />
+      {showMediaControl && <MediaPopover onSettingsOpen={onSettingsOpen} />}
     </div>
   );
 }
@@ -426,10 +430,9 @@ function ModelSelectorPopover({
           <PopoverTrigger asChild>
             <button
               className={cn(
-                'inline-flex items-center justify-center size-7 rounded-full transition-all cursor-pointer select-none',
-                'ring-1 ring-border/60 hover:ring-border hover:bg-muted/60',
-                currentModelId &&
-                  'ring-violet-300 dark:ring-violet-700 bg-violet-50 dark:bg-violet-950/20',
+                'inline-flex h-8 w-8 items-center justify-center rounded-full transition-all cursor-pointer select-none',
+                'ring-1 ring-slate-200 hover:ring-slate-300 bg-white/85 hover:bg-white',
+                currentModelId && 'ring-sky-300 bg-sky-100',
               )}
             >
               {currentProviderConfig?.icon ? (

@@ -1,18 +1,7 @@
 'use client';
 
-import {
-  Settings,
-  Sun,
-  Moon,
-  Monitor,
-  ArrowLeft,
-  Loader2,
-  Download,
-  FileDown,
-  Package,
-} from 'lucide-react';
+import { Settings, ArrowLeft, Loader2, Download, FileDown, Package } from 'lucide-react';
 import { useI18n } from '@/lib/hooks/use-i18n';
-import { useTheme } from '@/lib/hooks/use-theme';
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { SettingsDialog } from './settings';
@@ -28,11 +17,9 @@ interface HeaderProps {
 
 export function Header({ currentSceneTitle }: HeaderProps) {
   const { t, locale, setLocale } = useI18n();
-  const { theme, setTheme } = useTheme();
   const router = useRouter();
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [languageOpen, setLanguageOpen] = useState(false);
-  const [themeOpen, setThemeOpen] = useState(false);
 
   // Model setup state
   const currentModelId = useSettingsStore((s) => s.modelId);
@@ -54,7 +41,6 @@ export function Header({ currentSceneTitle }: HeaderProps) {
     Object.values(mediaTasks).every((task) => task.status === 'done' || task.status === 'failed');
 
   const languageRef = useRef<HTMLDivElement>(null);
-  const themeRef = useRef<HTMLDivElement>(null);
 
   // Close dropdown when clicking outside
   const handleClickOutside = useCallback(
@@ -62,22 +48,19 @@ export function Header({ currentSceneTitle }: HeaderProps) {
       if (languageOpen && languageRef.current && !languageRef.current.contains(e.target as Node)) {
         setLanguageOpen(false);
       }
-      if (themeOpen && themeRef.current && !themeRef.current.contains(e.target as Node)) {
-        setThemeOpen(false);
-      }
       if (exportMenuOpen && exportRef.current && !exportRef.current.contains(e.target as Node)) {
         setExportMenuOpen(false);
       }
     },
-    [languageOpen, themeOpen, exportMenuOpen],
+    [languageOpen, exportMenuOpen],
   );
 
   useEffect(() => {
-    if (languageOpen || themeOpen || exportMenuOpen) {
+    if (languageOpen || exportMenuOpen) {
       document.addEventListener('mousedown', handleClickOutside);
       return () => document.removeEventListener('mousedown', handleClickOutside);
     }
-  }, [languageOpen, themeOpen, exportMenuOpen, handleClickOutside]);
+  }, [languageOpen, exportMenuOpen, handleClickOutside]);
 
   return (
     <>
@@ -109,7 +92,6 @@ export function Header({ currentSceneTitle }: HeaderProps) {
             <button
               onClick={() => {
                 setLanguageOpen(!languageOpen);
-                setThemeOpen(false);
               }}
               className="flex items-center gap-1 px-3 py-1.5 rounded-full text-xs font-bold text-gray-500 dark:text-gray-400 hover:bg-white dark:hover:bg-gray-700 hover:text-gray-800 dark:hover:text-gray-200 hover:shadow-sm transition-all"
             >
@@ -142,69 +124,6 @@ export function Header({ currentSceneTitle }: HeaderProps) {
                   )}
                 >
                   English
-                </button>
-              </div>
-            )}
-          </div>
-
-          <div className="w-[1px] h-4 bg-gray-200 dark:bg-gray-700" />
-
-          {/* Theme Selector */}
-          <div className="relative" ref={themeRef}>
-            <button
-              onClick={() => {
-                setThemeOpen(!themeOpen);
-                setLanguageOpen(false);
-              }}
-              className="p-2 rounded-full text-gray-400 dark:text-gray-500 hover:bg-white dark:hover:bg-gray-700 hover:text-gray-800 dark:hover:text-gray-200 hover:shadow-sm transition-all group"
-            >
-              {theme === 'light' && <Sun className="w-4 h-4" />}
-              {theme === 'dark' && <Moon className="w-4 h-4" />}
-              {theme === 'system' && <Monitor className="w-4 h-4" />}
-            </button>
-            {themeOpen && (
-              <div className="absolute top-full mt-2 right-0 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg overflow-hidden z-50 min-w-[140px]">
-                <button
-                  onClick={() => {
-                    setTheme('light');
-                    setThemeOpen(false);
-                  }}
-                  className={cn(
-                    'w-full px-4 py-2 text-left text-sm hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors flex items-center gap-2',
-                    theme === 'light' &&
-                      'bg-purple-50 dark:bg-purple-900/20 text-purple-600 dark:text-purple-400',
-                  )}
-                >
-                  <Sun className="w-4 h-4" />
-                  {t('settings.themeOptions.light')}
-                </button>
-                <button
-                  onClick={() => {
-                    setTheme('dark');
-                    setThemeOpen(false);
-                  }}
-                  className={cn(
-                    'w-full px-4 py-2 text-left text-sm hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors flex items-center gap-2',
-                    theme === 'dark' &&
-                      'bg-purple-50 dark:bg-purple-900/20 text-purple-600 dark:text-purple-400',
-                  )}
-                >
-                  <Moon className="w-4 h-4" />
-                  {t('settings.themeOptions.dark')}
-                </button>
-                <button
-                  onClick={() => {
-                    setTheme('system');
-                    setThemeOpen(false);
-                  }}
-                  className={cn(
-                    'w-full px-4 py-2 text-left text-sm hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors flex items-center gap-2',
-                    theme === 'system' &&
-                      'bg-purple-50 dark:bg-purple-900/20 text-purple-600 dark:text-purple-400',
-                  )}
-                >
-                  <Monitor className="w-4 h-4" />
-                  {t('settings.themeOptions.system')}
                 </button>
               </div>
             )}

@@ -13,46 +13,25 @@ interface ThemeContextType {
 const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
 
 export function ThemeProvider({ children }: { children: ReactNode }) {
-  const [theme, setThemeState] = useState<Theme>('system');
-  const [systemTheme, setSystemTheme] = useState<'light' | 'dark'>('light');
+  const [theme, setThemeState] = useState<Theme>('light');
 
-  const resolvedTheme = theme === 'system' ? systemTheme : theme;
+  const resolvedTheme: 'light' | 'dark' = 'light';
 
-  // Hydrate from localStorage after mount (avoids SSR mismatch)
-  /* eslint-disable react-hooks/set-state-in-effect -- Hydration from localStorage must happen in effect */
+  // Enforce light theme globally
+  /* eslint-disable react-hooks/set-state-in-effect -- Theme enforcement must happen in effect */
   useEffect(() => {
-    const stored = localStorage.getItem('theme') as Theme | null;
-    if (stored && ['light', 'dark', 'system'].includes(stored)) {
-      setThemeState(stored);
-    }
-    setSystemTheme(window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+    const root = document.documentElement;
+    root.classList.remove('dark');
+    setThemeState('light');
+    localStorage.setItem('theme', 'light');
   }, []);
   /* eslint-enable react-hooks/set-state-in-effect */
 
-  // Apply theme to document
-  useEffect(() => {
-    const root = document.documentElement;
-    if (resolvedTheme === 'dark') {
-      root.classList.add('dark');
-    } else {
-      root.classList.remove('dark');
-    }
-  }, [resolvedTheme]);
-
-  // Listen to system theme changes
-  useEffect(() => {
-    const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
-    const handleChange = () => {
-      setSystemTheme(mediaQuery.matches ? 'dark' : 'light');
-    };
-    mediaQuery.addEventListener('change', handleChange);
-    return () => mediaQuery.removeEventListener('change', handleChange);
-  }, []);
-
-  // Save theme to localStorage
-  const handleSetTheme = (newTheme: Theme) => {
-    setThemeState(newTheme);
-    localStorage.setItem('theme', newTheme);
+  // Keep API shape but normalize all theme requests to light
+  const handleSetTheme = (_newTheme: Theme) => {
+    setThemeState('light');
+    localStorage.setItem('theme', 'light');
+    document.documentElement.classList.remove('dark');
   };
 
   return (

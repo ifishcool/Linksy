@@ -13,9 +13,6 @@ import {
   Pencil,
   Trash2,
   Settings,
-  Sun,
-  Moon,
-  Monitor,
   BotOff,
   ChevronUp,
 } from 'lucide-react';
@@ -27,7 +24,6 @@ import { cn } from '@/lib/utils';
 import { SettingsDialog } from '@/components/settings';
 import { GenerationToolbar } from '@/components/generation/generation-toolbar';
 import { AgentBar } from '@/components/agent/agent-bar';
-import { useTheme } from '@/lib/hooks/use-theme';
 import { nanoid } from 'nanoid';
 import { storePdfBlob } from '@/lib/utils/image-storage';
 import type { UserRequirements } from '@/lib/types/generation';
@@ -51,7 +47,6 @@ const log = createLogger('Home');
 
 const WEB_SEARCH_STORAGE_KEY = 'webSearchEnabled';
 const LANGUAGE_STORAGE_KEY = 'generationLanguage';
-const RECENT_OPEN_STORAGE_KEY = 'recentClassroomsOpen';
 
 interface FormState {
   pdfFile: File | null;
@@ -69,7 +64,6 @@ const initialFormState: FormState = {
 
 function HomePage() {
   const { t, locale, setLocale } = useI18n();
-  const { theme, setTheme } = useTheme();
   const router = useRouter();
   const [form, setForm] = useState<FormState>(initialFormState);
   const [settingsOpen, setSettingsOpen] = useState(false);
@@ -84,18 +78,11 @@ function HomePage() {
   // Model setup state
   const currentModelId = useSettingsStore((s) => s.modelId);
   const [storeHydrated, setStoreHydrated] = useState(false);
-  const [recentOpen, setRecentOpen] = useState(true);
 
   // Hydrate client-only state after mount (avoids SSR mismatch)
   /* eslint-disable react-hooks/set-state-in-effect -- Hydration from localStorage must happen in effect */
   useEffect(() => {
     setStoreHydrated(true);
-    try {
-      const saved = localStorage.getItem(RECENT_OPEN_STORAGE_KEY);
-      if (saved !== null) setRecentOpen(saved !== 'false');
-    } catch {
-      /* localStorage unavailable */
-    }
     try {
       const savedWebSearch = localStorage.getItem(WEB_SEARCH_STORAGE_KEY);
       const savedLanguage = localStorage.getItem(LANGUAGE_STORAGE_KEY);
@@ -127,7 +114,6 @@ function HomePage() {
 
   const needsSetup = storeHydrated && !currentModelId;
   const [languageOpen, setLanguageOpen] = useState(false);
-  const [themeOpen, setThemeOpen] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [classrooms, setClassrooms] = useState<StageListItem[]>([]);
   const [thumbnails, setThumbnails] = useState<Record<string, Slide>>({});
@@ -137,16 +123,15 @@ function HomePage() {
 
   // Close dropdowns when clicking outside
   useEffect(() => {
-    if (!languageOpen && !themeOpen) return;
+    if (!languageOpen) return;
     const handleClickOutside = (e: MouseEvent) => {
       if (toolbarRef.current && !toolbarRef.current.contains(e.target as Node)) {
         setLanguageOpen(false);
-        setThemeOpen(false);
       }
     };
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, [languageOpen, themeOpen]);
+  }, [languageOpen]);
 
   const loadClassrooms = async () => {
     try {
@@ -323,18 +308,18 @@ function HomePage() {
   };
 
   return (
-    <div className="min-h-[100dvh] w-full bg-gradient-to-b from-slate-50 to-slate-100 dark:from-slate-950 dark:to-slate-900 flex flex-col items-center p-4 pt-16 md:p-8 md:pt-16 overflow-x-hidden">
+    <div className="relative min-h-[100dvh] w-full flex flex-col items-center p-4 pt-16 md:p-8 md:pt-16 overflow-x-hidden">
+      <div className="fixed inset-0 -z-10 bg-[url('/bg.png')] bg-cover bg-center bg-no-repeat pointer-events-none" />
       {/* ═══ Top-right pill (unchanged) ═══ */}
       <div
         ref={toolbarRef}
-        className="fixed top-4 right-4 z-50 flex items-center gap-1 bg-white/60 dark:bg-gray-800/60 backdrop-blur-md px-2 py-1.5 rounded-full border border-gray-100/50 dark:border-gray-700/50 shadow-sm"
+        className="fixed top-4 right-4 z-50 flex items-center gap-1 bg-white/90 dark:bg-slate-900/90 backdrop-blur-md px-2 py-1.5 rounded-full border border-white/70 dark:border-slate-600 shadow-sm"
       >
         {/* Language Selector */}
         <div className="relative">
           <button
             onClick={() => {
               setLanguageOpen(!languageOpen);
-              setThemeOpen(false);
             }}
             className="flex items-center gap-1 px-3 py-1.5 rounded-full text-xs font-bold text-gray-500 dark:text-gray-400 hover:bg-white dark:hover:bg-gray-700 hover:text-gray-800 dark:hover:text-gray-200 hover:shadow-sm transition-all"
           >
@@ -350,7 +335,7 @@ function HomePage() {
                 className={cn(
                   'w-full px-4 py-2 text-left text-sm hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors',
                   locale === 'zh-CN' &&
-                    'bg-purple-50 dark:bg-purple-900/20 text-purple-600 dark:text-purple-400',
+                    'bg-slate-100 dark:bg-slate-800 text-slate-800 dark:text-slate-200',
                 )}
               >
                 简体中文
@@ -363,73 +348,10 @@ function HomePage() {
                 className={cn(
                   'w-full px-4 py-2 text-left text-sm hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors',
                   locale === 'en-US' &&
-                    'bg-purple-50 dark:bg-purple-900/20 text-purple-600 dark:text-purple-400',
+                    'bg-slate-100 dark:bg-slate-800 text-slate-800 dark:text-slate-200',
                 )}
               >
                 English
-              </button>
-            </div>
-          )}
-        </div>
-
-        <div className="w-[1px] h-4 bg-gray-200 dark:bg-gray-700" />
-
-        {/* Theme Selector */}
-        <div className="relative">
-          <button
-            onClick={() => {
-              setThemeOpen(!themeOpen);
-              setLanguageOpen(false);
-            }}
-            className="p-2 rounded-full text-gray-400 dark:text-gray-500 hover:bg-white dark:hover:bg-gray-700 hover:text-gray-800 dark:hover:text-gray-200 hover:shadow-sm transition-all"
-          >
-            {theme === 'light' && <Sun className="w-4 h-4" />}
-            {theme === 'dark' && <Moon className="w-4 h-4" />}
-            {theme === 'system' && <Monitor className="w-4 h-4" />}
-          </button>
-          {themeOpen && (
-            <div className="absolute top-full mt-2 right-0 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg overflow-hidden z-50 min-w-[140px]">
-              <button
-                onClick={() => {
-                  setTheme('light');
-                  setThemeOpen(false);
-                }}
-                className={cn(
-                  'w-full px-4 py-2 text-left text-sm hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors flex items-center gap-2',
-                  theme === 'light' &&
-                    'bg-purple-50 dark:bg-purple-900/20 text-purple-600 dark:text-purple-400',
-                )}
-              >
-                <Sun className="w-4 h-4" />
-                {t('settings.themeOptions.light')}
-              </button>
-              <button
-                onClick={() => {
-                  setTheme('dark');
-                  setThemeOpen(false);
-                }}
-                className={cn(
-                  'w-full px-4 py-2 text-left text-sm hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors flex items-center gap-2',
-                  theme === 'dark' &&
-                    'bg-purple-50 dark:bg-purple-900/20 text-purple-600 dark:text-purple-400',
-                )}
-              >
-                <Moon className="w-4 h-4" />
-                {t('settings.themeOptions.dark')}
-              </button>
-              <button
-                onClick={() => {
-                  setTheme('system');
-                  setThemeOpen(false);
-                }}
-                className={cn(
-                  'w-full px-4 py-2 text-left text-sm hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors flex items-center gap-2',
-                  theme === 'system' &&
-                    'bg-purple-50 dark:bg-purple-900/20 text-purple-600 dark:text-purple-400',
-                )}
-              >
-                <Monitor className="w-4 h-4" />
-                {t('settings.themeOptions.system')}
               </button>
             </div>
           )}
@@ -470,61 +392,41 @@ function HomePage() {
         initialSection={settingsSection}
       />
 
-      {/* ═══ Background Decor ═══ */}
-      <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        <div
-          className="absolute top-0 left-1/4 w-96 h-96 bg-blue-500/10 rounded-full blur-3xl animate-pulse"
-          style={{ animationDuration: '4s' }}
-        />
-        <div
-          className="absolute bottom-0 right-1/4 w-96 h-96 bg-purple-500/10 rounded-full blur-3xl animate-pulse"
-          style={{ animationDuration: '6s' }}
-        />
-      </div>
-
       {/* ═══ Hero section: title + input (centered, wider) ═══ */}
       <motion.div
-        initial={{ opacity: 0, y: 20 }}
+        initial={{ opacity: 0, y: 8 }}
         animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.6, ease: 'easeOut' }}
-        className={cn(
-          'relative z-20 w-full max-w-[800px] flex flex-col items-center',
-          classrooms.length === 0 ? 'justify-center min-h-[calc(100dvh-8rem)]' : 'mt-[10vh]',
-        )}
+        transition={{ duration: 0.25, ease: 'easeOut' }}
+        className="relative z-20 w-full max-w-[940px] flex flex-col items-center pt-2 md:pt-4"
       >
         {/* ── Logo ── */}
         <motion.img
           src="/logo.png"
           alt="Linksy"
-          initial={{ opacity: 0, scale: 0.9 }}
+          initial={{ opacity: 0 }}
           animate={{ opacity: 1, scale: 1 }}
-          transition={{
-            delay: 0.1,
-            type: 'spring',
-            stiffness: 200,
-            damping: 20,
-          }}
-          className="h-12 md:h-16 mb-2 -ml-2 md:-ml-3"
+          transition={{ delay: 0.05, duration: 0.2 }}
+          className="h-10 md:h-12 mb-2"
         />
 
         {/* ── Slogan ── */}
         <motion.p
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
-          transition={{ delay: 0.25 }}
-          className="text-sm text-muted-foreground/60 mb-8"
+          transition={{ delay: 0.12, duration: 0.2 }}
+          className="text-sm text-muted-foreground mb-6"
         >
           {t('home.slogan')}
         </motion.p>
 
         {/* ── Unified input area ── */}
         <motion.div
-          initial={{ opacity: 0, scale: 0.97 }}
-          animate={{ opacity: 1, scale: 1 }}
-          transition={{ delay: 0.35 }}
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ delay: 0.18, duration: 0.2 }}
           className="w-full"
         >
-          <div className="w-full rounded-2xl border border-border/60 bg-white/80 dark:bg-slate-900/80 backdrop-blur-xl shadow-xl shadow-black/[0.03] dark:shadow-black/20 transition-shadow focus-within:shadow-2xl focus-within:shadow-violet-500/[0.06]">
+          <div className="w-full rounded-[38px] border-[4px] border-sky-300/90 bg-gradient-to-b from-white/95 to-sky-50/85 backdrop-blur-sm transition-colors">
             {/* ── Greeting + Profile + Agents ── */}
             <div className="relative z-20 flex items-start justify-between">
               <GreetingBar />
@@ -537,7 +439,7 @@ function HomePage() {
             <textarea
               ref={textareaRef}
               placeholder={t('upload.requirementPlaceholder')}
-              className="w-full resize-none border-0 bg-transparent px-4 pt-1 pb-2 text-[13px] leading-relaxed placeholder:text-muted-foreground/40 focus:outline-none min-h-[140px] max-h-[300px]"
+              className="w-full resize-none border-0 bg-transparent px-6 pt-4 pb-4 text-[16px] leading-relaxed text-slate-700 placeholder:text-slate-400 focus:outline-none min-h-[260px] max-h-[380px]"
               value={form.requirement}
               onChange={(e) => updateForm('requirement', e.target.value)}
               onKeyDown={handleKeyDown}
@@ -545,7 +447,7 @@ function HomePage() {
             />
 
             {/* Toolbar row */}
-            <div className="px-3 pb-3 flex items-end gap-2">
+            <div className="px-5 pb-2 pt-2 flex items-center gap-2.5 border-t border-sky-200/80 bg-white/45 rounded-b-[34px]">
               <div className="flex-1 min-w-0">
                 <GenerationToolbar
                   language={form.language}
@@ -579,13 +481,13 @@ function HomePage() {
                 onClick={handleGenerate}
                 disabled={!canGenerate}
                 className={cn(
-                  'shrink-0 h-8 rounded-lg flex items-center justify-center gap-1.5 transition-all px-3',
+                  'shrink-0 h-11 rounded-full flex items-center justify-center gap-1.5 transition-colors px-5 border-2 text-sm font-semibold',
                   canGenerate
-                    ? 'bg-primary text-primary-foreground hover:opacity-90 shadow-sm cursor-pointer'
-                    : 'bg-muted text-muted-foreground/40 cursor-not-allowed',
+                    ? 'bg-orange-400 border-orange-300 text-white hover:bg-orange-500 cursor-pointer'
+                    : 'bg-slate-200 border-slate-200 text-slate-500 cursor-not-allowed',
                 )}
               >
-                <span className="text-xs font-medium">{t('toolbar.enterClassroom')}</span>
+                <span>{t('toolbar.enterClassroom')}</span>
                 <ArrowUp className="size-3.5" />
               </button>
             </div>
@@ -607,86 +509,55 @@ function HomePage() {
         </AnimatePresence>
       </motion.div>
 
-      {/* ═══ Recent classrooms — collapsible ═══ */}
+      {/* ═══ Recent classrooms — static list ═══ */}
       {classrooms.length > 0 && (
         <motion.div
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ delay: 0.5 }}
-          className="relative z-10 mt-10 w-full max-w-6xl flex flex-col items-center"
+          className="relative z-10 mt-7 w-full max-w-6xl flex flex-col items-center rounded-3xl border border-sky-200/80 bg-white/78 backdrop-blur-sm px-4 pb-6 pt-3"
         >
-          {/* Trigger — divider-line with centered text */}
-          <button
-            onClick={() => {
-              const next = !recentOpen;
-              setRecentOpen(next);
-              try {
-                localStorage.setItem(RECENT_OPEN_STORAGE_KEY, String(next));
-              } catch {
-                /* ignore */
-              }
-            }}
-            className="group w-full flex items-center gap-4 py-2 cursor-pointer"
-          >
-            <div className="flex-1 h-px bg-border/40 group-hover:bg-border/70 transition-colors" />
-            <span className="shrink-0 flex items-center gap-2 text-[13px] text-muted-foreground/60 group-hover:text-foreground/70 transition-colors select-none">
-              <Clock className="size-3.5" />
+          <div className="w-full flex items-center justify-between py-2.5 px-4 rounded-2xl bg-transparent">
+            <span className="flex items-center gap-2.5 text-[15px] text-sky-700 select-none font-bold tracking-tight">
+              <Clock className="size-4 text-sky-600" />
               {t('classroom.recentClassrooms')}
-              <span className="text-[11px] tabular-nums opacity-60">{classrooms.length}</span>
-              <motion.div
-                animate={{ rotate: recentOpen ? 180 : 0 }}
-                transition={{ duration: 0.3, ease: 'easeInOut' }}
-              >
-                <ChevronDown className="size-3.5" />
-              </motion.div>
+              <span className="text-[11px] tabular-nums rounded-full bg-orange-100 text-orange-600 px-1.5 py-0.5 font-semibold">
+                {classrooms.length}
+              </span>
             </span>
-            <div className="flex-1 h-px bg-border/40 group-hover:bg-border/70 transition-colors" />
-          </button>
+          </div>
 
-          {/* Expandable content */}
-          <AnimatePresence>
-            {recentOpen && (
+          <div className="w-full pt-5 grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-x-4 gap-y-6">
+            {classrooms.map((classroom, i) => (
               <motion.div
-                initial={{ height: 0, opacity: 0 }}
-                animate={{ height: 'auto', opacity: 1 }}
-                exit={{ height: 0, opacity: 0 }}
-                transition={{ duration: 0.4, ease: [0.25, 0.1, 0.25, 1] }}
-                className="w-full overflow-hidden"
+                key={classroom.id}
+                initial={{ opacity: 0, y: 16 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{
+                  delay: i * 0.04,
+                  duration: 0.35,
+                  ease: 'easeOut',
+                }}
               >
-                <div className="pt-8 grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-x-5 gap-y-8">
-                  {classrooms.map((classroom, i) => (
-                    <motion.div
-                      key={classroom.id}
-                      initial={{ opacity: 0, y: 16 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      transition={{
-                        delay: i * 0.04,
-                        duration: 0.35,
-                        ease: 'easeOut',
-                      }}
-                    >
-                      <ClassroomCard
-                        classroom={classroom}
-                        slide={thumbnails[classroom.id]}
-                        formatDate={formatDate}
-                        onDelete={handleDelete}
-                        confirmingDelete={pendingDeleteId === classroom.id}
-                        onConfirmDelete={() => confirmDelete(classroom.id)}
-                        onCancelDelete={() => setPendingDeleteId(null)}
-                        onClick={() => router.push(`/classroom/${classroom.id}`)}
-                      />
-                    </motion.div>
-                  ))}
-                </div>
+                <ClassroomCard
+                  classroom={classroom}
+                  slide={thumbnails[classroom.id]}
+                  formatDate={formatDate}
+                  onDelete={handleDelete}
+                  confirmingDelete={pendingDeleteId === classroom.id}
+                  onConfirmDelete={() => confirmDelete(classroom.id)}
+                  onCancelDelete={() => setPendingDeleteId(null)}
+                  onClick={() => router.push(`/classroom/${classroom.id}`)}
+                />
               </motion.div>
-            )}
-          </AnimatePresence>
+            ))}
+          </div>
         </motion.div>
       )}
 
       {/* Footer — flows with content, at the very end */}
-      <div className="mt-auto pt-12 pb-4 text-center text-xs text-muted-foreground/40">
-        OpenMAIC Open Source Project
+      <div className="mt-8 pb-5 text-center text-xs text-muted-foreground/50">
+        Linksy Kids Learning
       </div>
     </div>
   );
@@ -1021,7 +892,7 @@ function ClassroomCard({
       {/* Thumbnail — large radius, no border, subtle bg */}
       <div
         ref={thumbRef}
-        className="relative w-full aspect-[16/9] rounded-2xl bg-slate-100 dark:bg-slate-800/80 overflow-hidden transition-transform duration-200 group-hover:scale-[1.02]"
+        className="relative w-full aspect-[16/9] rounded-3xl border-2 border-sky-200 bg-sky-50 overflow-hidden"
       >
         {slide && thumbWidth > 0 ? (
           <ThumbnailSlide
@@ -1032,7 +903,7 @@ function ClassroomCard({
           />
         ) : !slide ? (
           <div className="absolute inset-0 flex items-center justify-center">
-            <div className="size-12 rounded-2xl bg-gradient-to-br from-violet-100 to-blue-100 dark:from-violet-900/30 dark:to-blue-900/30 flex items-center justify-center">
+            <div className="size-12 rounded-2xl bg-white border border-sky-200 flex items-center justify-center">
               <span className="text-xl opacity-50">📄</span>
             </div>
           </div>
@@ -1050,7 +921,7 @@ function ClassroomCard({
               <Button
                 size="icon"
                 variant="ghost"
-                className="absolute top-2 right-2 size-7 opacity-0 group-hover:opacity-100 transition-opacity bg-black/30 hover:bg-destructive/80 text-white hover:text-white backdrop-blur-sm rounded-full"
+                className="absolute top-2 right-2 size-7 opacity-0 group-hover:opacity-100 transition-opacity bg-white hover:bg-red-500 text-slate-700 hover:text-white rounded-full border border-slate-200"
                 onClick={(e) => {
                   e.stopPropagation();
                   onDelete(classroom.id, e);
@@ -1070,7 +941,7 @@ function ClassroomCard({
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
               transition={{ duration: 0.15 }}
-              className="absolute inset-0 z-10 flex flex-col items-center justify-center gap-3 bg-black/50 backdrop-blur-[6px]"
+              className="absolute inset-0 z-10 flex flex-col items-center justify-center gap-3 bg-black/55"
               onClick={(e) => e.stopPropagation()}
             >
               <span className="text-[13px] font-medium text-white/90">
@@ -1097,7 +968,7 @@ function ClassroomCard({
 
       {/* Info — outside the thumbnail */}
       <div className="mt-2.5 px-1 flex items-center gap-2">
-        <span className="shrink-0 inline-flex items-center rounded-full bg-violet-100 dark:bg-violet-900/30 px-2 py-0.5 text-[11px] font-medium text-violet-600 dark:text-violet-400">
+        <span className="shrink-0 inline-flex items-center rounded-full bg-orange-100 px-2 py-0.5 text-[11px] font-medium text-orange-700">
           {classroom.sceneCount} {t('classroom.slides')} · {formatDate(classroom.updatedAt)}
         </span>
         <Tooltip>
