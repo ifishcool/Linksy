@@ -65,8 +65,7 @@ export function WhiteboardHistory({ isOpen, onClose }: WhiteboardHistoryProps) {
     const whiteboardId = wbResult.data.id;
 
     // P2a: Skip no-op restores — if the snapshot matches what's already
-    // on screen, applying it would not change elementsKey, leaving
-    // restoredKey armed indefinitely and suppressing a future snapshot.
+    // on screen, restoring would be a no-op.
     const restoredElementsKey = snapshot.fingerprint;
     const currentKey = elementFingerprint(wbResult.data.elements ?? []);
     if (restoredElementsKey === currentKey) {
@@ -75,16 +74,17 @@ export function WhiteboardHistory({ isOpen, onClose }: WhiteboardHistoryProps) {
       return;
     }
 
-    // Set restoredKey so auto-snapshot skips the incoming change
-    useWhiteboardHistoryStore.getState().setRestoredKey(restoredElementsKey);
+    // Save current content before overwriting so the user can undo the restore
+    const currentElements = wbResult.data.elements ?? [];
+    if (currentElements.length > 0) {
+      useWhiteboardHistoryStore.getState().pushSnapshot(currentElements);
+    }
 
     // Transactional restore: replace all elements in one update() call
     // instead of looping delete/add which produces intermediate states.
     const result = stageAPI.whiteboard.update({ elements: snapshot.elements }, whiteboardId);
 
     if (!result.success) {
-      // Restore failed — clear restoredKey so auto-snapshot isn't stuck
-      useWhiteboardHistoryStore.getState().setRestoredKey(null);
       console.error('Failed to restore whiteboard snapshot:', result.error);
       // P3: Dedicated restoreError key (not clearError)
       toast.error(t('whiteboard.restoreError') + (result.error ?? ''));
