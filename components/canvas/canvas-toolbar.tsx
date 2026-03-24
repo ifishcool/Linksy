@@ -56,12 +56,12 @@ export interface CanvasToolbarProps {
 const ctrlBtn = cn(
   'relative w-7 h-7 rounded-xl border-2 border-slate-900/80 bg-white flex items-center justify-center',
   'transition-all duration-150 outline-none cursor-pointer',
-  'hover:bg-sky-100 active:scale-90',
+  'hover:brightness-95 active:scale-90',
 );
 
 /* Subtle separator */
 function CtrlDivider() {
-  return <div className="w-px h-3 bg-sky-200/80 mx-0.5 shrink-0" />;
+  return <div className="w-px h-4 bg-slate-900/25 mx-0.5 shrink-0" />;
 }
 
 /* Volume icon based on level */
@@ -157,7 +157,7 @@ export function CanvasToolbar({
             <LayoutList className="w-3.5 h-3.5" />
           </button>
         )}
-        <span className="text-[11px] text-slate-400 tabular-nums select-none font-medium">
+        <span className="text-[11px] text-slate-700 tabular-nums select-none font-bold">
           {currentSceneIndex + 1}
           <span className="opacity-35 mx-px">/</span>
           {scenesCount}
@@ -212,7 +212,7 @@ export function CanvasToolbar({
                   volumeHover && ttsEnabled && 'pointer-events-auto opacity-100',
                 )}
               >
-                <div className="bg-white border border-sky-200 rounded-lg px-2 py-2.5 flex flex-col items-center gap-1.5">
+                <div className="bg-white border-2 border-slate-900/70 rounded-xl px-2 py-2.5 flex flex-col items-center gap-1.5">
                   <span className="text-[10px] text-slate-400 tabular-nums font-medium select-none">
                     {Math.round(effectiveVolume * 100)}
                   </span>
@@ -264,8 +264,8 @@ export function CanvasToolbar({
                       'text-[11px] font-bold tabular-nums leading-none',
                       'active:scale-90',
                       playbackSpeed !== 1
-                        ? 'text-sky-700 bg-sky-200/70'
-                        : 'text-slate-500 hover:text-slate-700',
+                        ? 'text-sky-700 bg-sky-200/70 border-sky-400/50'
+                        : 'text-slate-600 hover:text-slate-700 bg-white/80',
                     )}
                     aria-label="Playback speed"
                   >
@@ -288,7 +288,7 @@ export function CanvasToolbar({
               disabled={!canGoPrev}
               className={cn(
                 ctrlBtn,
-                'w-6 h-6 text-slate-500 disabled:opacity-20 disabled:pointer-events-none',
+                'w-7 h-7 text-slate-600 disabled:opacity-20 disabled:pointer-events-none',
               )}
               aria-label="Previous scene"
             >
@@ -304,10 +304,10 @@ export function CanvasToolbar({
                 onStopDiscussion();
               }}
               className={cn(
-                'flex items-center gap-1.5 h-6 px-2.5 rounded-md',
-                'bg-red-500/10 text-red-600',
-                'text-[11px] font-semibold whitespace-nowrap',
-                'hover:bg-red-500/20 active:scale-95 transition-all cursor-pointer',
+                'flex items-center gap-1.5 h-7 px-3 rounded-xl border-2 border-slate-900/80',
+                'bg-[#ff8e8e] text-slate-900',
+                'text-[11px] font-black whitespace-nowrap',
+                'hover:brightness-95 active:scale-95 transition-all cursor-pointer',
               )}
               title={t('roundtable.stopDiscussion')}
             >
@@ -322,8 +322,8 @@ export function CanvasToolbar({
               onClick={onPlayPause}
               className={cn(
                 ctrlBtn,
-                'w-7 h-6',
-                engineState === 'playing' ? 'text-sky-700' : 'text-slate-500',
+                'w-8 h-7',
+                engineState === 'playing' ? 'text-sky-700 bg-sky-100' : 'text-slate-600',
               )}
               aria-label={engineState === 'playing' ? 'Pause' : 'Play'}
             >
@@ -362,8 +362,8 @@ export function CanvasToolbar({
                     onClick={onToggleAutoPlay}
                     className={cn(
                       ctrlBtn,
-                      'w-8 h-6',
-                      autoPlayLecture ? 'text-sky-700' : 'text-slate-500',
+                      'w-8 h-7',
+                      autoPlayLecture ? 'text-sky-700 bg-sky-100' : 'text-slate-600',
                     )}
                     aria-label="Auto-play"
                   >
@@ -383,7 +383,11 @@ export function CanvasToolbar({
               e.stopPropagation();
               onWhiteboardClose();
             }}
-            className={cn(ctrlBtn, 'w-6 h-6', whiteboardOpen ? 'text-sky-700' : 'text-slate-500')}
+            className={cn(
+              ctrlBtn,
+              'w-7 h-7',
+              whiteboardOpen ? 'text-sky-700 bg-sky-100' : 'text-slate-600',
+            )}
             title={whiteboardOpen ? t('whiteboard.minimize') : t('whiteboard.open')}
           >
             <PencilLine className="w-3.5 h-3.5" />
@@ -421,7 +425,7 @@ export function CanvasToolbar({
         {onToggleChat && (
           <button
             onClick={onToggleChat}
-            className={cn(ctrlBtn, 'w-6 h-6', chatCollapsed ? 'text-slate-400' : 'text-slate-600')}
+            className={cn(ctrlBtn, 'w-7 h-7', chatCollapsed ? 'text-slate-400' : 'text-slate-600')}
             aria-label="Toggle chat"
           >
             <MessageSquare className="w-3.5 h-3.5" />

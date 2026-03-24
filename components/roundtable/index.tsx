@@ -134,13 +134,8 @@ export function Roundtable({
 }: RoundtableProps) {
   const { t } = useI18n();
   const asrEnabled = useSettingsStore((state) => state.asrEnabled);
-  const ttsVolume = useSettingsStore((s) => s.ttsVolume);
-  const setTTSVolume = useSettingsStore((s) => s.setTTSVolume);
-  const autoPlayLecture = useSettingsStore((s) => s.autoPlayLecture);
-  const setAutoPlayLecture = useSettingsStore((s) => s.setAutoPlayLecture);
-  const playbackSpeed = useSettingsStore((s) => s.playbackSpeed);
-  const setPlaybackSpeed = useSettingsStore((s) => s.setPlaybackSpeed);
-  const [isInputOpen, setIsInputOpen] = useState(false);
+
+  const [inputValue, setInputValue] = useState('');
   const [isVoiceOpen, setIsVoiceOpen] = useState(false);
   const [inputValue, setInputValue] = useState('');
   const [userMessage, setUserMessage] = useState<string | null>(null);

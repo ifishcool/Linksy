@@ -68,17 +68,18 @@ export function Header({ currentSceneTitle }: HeaderProps) {
         <div className="flex items-center gap-3 min-w-0 flex-1">
           <button
             onClick={() => router.push('/')}
-            className="shrink-0 p-2 rounded-lg text-slate-400 hover:bg-sky-50 hover:text-sky-700 transition-colors"
+            className="shrink-0 h-11 px-4 rounded-2xl text-sm font-black text-slate-900 bg-[#ff7b6b] border-[3px] border-slate-900 hover:brightness-95 active:scale-95 transition-all flex items-center gap-1.5"
             title={t('generation.backToHome')}
           >
-            <ArrowLeft className="w-5 h-5" />
+            <ArrowLeft className="w-4 h-4" />
+            <span>{t('generation.backToHome')}</span>
           </button>
           <div className="flex flex-col min-w-0">
-            <span className="text-[10px] uppercase tracking-widest font-bold text-sky-500 mb-0.5">
+            <span className="text-[11px] tracking-wide font-bold text-slate-900 mb-0.5">
               {t('stage.currentScene')}
             </span>
             <h1
-              className="text-xl font-bold text-slate-800 tracking-tight truncate"
+              className="text-[44px] leading-[0.95] font-black text-white tracking-tight truncate [text-shadow:_3px_3px_0_rgb(15_23_42)]"
               suppressHydrationWarning
             >
               {currentSceneTitle || t('common.loading')}
@@ -86,19 +87,19 @@ export function Header({ currentSceneTitle }: HeaderProps) {
           </div>
         </div>
 
-        <div className="flex items-center gap-4 bg-white/85 backdrop-blur-sm px-2 py-1.5 rounded-full border border-sky-200/70 shrink-0">
+        <div className="flex items-center gap-2 px-1 py-1 shrink-0">
           {/* Language Selector */}
           <div className="relative" ref={languageRef}>
             <button
               onClick={() => {
                 setLanguageOpen(!languageOpen);
               }}
-              className="flex items-center gap-1 px-3 py-1.5 rounded-full text-xs font-bold text-slate-500 hover:bg-sky-50 hover:text-sky-700 transition-all"
+              className="flex items-center gap-1 h-10 px-4 rounded-full text-xs font-black text-slate-900 bg-[#56e0a7] border-[3px] border-slate-900 hover:brightness-95 transition-all"
             >
               {locale === 'zh-CN' ? 'CN' : 'EN'}
             </button>
             {languageOpen && (
-              <div className="absolute top-full mt-2 right-0 bg-white border border-sky-200 rounded-lg overflow-hidden z-50 min-w-[120px]">
+              <div className="absolute top-full mt-2 right-0 bg-white border-2 border-slate-900 rounded-xl overflow-hidden z-50 min-w-[120px]">
                 <button
                   onClick={() => {
                     setLocale('zh-CN');
@@ -106,7 +107,7 @@ export function Header({ currentSceneTitle }: HeaderProps) {
                   }}
                   className={cn(
                     'w-full px-4 py-2 text-left text-sm hover:bg-sky-50 transition-colors',
-                    locale === 'zh-CN' && 'bg-sky-100 text-sky-700',
+                    locale === 'zh-CN' && 'bg-sky-100 text-sky-700 font-bold',
                   )}
                 >
                   简体中文
@@ -118,7 +119,7 @@ export function Header({ currentSceneTitle }: HeaderProps) {
                   }}
                   className={cn(
                     'w-full px-4 py-2 text-left text-sm hover:bg-sky-50 transition-colors',
-                    locale === 'en-US' && 'bg-sky-100 text-sky-700',
+                    locale === 'en-US' && 'bg-sky-100 text-sky-700 font-bold',
                   )}
                 >
                   English
@@ -127,14 +128,12 @@ export function Header({ currentSceneTitle }: HeaderProps) {
             )}
           </div>
 
-          <div className="w-[1px] h-4 bg-sky-200" />
-
           {/* Settings Button */}
           <div className="relative">
             <button
               onClick={() => setSettingsOpen(true)}
               className={cn(
-                'p-2 rounded-full text-slate-400 hover:bg-sky-50 hover:text-sky-700 transition-all group',
+                'h-10 px-4 rounded-full text-xs font-black text-slate-900 bg-[#b495ff] border-[3px] border-slate-900 hover:brightness-95 transition-all group flex items-center gap-1.5',
                 needsSetup && 'animate-setup-glow',
               )}
             >
@@ -173,8 +172,8 @@ export function Header({ currentSceneTitle }: HeaderProps) {
             className={cn(
               'shrink-0 h-10 px-3 rounded-full border-[3px] border-slate-900 transition-all flex items-center justify-center bg-white',
               canExport && !isExporting
-                ? 'text-slate-400 hover:bg-sky-50 hover:text-sky-700'
-                : 'text-slate-300 cursor-not-allowed opacity-50',
+                ? 'text-slate-600 hover:bg-sky-50 hover:text-sky-700'
+                : 'text-slate-300 cursor-not-allowed opacity-50 bg-slate-100',
             )}
           >
             {isExporting ? (

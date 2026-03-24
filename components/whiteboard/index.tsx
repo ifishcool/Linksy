@@ -88,7 +88,7 @@ export function Whiteboard({ isOpen, onClose }: WhiteboardProps) {
               y: 16,
               transition: { duration: 0.5, ease: [0.4, 0, 0.2, 1] },
             }}
-            className="absolute inset-0 pointer-events-auto backdrop-blur-sm  border-sky-200/70 flex flex-col overflow-hidden z-[120]"
+            className="absolute inset-0 pointer-events-auto rounded-[20px] backdrop-blur-sm border-sky-200/70 flex flex-col overflow-hidden z-[120]"
           >
             {/* Header */}
             <div className="h-14 px-6 border-b border-sky-100 flex items-center justify-between shrink-0 bg-white/60">

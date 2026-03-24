@@ -85,16 +85,14 @@ export function CanvasArea({
       {/* Slide area — takes remaining space */}
       <div
         className={cn(
-          'flex-1 min-h-0 relative overflow-hidden flex items-center justify-center p-2 transition-colors duration-500',
+          'flex-1 min-h-0 relative overflow-hidden flex items-center justify-center p-3 transition-colors duration-500',
         )}
       >
         <div
           className={cn(
-            'aspect-[16/9] h-full max-h-full max-w-full bg-white rounded-lg overflow-hidden relative transition-all duration-700 border-2 border-sky-200/80',
+            'aspect-[16/9] h-full max-h-full max-w-full bg-[#f8f8f8] rounded-[20px] overflow-hidden relative transition-all duration-700 border-[3px] border-slate-900/90',
             showControls && !isLiveSession && currentScene?.type === 'slide' && 'cursor-pointer',
-            currentScene?.type === 'interactive'
-              ? 'ring-1 ring-sky-200/80'
-              : 'ring-1 ring-sky-100/80',
+            currentScene?.type === 'interactive' ? 'bg-white' : 'bg-[#f8f8f8]',
           )}
           onClick={handleSlideClick}
         >
@@ -184,7 +182,7 @@ export function CanvasArea({
 
           {/* Scene Number Badge */}
           {currentScene && (
-            <div className="absolute top-4 right-4 text-sky-200 font-black text-4xl opacity-60 pointer-events-none select-none">
+            <div className="absolute top-4 right-4 text-sky-300 font-black text-4xl opacity-70 pointer-events-none select-none">
               {(currentSceneIndex + 1).toString().padStart(2, '0')}
             </div>
           )}

@@ -109,7 +109,7 @@ export function SceneSidebar({
         width: displayWidth,
         transition: isDraggingRef.current ? 'none' : 'width 0.3s ease',
       }}
-      className="bg-white/86 backdrop-blur-sm border-r border-sky-100 flex flex-col shrink-0 z-20 relative overflow-visible"
+      className="bg-sky-300/85 border-[3px] border-slate-900/90 border-r-0 rounded-l-[18px] flex flex-col shrink-0 z-20 relative overflow-visible"
     >
       {/* Drag handle */}
       {!collapsed && (
@@ -125,17 +125,17 @@ export function SceneSidebar({
 
       <div className={cn('flex flex-col w-full h-full overflow-hidden', collapsed && 'hidden')}>
         {/* Logo Header */}
-        <div className="h-11 flex items-center justify-between shrink-0 relative mt-3.5 mb-2 px-3.5">
+        <div className="h-12 flex items-center justify-between shrink-0 relative mt-3 mb-2 px-3.5">
           <button
             onClick={() => router.push('/')}
-            className="flex items-center gap-2 cursor-pointer rounded-xl px-2 -mx-2 py-1.5 -my-1.5 hover:bg-sky-50 active:scale-[0.97] transition-all duration-150"
+            className="flex items-center gap-2 cursor-pointer rounded-2xl px-2 -mx-2 py-1.5 -my-1.5 hover:bg-white/50 active:scale-[0.97] transition-all duration-150"
             title={t('generation.backToHome')}
           >
             <img src="/logo_t.png" alt="Linksy" className="h-9" />
           </button>
           <button
             onClick={() => onCollapseChange(true)}
-            className="w-8 h-8 shrink-0 rounded-xl flex items-center justify-center bg-sky-50 text-sky-500 border border-sky-200 hover:bg-sky-100 hover:text-sky-700 active:scale-90 transition-all duration-200"
+            className="w-9 h-9 shrink-0 rounded-2xl flex items-center justify-center bg-white text-sky-600 border-2 border-slate-900/80 hover:bg-sky-50 hover:text-sky-700 active:scale-90 transition-all duration-200"
           >
             <PanelLeftClose className="w-4 h-4" />
           </button>
@@ -161,12 +161,12 @@ export function SceneSidebar({
                   }
                 }}
                 className={cn(
-                  'group relative rounded-xl transition-all duration-200 cursor-pointer flex flex-col gap-2 p-2.5 border border-transparent hover:border-sky-300',
+                  'group relative rounded-2xl transition-all duration-200 cursor-pointer flex flex-col gap-2.5 p-2.5 border-2 border-slate-900/80',
                   isActive
-                    ? 'bg-sky-100/80 ring-1 ring-sky-300'
+                    ? 'bg-white/95 ring-2 ring-orange-400/70'
                     : index % 2 === 0
-                      ? 'bg-white/60'
-                      : 'bg-sky-50/50',
+                      ? 'bg-white/85 hover:bg-white/95'
+                      : 'bg-sky-50/85 hover:bg-white/95',
                 )}
               >
                 {/* Scene Header */}
@@ -175,7 +175,7 @@ export function SceneSidebar({
                     <span
                       className={cn(
                         'text-[11px] font-black w-5 h-5 rounded-full flex items-center justify-center shrink-0',
-                        isActive ? 'bg-sky-500 text-white' : 'bg-sky-100 text-sky-500',
+                        isActive ? 'bg-sky-500 text-white' : 'bg-sky-100 text-sky-600',
                       )}
                     >
                       {index + 1}
@@ -184,7 +184,7 @@ export function SceneSidebar({
                       data-testid="scene-title"
                       className={cn(
                         'text-sm font-bold truncate transition-colors',
-                        isActive ? 'text-sky-700' : 'text-slate-600 group-hover:text-sky-700',
+                        isActive ? 'text-sky-700' : 'text-slate-700 group-hover:text-sky-700',
                       )}
                     >
                       {scene.title}
@@ -193,7 +193,7 @@ export function SceneSidebar({
                 </div>
 
                 {/* Thumbnail */}
-                <div className="relative aspect-video w-full rounded-lg overflow-hidden bg-sky-50 ring-1 ring-sky-100">
+                <div className="relative aspect-video w-full rounded-xl overflow-hidden bg-sky-50 border border-sky-200/80">
                   <div className="absolute inset-0 flex items-center justify-center">
                     {isSlide && slideContent ? (
                       <ThumbnailSlide
@@ -360,12 +360,12 @@ export function SceneSidebar({
                     }
                   }}
                   className={cn(
-                    'group relative rounded-xl flex flex-col gap-2 p-2.5 transition-all duration-200 border border-transparent hover:border-sky-300',
+                    'group relative rounded-2xl flex flex-col gap-2.5 p-2.5 transition-all duration-200 border-2 border-slate-900/80',
                     isFailed
-                      ? 'opacity-100 cursor-default bg-white/60'
-                      : 'cursor-pointer bg-sky-50/40',
+                      ? 'opacity-100 cursor-default bg-white/85'
+                      : 'cursor-pointer bg-white/90 hover:bg-white/95',
                     !isFailed && !isActive && 'opacity-60',
-                    isActive && !isFailed && 'bg-sky-100/70 ring-1 ring-sky-300 opacity-100',
+                    isActive && !isFailed && 'bg-white/95 ring-2 ring-orange-400/70 opacity-100',
                   )}
                 >
                   {/* Scene Header */}
