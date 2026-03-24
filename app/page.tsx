@@ -364,7 +364,7 @@ function HomePage() {
         }}
       />
 
-      <div className="relative min-h-[100dvh] w-full flex flex-col items-center p-4 pt-16 md:p-8 md:pt-16 lg:pl-[296px]">
+      <div className="relative min-h-[100dvh] w-full flex flex-col items-center justify-center p-4 md:p-8 lg:pl-[296px]">
         {/* ═══ Top-right pill (unchanged) ═══ */}
         <div
           ref={toolbarRef}
