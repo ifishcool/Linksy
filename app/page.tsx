@@ -589,10 +589,12 @@ function HomeSidebar({
     <aside className="hidden lg:flex fixed left-0 top-0 bottom-0 z-30 w-[268px] rounded-none bg-sky-200/70 border-r-[3px] border-r-slate-900/90 backdrop-blur-sm shadow-[0_2px_0_rgba(15,23,42,0.2)] flex-col overflow-hidden">
       <div className="px-4 pt-4 pb-3 border-b-2 border-slate-900/70">
         <div className="flex items-center gap-2">
-          <img src="/logo_t.png" alt="Linksy" className="h-7 w-auto" />
+          <img src="/logo_t.png" alt="Linksy" className="h-12 w-auto" />
         </div>
         <p className="mt-1 text-[11px] text-slate-800/80">
-          {locale === 'zh-CN' ? '课程记录与快捷入口' : 'Course History & Quick Access'}
+          {locale === 'zh-CN'
+            ? '多智能体互动课堂中的生成式学习'
+            : 'Generative Learning in Multi-Agent Interactive Classroom'}
         </p>
       </div>
 
