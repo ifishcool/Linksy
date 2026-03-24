@@ -962,7 +962,7 @@ export function Stage({
   };
 
   return (
-    <div className="flex-1 flex overflow-hidden bg-[#0f1726] p-2.5">
+    <div className="flex-1 flex overflow-hidden ">
       {/* Scene Sidebar */}
       <SceneSidebar
         collapsed={sidebarCollapsed}
