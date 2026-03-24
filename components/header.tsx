@@ -66,18 +66,7 @@ export function Header({ currentSceneTitle }: HeaderProps) {
     <>
       <header className="h-20 px-6 flex items-center justify-between z-10 bg-transparent gap-4">
         <div className="flex items-center gap-3 min-w-0 flex-1">
-          <button
-            onClick={() => router.push('/')}
-            className="shrink-0 h-11 px-4 rounded-2xl text-sm font-black text-slate-900 bg-[#ff7b6b] border-[3px] border-slate-900 hover:brightness-95 active:scale-95 transition-all flex items-center gap-1.5"
-            title={t('generation.backToHome')}
-          >
-            <ArrowLeft className="w-4 h-4" />
-            <span>{t('generation.backToHome')}</span>
-          </button>
           <div className="flex flex-col min-w-0">
-            <span className="text-[11px] tracking-wide font-bold text-slate-900 mb-0.5">
-              {t('stage.currentScene')}
-            </span>
             <h1
               className="text-[44px] leading-[1.08] pb-0.5 font-black text-white tracking-tight truncate [text-shadow:_2px_2px_0_rgb(15_23_42)]"
               suppressHydrationWarning
