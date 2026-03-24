@@ -50,7 +50,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-
+const now = Date.now();
 const log = createLogger('Home');
 
 const WEB_SEARCH_STORAGE_KEY = 'webSearchEnabled';
@@ -303,7 +303,6 @@ function HomePage() {
   };
 
   const sidebarSections = useMemo(() => {
-    const now = Date.now();
     const dayMs = 1000 * 60 * 60 * 24;
     const today: StageListItem[] = [];
     const yesterday: StageListItem[] = [];
@@ -457,9 +456,9 @@ function HomePage() {
             src="/logo.png"
             alt="Linksy"
             initial={{ opacity: 0 }}
-            animate={{ opacity: 1, scale: 1 }}
-            transition={{ delay: 0.05, duration: 0.2 }}
-            className="h-10 md:h-12 mb-2"
+            animate={{ opacity: 1, scale: 1.7 }}
+            transition={{ delay: 0.05, duration: 0.1 }}
+            className="h-10 md:h-12 mb-4"
           />
 
           {/* ── Slogan ── */}

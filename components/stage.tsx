@@ -49,6 +49,12 @@ export function Stage({
 
   const currentScene = getCurrentScene();
 
+  useEffect(() => {
+    // Safety reset: keep slide viewport in view when switching scenes
+    useCanvasStore.getState().setCanvasDragged(false);
+    useCanvasStore.getState().setCanvasPercentage(90);
+  }, [currentSceneId]);
+
   // Layout state from settings store (persisted via localStorage)
   const sidebarCollapsed = useSettingsStore((s) => s.sidebarCollapsed);
   const setSidebarCollapsed = useSettingsStore((s) => s.setSidebarCollapsed);
