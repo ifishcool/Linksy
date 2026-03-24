@@ -106,7 +106,7 @@ export function SceneSidebar({
         width: displayWidth,
         transition: isDraggingRef.current ? 'none' : 'width 0.3s ease',
       }}
-      className="bg-sky-300/85 border-[3px] border-slate-900/90 border-r-0 flex flex-col shrink-0 z-20 relative overflow-visible"
+      className="bg-sky-300/85 border-r-[3px] border-r-slate-900/90 flex flex-col shrink-0 z-20 relative overflow-visible"
     >
       {/* Drag handle */}
       {!collapsed && (
@@ -137,7 +137,7 @@ export function SceneSidebar({
         </div>
 
         {/* Scenes List */}
-        <div className="flex-1 overflow-y-auto overflow-x-hidden px-3 pb-3 space-y-3 scrollbar-hide pt-1.5">
+        <div className="flex-1 overflow-y-auto overflow-x-hidden px-2.5 pb-2.5 space-y-2.5 scrollbar-hide pt-1.5">
           {scenes.map((scene, index) => {
             const isActive = currentSceneId === scene.id;
             const Icon = getSceneTypeIcon(scene.type);
@@ -155,7 +155,7 @@ export function SceneSidebar({
                   }
                 }}
                 className={cn(
-                  'group relative rounded-2xl transition-all duration-200 cursor-pointer flex flex-col gap-2.5 p-2.5 border-2 border-slate-900/80',
+                  'group relative rounded-[18px] transition-all duration-200 cursor-pointer flex flex-col gap-2 p-2 border-2 border-slate-900/75',
                   isActive
                     ? 'bg-white/95 ring-2 ring-orange-400/70'
                     : index % 2 === 0
@@ -164,11 +164,11 @@ export function SceneSidebar({
                 )}
               >
                 {/* Scene Header */}
-                <div className="flex justify-between items-center px-2.5 pt-0.5">
-                  <div className="flex items-center gap-2 max-w-full">
+                <div className="flex justify-between items-center px-2 pt-0.5">
+                  <div className="flex items-center gap-1.5 max-w-full">
                     <span
                       className={cn(
-                        'text-[11px] font-black w-5 h-5 rounded-full flex items-center justify-center shrink-0',
+                        'text-[10px] font-black w-4.5 h-4.5 rounded-full flex items-center justify-center shrink-0',
                         isActive ? 'bg-sky-500 text-white' : 'bg-sky-100 text-sky-600',
                       )}
                     >
@@ -176,7 +176,7 @@ export function SceneSidebar({
                     </span>
                     <span
                       className={cn(
-                        'text-sm font-bold truncate transition-colors',
+                        'text-[13px] font-bold truncate transition-colors',
                         isActive ? 'text-sky-700' : 'text-slate-700 group-hover:text-sky-700',
                       )}
                     >
@@ -186,14 +186,14 @@ export function SceneSidebar({
                 </div>
 
                 {/* Thumbnail */}
-                <div className="relative aspect-video w-full rounded-xl overflow-hidden bg-sky-50 border border-sky-200/80">
+                <div className="relative aspect-video w-full rounded-lg overflow-hidden bg-sky-50 border border-sky-200/70">
                   <div className="absolute inset-0 flex items-center justify-center">
                     {isSlide && slideContent ? (
                       <ThumbnailSlide
                         slide={slideContent.canvas}
                         viewportSize={viewportSize}
                         viewportRatio={viewportRatio}
-                        size={Math.max(120, sidebarWidth - 38)}
+                        size={Math.max(108, sidebarWidth - 40)}
                       />
                     ) : scene.type === 'quiz' ? (
                       /* Quiz: question bar + 2x2 option grid */
@@ -331,7 +331,7 @@ export function SceneSidebar({
                     }
                   }}
                   className={cn(
-                    'group relative rounded-2xl flex flex-col gap-2.5 p-2.5 transition-all duration-200 border-2 border-slate-900/80',
+                    'group relative rounded-[18px] flex flex-col gap-2 p-2 transition-all duration-200 border-2 border-slate-900/75',
                     isFailed
                       ? 'opacity-100 cursor-default bg-white/85'
                       : 'cursor-pointer bg-white/90 hover:bg-white/95',
@@ -340,11 +340,11 @@ export function SceneSidebar({
                   )}
                 >
                   {/* Scene Header */}
-                  <div className="flex justify-between items-center px-2.5 pt-0.5">
-                    <div className="flex items-center gap-2 max-w-full">
+                  <div className="flex justify-between items-center px-2 pt-0.5">
+                    <div className="flex items-center gap-1.5 max-w-full">
                       <span
                         className={cn(
-                          'text-[11px] font-black w-5 h-5 rounded-full flex items-center justify-center shrink-0',
+                          'text-[10px] font-black w-4.5 h-4.5 rounded-full flex items-center justify-center shrink-0',
                           isActive && !isFailed
                             ? 'bg-sky-500 text-white'
                             : 'bg-sky-100 text-sky-400',
@@ -354,7 +354,7 @@ export function SceneSidebar({
                       </span>
                       <span
                         className={cn(
-                          'text-sm font-bold truncate transition-colors',
+                          'text-[13px] font-bold truncate transition-colors',
                           isActive && !isFailed
                             ? 'text-sky-700'
                             : isFailed
@@ -370,7 +370,7 @@ export function SceneSidebar({
                   {/* Skeleton Thumbnail */}
                   <div
                     className={cn(
-                      'relative aspect-video w-full rounded-lg overflow-hidden ring-1',
+                      'relative aspect-video w-full rounded-md overflow-hidden ring-1',
                       isFailed ? 'bg-red-50/30 ring-red-100' : 'bg-sky-50 ring-sky-100',
                     )}
                   >

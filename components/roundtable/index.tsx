@@ -160,8 +160,8 @@ export function Roundtable({
   };
 
   return (
-    <div className="h-[96px] w-full relative z-10 border-t-[3px] border-slate-900/90 bg-[#ffd449]">
-      <div className="h-full px-4 flex items-center gap-3">
+    <div className="h-[80px] w-full relative z-10 border-t-[3px] border-slate-900/90 bg-[#ffd449]">
+      <div className="h-full px-3.5 flex items-center gap-2.5">
         <button
           onClick={(e) => {
             e.stopPropagation();
@@ -169,7 +169,7 @@ export function Roundtable({
           }}
           disabled={!asrEnabled || isSendCooldown}
           className={cn(
-            'shrink-0 w-11 h-11 rounded-2xl border-[3px] border-slate-900/85 flex items-center justify-center transition-all active:scale-95',
+            'shrink-0 w-10 h-10 rounded-xl border-[3px] border-slate-900/85 flex items-center justify-center transition-all active:scale-95',
             !asrEnabled || isSendCooldown
               ? 'bg-slate-100 text-slate-300 cursor-not-allowed'
               : isVoiceOpen
@@ -177,10 +177,10 @@ export function Roundtable({
                 : 'bg-white text-slate-700 hover:bg-orange-50 hover:text-orange-600',
           )}
         >
-          {asrEnabled ? <Mic className="w-5 h-5" /> : <MicOff className="w-5 h-5" />}
+          {asrEnabled ? <Mic className="w-4 h-4" /> : <MicOff className="w-4 h-4" />}
         </button>
 
-        <div className="flex-1 rounded-2xl border-[3px] border-slate-900/85 bg-white px-4 py-2">
+        <div className="flex-1 rounded-xl border-[3px] border-slate-900/85 bg-white px-3.5 py-1.5">
           <textarea
             value={inputValue}
             onChange={(e) => setInputValue(e.target.value)}
@@ -193,7 +193,7 @@ export function Roundtable({
             }}
             placeholder={t('roundtable.inputPlaceholder')}
             rows={1}
-            className="w-full resize-none bg-transparent border-none focus:ring-0 focus:outline-none outline-none shadow-none ring-0 text-slate-700 text-sm placeholder:text-slate-400 min-h-[28px] max-h-[64px]"
+            className="w-full resize-none bg-transparent border-none focus:ring-0 focus:outline-none outline-none shadow-none ring-0 text-slate-700 text-sm placeholder:text-slate-400 min-h-[24px] max-h-[56px] leading-6"
           />
         </div>
 
@@ -201,7 +201,7 @@ export function Roundtable({
           onClick={handleSendMessage}
           disabled={!inputValue.trim() || isSendCooldown}
           className={cn(
-            'shrink-0 h-11 px-5 text-white rounded-2xl transition border-[3px] border-slate-900/85 font-black active:scale-95',
+            'shrink-0 h-10 px-4.5 text-white rounded-xl transition border-[3px] border-slate-900/85 font-black active:scale-95',
             !inputValue.trim() || isSendCooldown
               ? 'bg-slate-400 cursor-not-allowed'
               : 'bg-[#ff7f3f] hover:brightness-95',
@@ -216,7 +216,7 @@ export function Roundtable({
       </div>
 
       {isVoiceOpen && (
-        <div className="absolute right-4 -top-8 rounded-full border-2 border-slate-900/75 bg-white px-3 py-1 text-[11px] font-bold text-orange-600">
+        <div className="absolute right-3.5 -top-7 rounded-full border-2 border-slate-900/75 bg-white px-2.5 py-1 text-[11px] font-bold text-orange-600">
           {isProcessing ? t('roundtable.processing') : t('roundtable.listening')}
         </div>
       )}

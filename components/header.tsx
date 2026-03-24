@@ -79,7 +79,7 @@ export function Header({ currentSceneTitle }: HeaderProps) {
               {t('stage.currentScene')}
             </span>
             <h1
-              className="text-[44px] leading-[0.95] font-black text-white tracking-tight truncate [text-shadow:_3px_3px_0_rgb(15_23_42)]"
+              className="text-[44px] leading-[1.08] pb-0.5 font-black text-white tracking-tight truncate [text-shadow:_2px_2px_0_rgb(15_23_42)]"
               suppressHydrationWarning
             >
               {currentSceneTitle || t('common.loading')}

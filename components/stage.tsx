@@ -670,7 +670,7 @@ export function Stage({
   // Calculate scene viewer height (subtract Header's 80px height)
   const sceneViewerHeight = (() => {
     const headerHeight = 80; // Header h-20 = 80px
-    const inputBarHeight = 96;
+    const inputBarHeight = 80;
     if (mode === 'playback') {
       return `calc(100% - ${headerHeight + inputBarHeight}px)`;
     }
@@ -763,7 +763,7 @@ export function Stage({
       />
 
       {/* Main Content Area */}
-      <div className="flex-1 flex flex-col overflow-hidden min-w-0 relative border-[3px] border-l-0 border-slate-900/90 bg-sky-200/95">
+      <div className="flex-1 flex flex-col overflow-hidden min-w-0 relative bg-sky-200/95">
         {/* Header */}
         <Header currentSceneTitle={currentScene?.title || ''} />
 
