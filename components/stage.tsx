@@ -670,14 +670,90 @@ export function Stage({
   // Calculate scene viewer height (subtract Header's 80px height)
   const sceneViewerHeight = (() => {
     const headerHeight = 80; // Header h-20 = 80px
+    const inputBarHeight = 80;
     if (mode === 'playback') {
-      return `calc(100% - ${headerHeight + 192}px)`; // Header + Roundtable
+      return `calc(100% - ${headerHeight + inputBarHeight}px)`;
     }
     return `calc(100% - ${headerHeight}px)`;
   })();
 
+  const speakerDisplay = useMemo(() => {
+    if (mode !== 'playback') return null;
+    const teacher = participants.find((p) => p.role === 'teacher');
+    const speakingParticipant = speakingAgentId
+      ? participants.find((p) => p.id === speakingAgentId)
+      : null;
+
+    if (isCueUser) {
+      return {
+        name: t('roundtable.you'),
+        text: t('roundtable.yourTurn'),
+        side: 'right' as const,
+        avatar: participants.find((p) => p.role === 'user')?.avatar,
+      };
+    }
+
+    if (thinkingState?.stage === 'director') {
+      return {
+        name: teacher?.name || t('roundtable.teacher'),
+        text: t('roundtable.thinking'),
+        side: 'left' as const,
+        avatar: teacher?.avatar,
+      };
+    }
+
+    const text = playbackView.sourceText?.trim() || '';
+    if (!text) return null;
+
+    if (playbackView.bubbleRole === 'agent') {
+      return {
+        name: speakingParticipant?.name || t('settings.agentRoles.student'),
+        text,
+        side: 'right' as const,
+        avatar: speakingParticipant?.avatar,
+      };
+    }
+
+    if (playbackView.bubbleRole === 'user') {
+      return {
+        name: t('roundtable.you'),
+        text,
+        side: 'right' as const,
+        avatar: participants.find((p) => p.role === 'user')?.avatar,
+      };
+    }
+
+    return {
+      name: teacher?.name || t('roundtable.teacher'),
+      text,
+      side: 'left' as const,
+      avatar: teacher?.avatar,
+    };
+  }, [
+    mode,
+    participants,
+    speakingAgentId,
+    isCueUser,
+    thinkingState,
+    playbackView.sourceText,
+    playbackView.bubbleRole,
+    t,
+  ]);
+
+  const renderAvatar = (avatar: string | undefined, name: string) => {
+    if (!avatar) {
+      return <span className="text-xs font-black text-slate-700">{name.slice(0, 1)}</span>;
+    }
+    const isImage =
+      avatar.startsWith('/') || avatar.startsWith('http') || avatar.startsWith('data:');
+    if (isImage) {
+      return <img src={avatar} alt={name} className="w-full h-full object-cover" />;
+    }
+    return <span className="text-lg leading-none">{avatar}</span>;
+  };
+
   return (
-    <div className="flex-1 flex overflow-hidden bg-sky-50/30">
+    <div className="flex-1 flex overflow-hidden ">
       {/* Scene Sidebar */}
       <SceneSidebar
         collapsed={sidebarCollapsed}
@@ -687,7 +763,7 @@ export function Stage({
       />
 
       {/* Main Content Area */}
-      <div className="flex-1 flex flex-col overflow-hidden min-w-0 relative">
+      <div className="flex-1 flex flex-col overflow-hidden min-w-0 relative bg-transparent">
         {/* Header */}
         <Header currentSceneTitle={currentScene?.title || ''} />
 
@@ -722,7 +798,7 @@ export function Stage({
               (chatIsStreaming && (chatSessionType === 'qa' || chatSessionType === 'discussion'))
             }
             onStopDiscussion={handleStopDiscussion}
-            hideToolbar={mode === 'playback'}
+            hideToolbar={false}
             isPendingScene={isPendingScene}
             isGenerationFailed={
               isPendingScene && failedOutlines.some((f) => f.id === generatingOutlines[0]?.id)
@@ -733,6 +809,42 @@ export function Stage({
                 : undefined
             }
           />
+
+          {mode === 'playback' && speakerDisplay && (
+            <div
+              className={`absolute bottom-11 left-4 right-4 z-[140] pointer-events-none flex ${
+                speakerDisplay.side === 'left' ? 'justify-start' : 'justify-end'
+              }`}
+            >
+              <div
+                className={`max-w-[74%] rounded-2xl border-[3px] border-slate-900/80 bg-white/96 px-3 py-2 flex items-start gap-2 shadow-[0_2px_0_rgba(15,23,42,0.18)] ${
+                  speakerDisplay.side === 'left'
+                    ? 'rounded-bl-md border-sky-500/80'
+                    : 'rounded-br-md border-orange-500/80'
+                }`}
+              >
+                <div
+                  className={`w-8 h-8 rounded-full overflow-hidden border-2 bg-white shrink-0 flex items-center justify-center ${
+                    speakerDisplay.side === 'left' ? 'border-sky-500/80' : 'border-orange-500/80'
+                  }`}
+                >
+                  {renderAvatar(speakerDisplay.avatar, speakerDisplay.name)}
+                </div>
+                <div className="min-w-0">
+                  <div
+                    className={`text-[10px] font-black uppercase tracking-wide mb-0.5 ${
+                      speakerDisplay.side === 'left' ? 'text-sky-700' : 'text-orange-600'
+                    }`}
+                  >
+                    {speakerDisplay.name}
+                  </div>
+                  <p className="text-sm font-semibold text-slate-700 leading-snug line-clamp-2">
+                    {speakerDisplay.text}
+                  </p>
+                </div>
+              </div>
+            </div>
+          )}
         </div>
 
         {/* Roundtable Area */}
