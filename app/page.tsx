@@ -50,7 +50,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-
+const now = Date.now();
 const log = createLogger('Home');
 
 const WEB_SEARCH_STORAGE_KEY = 'webSearchEnabled';
@@ -69,7 +69,7 @@ const initialFormState: FormState = {
   language: 'zh-CN',
   webSearch: false,
 };
-const now = Date.now();
+
 function HomePage() {
   const { t, locale, setLocale } = useI18n();
   const router = useRouter();
@@ -290,6 +290,18 @@ function HomePage() {
     }
   };
 
+  const formatDate = (timestamp: number) => {
+    const date = new Date(timestamp);
+    const now = new Date();
+    const diffTime = Math.abs(now.getTime() - date.getTime());
+    const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+
+    if (diffDays === 0) return t('classroom.today');
+    if (diffDays === 1) return t('classroom.yesterday');
+    if (diffDays < 7) return `${diffDays} ${t('classroom.daysAgo')}`;
+    return date.toLocaleDateString();
+  };
+
   const sidebarSections = useMemo(() => {
     const dayMs = 1000 * 60 * 60 * 24;
     const today: StageListItem[] = [];
@@ -444,9 +456,9 @@ function HomePage() {
             src="/logo.png"
             alt="Linksy"
             initial={{ opacity: 0 }}
-            animate={{ opacity: 1, scale: 1.7 }}
+            animate={{ opacity: 1, scale: 1 }}
             transition={{ delay: 0.05, duration: 0.2 }}
-            className="h-10 md:h-12 mb-3"
+            className="h-10 md:h-12 mb-2"
           />
 
           {/* ── Slogan ── */}
@@ -610,8 +622,9 @@ function HomeSidebar({
                       }
                     }}
                     className={cn(
-                      'group/item relative z-0 w-full rounded-[16px] border-2 border-slate-900/75 px-2.5 py-2 text-left transition-colors shadow-[0_2px_0_rgba(15,23,42,0.25)] select-none touch-manipulation',
-                      'bg-white/95 hover:bg-sky-100 hover:z-10 active:scale-[0.99]',
+                      'group/item w-full rounded-[16px] border-2 border-slate-900/75 px-2.5 py-2 text-left transition-colors shadow-[0_2px_0_rgba(15,23,42,0.25)]',
+                      index % 2 === 0 ? 'bg-white/95' : 'bg-sky-50/85',
+                      'hover:bg-white',
                     )}
                   >
                     <div className="flex items-center gap-2">
@@ -754,16 +767,12 @@ function GreetingBar() {
       {!open && (
         <div
           className="flex items-center gap-2.5 cursor-pointer transition-colors group rounded-full px-2.5 py-1.5 border-2 border-sky-200/80 bg-white/90 text-slate-700 hover:border-sky-300 hover:bg-sky-50"
-          className="flex items-center gap-2.5 cursor-pointer transition-colors group rounded-full px-2.5 py-1.5 border-2 border-sky-200/80 bg-white/90 text-slate-700 hover:border-sky-300 hover:bg-sky-50"
           onClick={() => setOpen(true)}
         >
           <div className="shrink-0 relative">
             <div className="size-8 rounded-full overflow-hidden ring-2 ring-sky-200 group-hover:ring-sky-300 transition-colors">
-            <div className="size-8 rounded-full overflow-hidden ring-2 ring-sky-200 group-hover:ring-sky-300 transition-colors">
               <img src={avatar} alt="" className="size-full object-cover" />
             </div>
-            <div className="absolute -bottom-0.5 -right-0.5 size-3.5 rounded-full bg-orange-100 border border-orange-200 flex items-center justify-center opacity-80 group-hover:opacity-100 transition-opacity">
-              <Pencil className="size-[7px] text-orange-600" />
             <div className="absolute -bottom-0.5 -right-0.5 size-3.5 rounded-full bg-orange-100 border border-orange-200 flex items-center justify-center opacity-80 group-hover:opacity-100 transition-opacity">
               <Pencil className="size-[7px] text-orange-600" />
             </div>
@@ -774,15 +783,12 @@ function GreetingBar() {
                 <span className="leading-none select-none flex items-center gap-1">
                   <span>
                     <span className="text-xs text-sky-600/90 group-hover:text-sky-700 transition-colors">
-                    <span className="text-xs text-sky-600/90 group-hover:text-sky-700 transition-colors">
                       {t('home.greeting')}
                     </span>
-                    <span className="text-[13px] font-semibold text-slate-800 group-hover:text-slate-900 transition-colors">
                     <span className="text-[13px] font-semibold text-slate-800 group-hover:text-slate-900 transition-colors">
                       {displayName}
                     </span>
                   </span>
-                  <ChevronDown className="size-3 text-sky-400 group-hover:text-sky-600 transition-colors shrink-0" />
                   <ChevronDown className="size-3 text-sky-400 group-hover:text-sky-600 transition-colors shrink-0" />
                 </span>
               </TooltipTrigger>
@@ -803,13 +809,10 @@ function GreetingBar() {
             exit={{ opacity: 0, y: -4, scale: 0.97 }}
             transition={{ duration: 0.2, ease: [0.25, 0.1, 0.25, 1] }}
             className="absolute left-4 top-3.5 z-50 w-72"
-            className="absolute left-4 top-3.5 z-50 w-72"
           >
-            <div className="rounded-2xl bg-white/96 backdrop-blur-sm border-2 border-sky-200/80 px-3 py-2.5">
             <div className="rounded-2xl bg-white/96 backdrop-blur-sm border-2 border-sky-200/80 px-3 py-2.5">
               {/* ── Row: avatar + name ── */}
               <div
-                className="flex items-center gap-2.5 cursor-pointer transition-colors"
                 className="flex items-center gap-2.5 cursor-pointer transition-colors"
                 onClick={() => {
                   setOpen(false);
@@ -826,18 +829,15 @@ function GreetingBar() {
                   }}
                 >
                   <div className="size-8 rounded-full overflow-hidden ring-2 ring-sky-300/80 transition-colors">
-                  <div className="size-8 rounded-full overflow-hidden ring-2 ring-sky-300/80 transition-colors">
                     <img src={avatar} alt="" className="size-full object-cover" />
                   </div>
                   <motion.div
                     initial={{ scale: 0 }}
                     animate={{ scale: 1 }}
                     className="absolute -bottom-0.5 -right-0.5 size-3.5 rounded-full bg-orange-100 border border-orange-200 flex items-center justify-center"
-                    className="absolute -bottom-0.5 -right-0.5 size-3.5 rounded-full bg-orange-100 border border-orange-200 flex items-center justify-center"
                   >
                     <ChevronDown
                       className={cn(
-                        'size-2 text-orange-600 transition-transform duration-200',
                         'size-2 text-orange-600 transition-transform duration-200',
                         avatarPickerOpen && 'rotate-180',
                       )}
@@ -880,10 +880,8 @@ function GreetingBar() {
                       className="group/name inline-flex items-center gap-1 cursor-pointer"
                     >
                       <span className="text-[13px] font-semibold text-slate-800 group-hover/name:text-slate-900 transition-colors">
-                      <span className="text-[13px] font-semibold text-slate-800 group-hover/name:text-slate-900 transition-colors">
                         {displayName}
                       </span>
-                      <Pencil className="size-2.5 text-sky-400 opacity-0 group-hover/name:opacity-100 transition-opacity" />
                       <Pencil className="size-2.5 text-sky-400 opacity-0 group-hover/name:opacity-100 transition-opacity" />
                     </span>
                   )}
@@ -894,9 +892,7 @@ function GreetingBar() {
                   initial={{ opacity: 0, y: -2 }}
                   animate={{ opacity: 1, y: 0 }}
                   className="shrink-0 size-6 rounded-full flex items-center justify-center hover:bg-sky-100 transition-colors"
-                  className="shrink-0 size-6 rounded-full flex items-center justify-center hover:bg-sky-100 transition-colors"
                 >
-                  <ChevronUp className="size-3.5 text-sky-500" />
                   <ChevronUp className="size-3.5 text-sky-500" />
                 </motion.div>
               </div>
@@ -955,7 +951,6 @@ function GreetingBar() {
                   maxLength={200}
                   rows={2}
                   className="resize-none border-sky-200/80 bg-sky-50/40 min-h-[72px] !text-[13px] !leading-relaxed placeholder:!text-[11px] placeholder:!leading-relaxed focus-visible:ring-1 focus-visible:ring-sky-300"
-                  className="resize-none border-sky-200/80 bg-sky-50/40 min-h-[72px] !text-[13px] !leading-relaxed placeholder:!text-[11px] placeholder:!leading-relaxed focus-visible:ring-1 focus-visible:ring-sky-300"
                 />
               </div>
             </div>
@@ -1005,7 +1000,7 @@ function ClassroomCard({
       {/* Thumbnail — large radius, no border, subtle bg */}
       <div
         ref={thumbRef}
-        className="relative w-full aspect-[16/9] rounded-3xl border-2 border-sky-200 bg-sky-50 overflow-hidden transition-colors duration-200 group-hover:border-sky-400 group-hover:bg-sky-100/70"
+        className="relative w-full aspect-[16/9] rounded-3xl border-[3px] border-sky-300/80 bg-sky-50 overflow-hidden transition-colors duration-200 group-hover:border-sky-400 group-hover:bg-sky-100/70"
       >
         {slide && thumbWidth > 0 ? (
           <ThumbnailSlide
@@ -1082,12 +1077,11 @@ function ClassroomCard({
       {/* Info — outside the thumbnail */}
       <div className="mt-2.5 px-1 flex items-center gap-2">
         <span className="shrink-0 inline-flex items-center rounded-full bg-orange-100 px-2 py-0.5 text-[11px] font-medium text-orange-700 transition-colors duration-200 group-hover:bg-orange-200">
-        <span className="shrink-0 inline-flex items-center rounded-full bg-orange-100 px-2 py-0.5 text-[11px] font-medium text-orange-700 transition-colors duration-200 group-hover:bg-orange-200">
           {classroom.sceneCount} {t('classroom.slides')} · {formatDate(classroom.updatedAt)}
         </span>
         <Tooltip>
           <TooltipTrigger asChild>
-            <p className="font-medium text-[15px] truncate text-foreground/90 min-w-0 transition-colors duration-200 group-hover:text-sky-700">
+            <p className="font-semibold text-[15px] truncate text-slate-700 min-w-0 transition-colors duration-200 group-hover:text-sky-700">
               {classroom.name}
             </p>
           </TooltipTrigger>

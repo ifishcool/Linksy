@@ -92,13 +92,10 @@ export function Whiteboard({ isOpen, onClose }: WhiteboardProps) {
           >
             {/* Header */}
             <div className="h-14 px-6 border-b border-sky-100 flex items-center justify-between shrink-0 bg-white/60">
-            <div className="h-14 px-6 border-b border-sky-100 flex items-center justify-between shrink-0 bg-white/60">
               <div className="flex items-center gap-3">
-                <div className="w-8 h-8 rounded-xl bg-sky-100 flex items-center justify-center text-sky-700">
                 <div className="w-8 h-8 rounded-xl bg-sky-100 flex items-center justify-center text-sky-700">
                   <PencilLine className="w-4 h-4" />
                 </div>
-                <span className="font-bold text-slate-800 tracking-tight">
                 <span className="font-bold text-slate-800 tracking-tight">
                   {t('whiteboard.title')}
                 </span>
@@ -110,7 +107,6 @@ export function Whiteboard({ isOpen, onClose }: WhiteboardProps) {
                   onClick={handleClear}
                   disabled={isClearing || elementCount === 0}
                   whileTap={{ scale: 0.9 }}
-                  className="p-2 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors disabled:opacity-40 disabled:pointer-events-none"
                   className="p-2 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors disabled:opacity-40 disabled:pointer-events-none"
                   title={t('whiteboard.clear')}
                 >
@@ -128,23 +124,19 @@ export function Whiteboard({ isOpen, onClose }: WhiteboardProps) {
                   onClick={() => setHistoryOpen(!historyOpen)}
                   whileTap={{ scale: 0.9 }}
                   className="relative p-2 text-slate-400 hover:text-sky-600 hover:bg-sky-50 rounded-lg transition-colors"
-                  className="relative p-2 text-slate-400 hover:text-sky-600 hover:bg-sky-50 rounded-lg transition-colors"
                   title={t('whiteboard.history')}
                 >
                   <History className="w-4 h-4" />
                   {snapshotCount > 0 && (
-                    <span className="absolute -top-0.5 -right-0.5 min-w-[16px] h-4 px-1 rounded-full bg-sky-600 text-white text-[10px] font-bold flex items-center justify-center">
                     <span className="absolute -top-0.5 -right-0.5 min-w-[16px] h-4 px-1 rounded-full bg-sky-600 text-white text-[10px] font-bold flex items-center justify-center">
                       {snapshotCount}
                     </span>
                   )}
                 </motion.button>
                 <div className="w-px h-4 bg-sky-200 mx-1" />
-                <div className="w-px h-4 bg-sky-200 mx-1" />
                 <button
                   type="button"
                   onClick={onClose}
-                  className="p-2 text-slate-400 hover:text-slate-800 hover:bg-slate-100 rounded-lg transition-colors"
                   className="p-2 text-slate-400 hover:text-slate-800 hover:bg-slate-100 rounded-lg transition-colors"
                   title={t('whiteboard.minimize')}
                 >
@@ -154,7 +146,6 @@ export function Whiteboard({ isOpen, onClose }: WhiteboardProps) {
             </div>
 
             {/* Whiteboard Content Area */}
-            <div className="flex-1 relative bg-[radial-gradient(#e2e8f0_1px,transparent_1px)] [background-size:24px_24px] overflow-hidden">
             <div className="flex-1 relative bg-[radial-gradient(#e2e8f0_1px,transparent_1px)] [background-size:24px_24px] overflow-hidden">
               <WhiteboardCanvas />
 

@@ -66,18 +66,7 @@ export function Header({ currentSceneTitle }: HeaderProps) {
     <>
       <header className="h-20 px-6 flex items-center justify-between z-10 bg-transparent gap-4">
         <div className="flex items-center gap-3 min-w-0 flex-1">
-          <button
-            onClick={() => router.push('/')}
-            className="shrink-0 h-11 px-4 rounded-2xl text-sm font-black text-slate-900 bg-[#ff7b6b] border-[3px] border-slate-900 hover:brightness-95 active:scale-95 transition-all flex items-center gap-1.5"
-            title={t('generation.backToHome')}
-          >
-            <ArrowLeft className="w-4 h-4" />
-            <span>{t('generation.backToHome')}</span>
-          </button>
           <div className="flex flex-col min-w-0">
-            <span className="text-[11px] tracking-wide font-bold text-slate-900 mb-0.5">
-              {t('stage.currentScene')}
-            </span>
             <h1
               className="text-[44px] leading-[1.08] pb-0.5 font-black text-white tracking-tight truncate [text-shadow:_2px_2px_0_rgb(15_23_42)]"
               suppressHydrationWarning
@@ -147,7 +136,6 @@ export function Header({ currentSceneTitle }: HeaderProps) {
                   <span className="relative inline-flex rounded-full h-3 w-3 bg-violet-500" />
                 </span>
                 <span className="animate-setup-float absolute top-full mt-2 right-0 whitespace-nowrap text-[11px] font-medium text-orange-600 bg-orange-50 border border-orange-200 px-2 py-0.5 rounded-full pointer-events-none">
-                <span className="animate-setup-float absolute top-full mt-2 right-0 whitespace-nowrap text-[11px] font-medium text-orange-600 bg-orange-50 border border-orange-200 px-2 py-0.5 rounded-full pointer-events-none">
                   {t('settings.setupNeeded')}
                 </span>
               </>
@@ -184,16 +172,13 @@ export function Header({ currentSceneTitle }: HeaderProps) {
           </button>
           {exportMenuOpen && (
             <div className="absolute top-full mt-2 right-0 bg-white border border-sky-200 rounded-lg overflow-hidden z-50 min-w-[200px]">
-            <div className="absolute top-full mt-2 right-0 bg-white border border-sky-200 rounded-lg overflow-hidden z-50 min-w-[200px]">
               <button
                 onClick={() => {
                   setExportMenuOpen(false);
                   exportPPTX();
                 }}
                 className="w-full px-4 py-2.5 text-left text-sm hover:bg-sky-50 transition-colors flex items-center gap-2.5"
-                className="w-full px-4 py-2.5 text-left text-sm hover:bg-sky-50 transition-colors flex items-center gap-2.5"
               >
-                <FileDown className="w-4 h-4 text-slate-400 shrink-0" />
                 <FileDown className="w-4 h-4 text-slate-400 shrink-0" />
                 <span>{t('export.pptx')}</span>
               </button>
@@ -203,13 +188,10 @@ export function Header({ currentSceneTitle }: HeaderProps) {
                   exportResourcePack();
                 }}
                 className="w-full px-4 py-2.5 text-left text-sm hover:bg-sky-50 transition-colors flex items-center gap-2.5"
-                className="w-full px-4 py-2.5 text-left text-sm hover:bg-sky-50 transition-colors flex items-center gap-2.5"
               >
-                <Package className="w-4 h-4 text-slate-400 shrink-0" />
                 <Package className="w-4 h-4 text-slate-400 shrink-0" />
                 <div>
                   <div>{t('export.resourcePack')}</div>
-                  <div className="text-[11px] text-slate-400">{t('export.resourcePackDesc')}</div>
                   <div className="text-[11px] text-slate-400">{t('export.resourcePackDesc')}</div>
                 </div>
               </button>

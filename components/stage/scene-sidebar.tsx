@@ -29,9 +29,6 @@ interface SceneSidebarProps {
 const DEFAULT_WIDTH = 260;
 const MIN_WIDTH = 210;
 const MAX_WIDTH = 420;
-const DEFAULT_WIDTH = 260;
-const MIN_WIDTH = 210;
-const MAX_WIDTH = 420;
 
 export function SceneSidebar({
   collapsed,
@@ -109,16 +106,14 @@ export function SceneSidebar({
         width: displayWidth,
         transition: isDraggingRef.current ? 'none' : 'width 0.3s ease',
       }}
-      className="bg-sky-200/70 border-r-[3px] border-r-slate-900/90 flex flex-col shrink-0 z-20 relative overflow-visible"
+      className="bg-sky-200 border-r-[3px] border-r-slate-900/90 flex flex-col shrink-0 z-20 relative overflow-visible"
     >
       {/* Drag handle */}
       {!collapsed && (
         <div
           onMouseDown={handleDragStart}
           className="absolute right-0 top-0 bottom-0 w-1.5 cursor-col-resize z-50 group hover:bg-sky-300/40 active:bg-sky-400/40 transition-colors"
-          className="absolute right-0 top-0 bottom-0 w-1.5 cursor-col-resize z-50 group hover:bg-sky-300/40 active:bg-sky-400/40 transition-colors"
         >
-          <div className="absolute right-0.5 top-1/2 -translate-y-1/2 w-0.5 h-8 rounded-full bg-sky-200 group-hover:bg-sky-400 transition-colors" />
           <div className="absolute right-0.5 top-1/2 -translate-y-1/2 w-0.5 h-8 rounded-full bg-sky-200 group-hover:bg-sky-400 transition-colors" />
         </div>
       )}
@@ -152,7 +147,6 @@ export function SceneSidebar({
             return (
               <div
                 key={scene.id}
-                data-testid="scene-item"
                 onClick={() => {
                   if (onSceneSelect) {
                     onSceneSelect(scene.id);
@@ -181,7 +175,6 @@ export function SceneSidebar({
                       {index + 1}
                     </span>
                     <span
-                      data-testid="scene-title"
                       className={cn(
                         'text-[13px] font-bold truncate transition-colors',
                         isActive ? 'text-sky-700' : 'text-slate-700 group-hover:text-sky-700',
@@ -206,8 +199,6 @@ export function SceneSidebar({
                       /* Quiz: question bar + 2x2 option grid */
                       <div className="w-full h-full bg-gradient-to-br from-orange-50 to-amber-50 p-2 flex flex-col">
                         <div className="h-1.5 w-4/5 bg-orange-200/70 rounded-full mb-1.5" />
-                      <div className="w-full h-full bg-gradient-to-br from-orange-50 to-amber-50 p-2 flex flex-col">
-                        <div className="h-1.5 w-4/5 bg-orange-200/70 rounded-full mb-1.5" />
                         <div className="flex-1 grid grid-cols-2 gap-1">
                           {[0, 1, 2, 3].map((i) => (
                             <div
@@ -217,21 +208,17 @@ export function SceneSidebar({
                                 i === 1
                                   ? 'bg-orange-400/20 border border-orange-300/50'
                                   : 'bg-white/60 border border-orange-100/60',
-                                  ? 'bg-orange-400/20 border border-orange-300/50'
-                                  : 'bg-white/60 border border-orange-100/60',
                               )}
                             >
                               <div
                                 className={cn(
                                   'w-1.5 h-1.5 rounded-full shrink-0',
                                   i === 1 ? 'bg-orange-400' : 'bg-orange-200',
-                                  i === 1 ? 'bg-orange-400' : 'bg-orange-200',
                                 )}
                               />
                               <div
                                 className={cn(
                                   'h-1 rounded-full flex-1',
-                                  i === 1 ? 'bg-orange-300/60' : 'bg-orange-100/80',
                                   i === 1 ? 'bg-orange-300/60' : 'bg-orange-100/80',
                                 )}
                               />
@@ -243,17 +230,11 @@ export function SceneSidebar({
                       /* Interactive: browser window with chrome + content */
                       <div className="w-full h-full bg-gradient-to-br from-emerald-50 to-teal-50 p-1.5 flex flex-col">
                         <div className="flex items-center gap-1 mb-1 pb-1 border-b border-emerald-200/40">
-                      <div className="w-full h-full bg-gradient-to-br from-emerald-50 to-teal-50 p-1.5 flex flex-col">
-                        <div className="flex items-center gap-1 mb-1 pb-1 border-b border-emerald-200/40">
                           <div className="flex gap-0.5">
                             <div className="w-1 h-1 rounded-full bg-red-300" />
                             <div className="w-1 h-1 rounded-full bg-amber-300" />
                             <div className="w-1 h-1 rounded-full bg-green-300" />
-                            <div className="w-1 h-1 rounded-full bg-red-300" />
-                            <div className="w-1 h-1 rounded-full bg-amber-300" />
-                            <div className="w-1 h-1 rounded-full bg-green-300" />
                           </div>
-                          <div className="h-1.5 flex-1 bg-emerald-200/40 rounded-full ml-0.5" />
                           <div className="h-1.5 flex-1 bg-emerald-200/40 rounded-full ml-0.5" />
                         </div>
                         <div className="flex-1 flex gap-1">
@@ -262,12 +243,9 @@ export function SceneSidebar({
                               <div
                                 key={i}
                                 className="h-0.5 w-full bg-emerald-200/60 rounded-full"
-                                className="h-0.5 w-full bg-emerald-200/60 rounded-full"
                               />
                             ))}
                           </div>
-                          <div className="flex-1 bg-emerald-100/40 rounded flex items-center justify-center border border-emerald-200/40">
-                            <Globe className="w-4 h-4 text-emerald-300/80" />
                           <div className="flex-1 bg-emerald-100/40 rounded flex items-center justify-center border border-emerald-200/40">
                             <Globe className="w-4 h-4 text-emerald-300/80" />
                           </div>
@@ -276,10 +254,7 @@ export function SceneSidebar({
                     ) : scene.type === 'pbl' ? (
                       /* PBL: kanban board with 3 columns */
                       <div className="w-full h-full bg-gradient-to-br from-blue-50 to-indigo-50 p-1.5 flex flex-col">
-                      <div className="w-full h-full bg-gradient-to-br from-blue-50 to-indigo-50 p-1.5 flex flex-col">
                         <div className="flex items-center gap-1 mb-1.5">
-                          <div className="w-1.5 h-1.5 rounded bg-blue-300" />
-                          <div className="h-1 w-8 bg-blue-200/60 rounded-full" />
                           <div className="w-1.5 h-1.5 rounded bg-blue-300" />
                           <div className="h-1 w-8 bg-blue-200/60 rounded-full" />
                         </div>
@@ -287,7 +262,6 @@ export function SceneSidebar({
                           {[0, 1, 2].map((col) => (
                             <div
                               key={col}
-                              className="flex-1 bg-white/50 rounded p-0.5 flex flex-col gap-0.5"
                               className="flex-1 bg-white/50 rounded p-0.5 flex flex-col gap-0.5"
                             >
                               <div
@@ -315,7 +289,6 @@ export function SceneSidebar({
                     ) : (
                       /* Fallback */
                       <div className="w-full h-full flex flex-col items-center justify-center gap-1 bg-sky-50 text-sky-300">
-                      <div className="w-full h-full flex flex-col items-center justify-center gap-1 bg-sky-50 text-sky-300">
                         <Icon className="w-4 h-4" />
                         <span className="text-[9px] font-bold uppercase tracking-wider opacity-80">
                           {scene.type}
@@ -326,8 +299,6 @@ export function SceneSidebar({
                     {isSlide && (
                       <div
                         className={cn(
-                          'absolute inset-0 bg-sky-500/0 transition-colors',
-                          isActive ? 'bg-sky-500/0' : 'group-hover:bg-sky-500/8',
                           'absolute inset-0 bg-sky-500/0 transition-colors',
                           isActive ? 'bg-sky-500/0' : 'group-hover:bg-sky-500/8',
                         )}
@@ -377,8 +348,6 @@ export function SceneSidebar({
                           isActive && !isFailed
                             ? 'bg-sky-500 text-white'
                             : 'bg-sky-100 text-sky-400',
-                            ? 'bg-sky-500 text-white'
-                            : 'bg-sky-100 text-sky-400',
                         )}
                       >
                         {scenes.length + 1}
@@ -388,10 +357,7 @@ export function SceneSidebar({
                           'text-[13px] font-bold truncate transition-colors',
                           isActive && !isFailed
                             ? 'text-sky-700'
-                            ? 'text-sky-700'
                             : isFailed
-                              ? 'text-slate-700'
-                              : 'text-slate-400',
                               ? 'text-slate-700'
                               : 'text-slate-400',
                         )}
@@ -410,7 +376,6 @@ export function SceneSidebar({
                   >
                     <div className="absolute inset-0 flex flex-col items-center justify-center gap-1.5">
                       {isFailed ? (
-                        <div className="flex items-center gap-1 text-xs font-medium text-red-500/90">
                         <div className="flex items-center gap-1 text-xs font-medium text-red-500/90">
                           {onRetryOutline ? (
                             <button
@@ -440,18 +405,15 @@ export function SceneSidebar({
                           <div
                             className={cn(
                               'h-2 w-3/5 bg-sky-200 rounded',
-                              'h-2 w-3/5 bg-sky-200 rounded',
                               !isPaused && 'animate-pulse',
                             )}
                           />
                           <div
                             className={cn(
                               'h-1.5 w-2/5 bg-sky-200 rounded',
-                              'h-1.5 w-2/5 bg-sky-200 rounded',
                               !isPaused && 'animate-pulse',
                             )}
                           />
-                          <span className="text-[9px] font-medium text-slate-400 mt-0.5">
                           <span className="text-[9px] font-medium text-slate-400 mt-0.5">
                             {isPaused ? t('stage.paused') : t('stage.generating')}
                           </span>
@@ -459,7 +421,6 @@ export function SceneSidebar({
                       )}
                     </div>
                     {!isFailed && !isPaused && (
-                      <div className="absolute inset-0 -translate-x-full animate-[shimmer_2s_infinite] bg-gradient-to-r from-transparent via-white/50 to-transparent" />
                       <div className="absolute inset-0 -translate-x-full animate-[shimmer_2s_infinite] bg-gradient-to-r from-transparent via-white/50 to-transparent" />
                     )}
                   </div>

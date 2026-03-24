@@ -13,8 +13,6 @@ import {
   Volume2,
   VolumeX,
   Repeat,
-  Maximize2,
-  Minimize2,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useStageStore } from '@/lib/store';
@@ -37,8 +35,6 @@ export interface CanvasToolbarProps {
   readonly onWhiteboardClose: () => void;
   readonly showStopDiscussion?: boolean;
   readonly onStopDiscussion?: () => void;
-  readonly isPresenting?: boolean;
-  readonly onTogglePresentation?: () => void;
   readonly className?: string;
   // Audio/playback controls
   readonly ttsEnabled?: boolean;
@@ -96,8 +92,6 @@ export function CanvasToolbar({
   onWhiteboardClose,
   showStopDiscussion,
   onStopDiscussion,
-  isPresenting,
-  onTogglePresentation,
   className,
   ttsEnabled,
   ttsMuted,
@@ -137,10 +131,9 @@ export function CanvasToolbar({
 
   // Effective volume for display
   const effectiveVolume = ttsMuted ? 0 : ttsVolume;
-  const presentationLabel = isPresenting ? t('stage.exitFullscreen') : t('stage.fullscreen');
 
   return (
-    <div className={cn('flex items-center gap-2', className)}>
+    <div className={cn('flex items-center', className)}>
       {/* ── Left: sidebar toggle + page indicator ── */}
       <div className="flex items-center gap-1 shrink-0 pl-1">
         {onToggleSidebar && (
@@ -149,7 +142,6 @@ export function CanvasToolbar({
             className={cn(
               ctrlBtn,
               'w-6 h-6',
-              sidebarCollapsed ? 'text-slate-400' : 'text-slate-600',
               sidebarCollapsed ? 'text-slate-400' : 'text-slate-600',
             )}
             aria-label="Toggle sidebar"
@@ -164,18 +156,9 @@ export function CanvasToolbar({
         </span>
       </div>
 
-      <CtrlDivider />
-
       {/* ── Center: unified playback controls ── */}
       <div className="flex-1 flex items-center justify-center min-w-0">
-        <div
-          className={cn(
-            'inline-flex items-center gap-0.5 px-1 h-7',
-            isPresenting
-              ? '' /* Single visual layer in fullscreen — buttons sit inside outer pill directly */
-              : 'bg-sky-100/70 rounded-lg',
-          )}
-        >
+        <div className="inline-flex items-center gap-0.5 bg-white/85 rounded-2xl px-1.5 h-9 border-2 border-slate-900/80">
           {/* Volume with vertical popover slider */}
           {onToggleMute && (
             <div
@@ -192,10 +175,7 @@ export function CanvasToolbar({
                   'w-7 h-7',
                   !ttsEnabled
                     ? 'text-slate-300 cursor-not-allowed'
-                    ? 'text-slate-300 cursor-not-allowed'
                     : ttsMuted
-                      ? 'text-red-500'
-                      : 'text-slate-500',
                       ? 'text-red-500'
                       : 'text-slate-500',
                 )}
@@ -231,21 +211,16 @@ export function CanvasToolbar({
                       'appearance-none cursor-pointer',
                       'h-16 w-1 rounded-full',
                       'bg-sky-200',
-                      'bg-sky-200',
                       '[writing-mode:vertical-lr] [direction:rtl]',
                       '[&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-3 [&::-webkit-slider-thumb]:h-3',
                       '[&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-sky-500',
                       '[&::-webkit-slider-thumb]:cursor-pointer',
-                      '[&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-sky-500',
-                      '[&::-webkit-slider-thumb]:cursor-pointer',
                       '[&::-moz-range-thumb]:w-3 [&::-moz-range-thumb]:h-3',
-                      '[&::-moz-range-thumb]:rounded-full [&::-moz-range-thumb]:bg-sky-500 [&::-moz-range-thumb]:border-0',
                       '[&::-moz-range-thumb]:rounded-full [&::-moz-range-thumb]:bg-sky-500 [&::-moz-range-thumb]:border-0',
                     )}
                   />
                 </div>
                 {/* Arrow pointing down */}
-                <div className="w-2 h-2 bg-white border-b border-r border-sky-200 rotate-45 -mt-[5px]" />
                 <div className="w-2 h-2 bg-white border-b border-r border-sky-200 rotate-45 -mt-[5px]" />
               </div>
             </div>
@@ -343,7 +318,6 @@ export function CanvasToolbar({
               className={cn(
                 ctrlBtn,
                 'w-6 h-6 text-slate-500 disabled:opacity-20 disabled:pointer-events-none',
-                'w-6 h-6 text-slate-500 disabled:opacity-20 disabled:pointer-events-none',
               )}
               aria-label="Next scene"
             >
@@ -393,35 +367,13 @@ export function CanvasToolbar({
             <PencilLine className="w-3.5 h-3.5" />
             {!whiteboardOpen && whiteboardElementCount > 0 && (
               <span className="absolute top-0.5 right-0.5 w-1.5 h-1.5 bg-sky-500 rounded-full" />
-              <span className="absolute top-0.5 right-0.5 w-1.5 h-1.5 bg-sky-500 rounded-full" />
             )}
           </button>
         </div>
       </div>
 
-      {/* ── Right: fullscreen + chat toggle ── */}
+      {/* ── Right: chat toggle ── */}
       <div className="flex items-center justify-end gap-px shrink-0 pr-1">
-        <CtrlDivider />
-        {onTogglePresentation && (
-          <button
-            onClick={onTogglePresentation}
-            className={cn(
-              ctrlBtn,
-              'w-6 h-6',
-              isPresenting
-                ? 'text-violet-600 dark:text-violet-400'
-                : 'text-gray-500 dark:text-gray-400',
-            )}
-            aria-label={presentationLabel}
-            title={presentationLabel}
-          >
-            {isPresenting ? (
-              <Minimize2 className="w-3.5 h-3.5" />
-            ) : (
-              <Maximize2 className="w-3.5 h-3.5" />
-            )}
-          </button>
-        )}
         {onToggleChat && (
           <button
             onClick={onToggleChat}
