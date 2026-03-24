@@ -106,7 +106,7 @@ export function SceneSidebar({
         width: displayWidth,
         transition: isDraggingRef.current ? 'none' : 'width 0.3s ease',
       }}
-      className="bg-sky-200/70 border-r-[3px] border-r-slate-900/90 flex flex-col shrink-0 z-20 relative overflow-visible"
+      className="bg-sky-200 border-r-[3px] border-r-slate-900/90 flex flex-col shrink-0 z-20 relative overflow-visible"
     >
       {/* Drag handle */}
       {!collapsed && (
