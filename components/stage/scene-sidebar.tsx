@@ -137,7 +137,10 @@ export function SceneSidebar({
         </div>
 
         {/* Scenes List */}
-        <div className="flex-1 overflow-y-auto overflow-x-hidden px-2.5 pb-2.5 space-y-2.5 scrollbar-hide pt-1.5">
+        <div
+          data-testid="scene-list"
+          className="flex-1 overflow-y-auto overflow-x-hidden p-2 space-y-2 scrollbar-hide pt-1"
+        >
           {scenes.map((scene, index) => {
             const isActive = currentSceneId === scene.id;
             const Icon = getSceneTypeIcon(scene.type);
@@ -147,6 +150,7 @@ export function SceneSidebar({
             return (
               <div
                 key={scene.id}
+                data-testid="scene-item"
                 onClick={() => {
                   if (onSceneSelect) {
                     onSceneSelect(scene.id);
@@ -175,6 +179,7 @@ export function SceneSidebar({
                       {index + 1}
                     </span>
                     <span
+                      data-testid="scene-title"
                       className={cn(
                         'text-[13px] font-bold truncate transition-colors',
                         isActive ? 'text-sky-700' : 'text-slate-700 group-hover:text-sky-700',
