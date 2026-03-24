@@ -878,9 +878,12 @@ export function Stage({
 
   // Calculate scene viewer height (subtract Header's 80px height)
   const sceneViewerHeight = (() => {
-    const headerHeight = isPresenting ? 0 : 80; // Header h-20 = 80px
-    const roundtableHeight = mode === 'playback' && !isPresenting ? 192 : 0;
-    return `calc(100% - ${headerHeight + roundtableHeight}px)`;
+    const headerHeight = 80; // Header h-20 = 80px
+    const inputBarHeight = 96;
+    if (mode === 'playback') {
+      return `calc(100% - ${headerHeight + inputBarHeight}px)`;
+    }
+    return `calc(100% - ${headerHeight}px)`;
   })();
 
   const speakerDisplay = useMemo(() => {
@@ -959,7 +962,7 @@ export function Stage({
   };
 
   return (
-    <div className="flex-1 flex overflow-hidden bg-sky-50/30">
+    <div className="flex-1 flex overflow-hidden bg-[#0f1726] p-2.5">
       {/* Scene Sidebar */}
       <SceneSidebar
         collapsed={sidebarCollapsed}
@@ -1006,7 +1009,7 @@ export function Stage({
               (chatIsStreaming && (chatSessionType === 'qa' || chatSessionType === 'discussion'))
             }
             onStopDiscussion={handleStopDiscussion}
-            hideToolbar={mode === 'playback' || (isPresenting && !controlsVisible)}
+            hideToolbar={false}
             isPendingScene={isPendingScene}
             isGenerationFailed={
               isPendingScene && failedOutlines.some((f) => f.id === generatingOutlines[0]?.id)

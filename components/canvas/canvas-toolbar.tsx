@@ -167,7 +167,7 @@ export function CanvasToolbar({
 
       {/* ── Center: unified playback controls ── */}
       <div className="flex-1 flex items-center justify-center min-w-0">
-        <div className="inline-flex items-center gap-0.5 bg-sky-100/70 rounded-lg px-1 h-7">
+        <div className="inline-flex items-center gap-0.5 bg-white/85 rounded-2xl px-1.5 h-9 border-2 border-slate-900/80">
           {/* Volume with vertical popover slider */}
           {onToggleMute && (
             <div
@@ -407,7 +407,7 @@ export function CanvasToolbar({
         {onToggleChat && (
           <button
             onClick={onToggleChat}
-            className={cn(ctrlBtn, 'w-6 h-6', chatCollapsed ? 'text-slate-400' : 'text-slate-600')}
+            className={cn(ctrlBtn, 'w-7 h-7', chatCollapsed ? 'text-slate-400' : 'text-slate-600')}
             aria-label="Toggle chat"
           >
             <MessageSquare className="w-3.5 h-3.5" />
