@@ -69,7 +69,7 @@ const initialFormState: FormState = {
   language: 'zh-CN',
   webSearch: false,
 };
-
+const now = Date.now();
 function HomePage() {
   const { t, locale, setLocale } = useI18n();
   const router = useRouter();
@@ -290,20 +290,7 @@ function HomePage() {
     }
   };
 
-  const formatDate = (timestamp: number) => {
-    const date = new Date(timestamp);
-    const now = new Date();
-    const diffTime = Math.abs(now.getTime() - date.getTime());
-    const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
-
-    if (diffDays === 0) return t('classroom.today');
-    if (diffDays === 1) return t('classroom.yesterday');
-    if (diffDays < 7) return `${diffDays} ${t('classroom.daysAgo')}`;
-    return date.toLocaleDateString();
-  };
-
   const sidebarSections = useMemo(() => {
-    const now = Date.now();
     const dayMs = 1000 * 60 * 60 * 24;
     const today: StageListItem[] = [];
     const yesterday: StageListItem[] = [];
@@ -457,9 +444,9 @@ function HomePage() {
             src="/logo.png"
             alt="Linksy"
             initial={{ opacity: 0 }}
-            animate={{ opacity: 1, scale: 1 }}
+            animate={{ opacity: 1, scale: 1.7 }}
             transition={{ delay: 0.05, duration: 0.2 }}
-            className="h-10 md:h-12 mb-2"
+            className="h-10 md:h-12 mb-3"
           />
 
           {/* ── Slogan ── */}
@@ -623,9 +610,8 @@ function HomeSidebar({
                       }
                     }}
                     className={cn(
-                      'group/item w-full rounded-[16px] border-2 border-slate-900/75 px-2.5 py-2 text-left transition-colors shadow-[0_2px_0_rgba(15,23,42,0.25)]',
-                      index % 2 === 0 ? 'bg-white/95' : 'bg-sky-50/85',
-                      'hover:bg-white',
+                      'group/item relative z-0 w-full rounded-[16px] border-2 border-slate-900/75 px-2.5 py-2 text-left transition-colors shadow-[0_2px_0_rgba(15,23,42,0.25)] select-none touch-manipulation',
+                      'bg-white/95 hover:bg-sky-100 hover:z-10 active:scale-[0.99]',
                     )}
                   >
                     <div className="flex items-center gap-2">
