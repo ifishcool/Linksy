@@ -879,7 +879,7 @@ export function Stage({
   // Calculate scene viewer height (subtract Header's 80px height)
   const sceneViewerHeight = (() => {
     const headerHeight = 80; // Header h-20 = 80px
-    const inputBarHeight = 96;
+    const inputBarHeight = 80;
     if (mode === 'playback') {
       return `calc(100% - ${headerHeight + inputBarHeight}px)`;
     }
