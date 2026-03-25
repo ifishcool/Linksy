@@ -234,10 +234,11 @@ export function Stage({
 
   /** Request failure should exit live discussion UI without hard-closing the session. */
   const handleLiveSessionError = useCallback(() => {
+    discussionTTS.cleanup();
     engineRef.current?.handleDiscussionError();
     resetLiveState();
     setActiveBubbleId(null);
-  }, [resetLiveState]);
+  }, [discussionTTS, resetLiveState]);
 
   /**
    * Unified session cleanup — called by both roundtable stop button and chat area end button.

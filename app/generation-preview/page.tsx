@@ -488,7 +488,14 @@ function GenerationPreviewContent() {
             const a = registry.getAgent(id);
             return a && !a.isGenerated;
           });
-          agents = fallbackIds
+          const safeFallbackIds =
+            fallbackIds.length > 0
+              ? fallbackIds
+              : ['default-1', 'default-2', 'default-3'].filter((id) => {
+                  const a = registry.getAgent(id);
+                  return a && !a.isGenerated;
+                });
+          agents = safeFallbackIds
             .map((id) => registry.getAgent(id))
             .filter(Boolean)
             .map((a) => ({
@@ -497,7 +504,7 @@ function GenerationPreviewContent() {
               role: a!.role,
               persona: a!.persona,
             }));
-          stage.agentIds = fallbackIds;
+          stage.agentIds = safeFallbackIds;
         }
       } else {
         // Preset mode — use selected agents (include persona)
@@ -507,7 +514,14 @@ function GenerationPreviewContent() {
           const a = registry.getAgent(id);
           return a && !a.isGenerated;
         });
-        agents = presetAgentIds
+        const safePresetAgentIds =
+          presetAgentIds.length > 0
+            ? presetAgentIds
+            : ['default-1', 'default-2', 'default-3'].filter((id) => {
+                const a = registry.getAgent(id);
+                return a && !a.isGenerated;
+              });
+        agents = safePresetAgentIds
           .map((id) => registry.getAgent(id))
           .filter(Boolean)
           .map((a) => ({
@@ -516,7 +530,7 @@ function GenerationPreviewContent() {
             role: a!.role,
             persona: a!.persona,
           }));
-        stage.agentIds = presetAgentIds;
+        stage.agentIds = safePresetAgentIds;
       }
 
       // ── Generate outlines (with agent personas for teacher context) ──

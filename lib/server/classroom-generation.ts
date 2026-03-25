@@ -298,6 +298,7 @@ export async function generateClassroom(
     description: undefined,
     language: lang,
     style: 'interactive',
+    agentIds: agents.map((a) => a.id),
     createdAt: Date.now(),
     updatedAt: Date.now(),
   };

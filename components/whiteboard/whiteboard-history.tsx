@@ -75,6 +75,9 @@ export function WhiteboardHistory({ isOpen, onClose }: WhiteboardHistoryProps) {
       return;
     }
 
+    // Save current content before restore to avoid losing the latest state
+    useWhiteboardHistoryStore.getState().pushSnapshot(wbResult.data.elements ?? []);
+
     // Set restoredKey so auto-snapshot skips the incoming change
     useWhiteboardHistoryStore.getState().setRestoredKey(restoredElementsKey);
 

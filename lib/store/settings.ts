@@ -756,7 +756,12 @@ export const useSettingsStore = create<SettingsState>()(
                   clearedModelId = '';
                 } else if (state.modelId) {
                   const hasServerModelRestriction = !!serverInfo?.models?.length;
-                  if (hasServerModelRestriction && !serverInfo!.models!.includes(state.modelId)) {
+                  const modelAllowedByServer =
+                    !hasServerModelRestriction || serverInfo!.models!.includes(state.modelId);
+                  const modelExistsInProvider = selectedCfg.models.some(
+                    (m) => m.id === state.modelId,
+                  );
+                  if (!modelAllowedByServer || !modelExistsInProvider) {
                     clearedModelId = '';
                   }
                 }

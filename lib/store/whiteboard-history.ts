@@ -53,7 +53,7 @@ export const useWhiteboardHistoryStore = create<WhiteboardHistoryState>((set, ge
 
     const { snapshots } = get();
     const newFingerprint = elementFingerprint(elements);
-    if (snapshots.length > 0 && snapshots[snapshots.length - 1].fingerprint === newFingerprint) {
+    if (snapshots.some((s) => s.fingerprint === newFingerprint)) {
       return;
     }
 

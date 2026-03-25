@@ -46,14 +46,21 @@ export function AgentBar() {
   const handleModeChange = (mode: 'preset' | 'auto') => {
     setAgentMode(mode);
     if (mode === 'preset') {
+      const presetSafeIds = selectedAgentIds.filter((id) => {
+        const a = agents.find((agent) => agent.id === id);
+        return !!a;
+      });
+
       // Ensure a teacher is always selected in preset mode
-      const hasTeacherSelected = selectedAgentIds.some((id) => {
+      const hasTeacherSelected = presetSafeIds.some((id) => {
         const a = agents.find((agent) => agent.id === id);
         return a?.role === 'teacher';
       });
-      if (!hasTeacherSelected && teacherAgent) {
-        setSelectedAgentIds([teacherAgent.id, ...selectedAgentIds]);
-      }
+
+      const nextIds =
+        !hasTeacherSelected && teacherAgent ? [teacherAgent.id, ...presetSafeIds] : presetSafeIds;
+
+      setSelectedAgentIds(nextIds);
     }
   };
 
