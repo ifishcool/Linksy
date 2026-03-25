@@ -98,7 +98,7 @@ export function CanvasArea({
       >
         <div
           className={cn(
-            'aspect-[16/9] h-full max-h-full max-w-full bg-[#f8f8f8] rounded-[20px] overflow-hidden relative transition-all duration-700 border-[3px] border-slate-900/90',
+            'aspect-[16/9] h-full max-h-full max-w-full bg-[#f8f8f8] rounded-[20px] overflow-hidden relative transition-all duration-700 border-[4px] border-slate-900/90',
             showControls && !isLiveSession && currentScene?.type === 'slide' && 'cursor-pointer',
             currentScene?.type === 'interactive' ? 'bg-white' : 'bg-[#f8f8f8]',
           )}

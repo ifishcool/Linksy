@@ -155,7 +155,7 @@ export function AgentBar() {
           <button
             className={cn(
               'group flex items-center gap-2 cursor-pointer rounded-full px-2.5 py-2 transition-colors w-full',
-              'border-2 border-slate-900/70 bg-white/90 text-slate-700 hover:border-slate-900/85 hover:bg-sky-50',
+              'border-[3px] border-slate-900/70 bg-white/90 text-slate-700 hover:border-slate-900/85 hover:bg-sky-50',
             )}
             onClick={() => setOpen(!open)}
           >
@@ -192,7 +192,7 @@ export function AgentBar() {
             transition={{ duration: 0.2, ease: [0.25, 0.1, 0.25, 1] }}
             className="absolute right-0 top-full mt-1 z-50 w-80"
           >
-            <div className="rounded-2xl bg-white/96 backdrop-blur-sm border-2 border-slate-900/70 shadow-[0_2px_0_rgba(15,23,42,0.15)] px-2.5 py-2">
+            <div className="rounded-2xl bg-white/96 backdrop-blur-sm border-[3px] border-slate-900/70 shadow-[0_2px_0_rgba(15,23,42,0.15)] px-2.5 py-2">
               {/* Mode tabs — full width, 50/50 */}
               <div className="flex rounded-lg border border-slate-900/25 bg-sky-50/70 p-0.5 mb-2.5">
                 <button

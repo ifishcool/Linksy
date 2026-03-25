@@ -245,7 +245,7 @@ export const ChatArea = forwardRef<ChatAreaRef, ChatAreaProps>(
           transition: isDragging ? 'none' : 'width 0.3s ease',
         }}
         className={cn(
-          'bg-[#fff8db] border-l-[3px] border-slate-900/80 flex flex-col shrink-0 z-20 relative overflow-visible',
+          'bg-[#fff8db] border-l-[4px] border-slate-900/80 flex flex-col shrink-0 z-20 relative overflow-visible',
           className,
         )}
       >
@@ -269,7 +269,7 @@ export const ChatArea = forwardRef<ChatAreaRef, ChatAreaProps>(
             <div className="h-11 flex items-center gap-1.5 shrink-0 mt-2.5 mb-1 px-3">
               <TabsList
                 variant="line"
-                className="h-full flex-1 w-0 rounded-xl border-2 border-slate-900/70 bg-white px-1"
+                className="h-full flex-1 w-0 rounded-xl border-[3px] border-slate-900/70 bg-white px-1"
               >
                 <TabsTrigger
                   value="lecture"
@@ -297,7 +297,7 @@ export const ChatArea = forwardRef<ChatAreaRef, ChatAreaProps>(
               {onCollapseChange && (
                 <button
                   onClick={() => onCollapseChange(true)}
-                  className="w-8 h-8 shrink-0 rounded-xl flex items-center justify-center bg-white text-sky-600 border-2 border-slate-900/70 hover:bg-sky-50 hover:text-sky-700 active:scale-90 transition-all duration-200"
+                  className="w-8 h-8 shrink-0 rounded-xl flex items-center justify-center bg-white text-sky-600 border-[3px] border-slate-900/70 hover:bg-sky-50 hover:text-sky-700 active:scale-90 transition-all duration-200"
                 >
                   <PanelRightClose className="w-4 h-4" />
                 </button>

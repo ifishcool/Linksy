@@ -334,7 +334,7 @@ function HomePage() {
         {/* ═══ Top-right pill (unchanged) ═══ */}
         <div
           ref={toolbarRef}
-          className="fixed top-4 right-4 z-50 flex items-center gap-1 bg-white/92 backdrop-blur-md px-2 py-1.5 rounded-full border-2 border-slate-900/70 shadow-[0_2px_0_rgba(15,23,42,0.2)]"
+          className="fixed top-4 right-4 z-50 flex items-center gap-1 bg-white/92 backdrop-blur-md px-2 py-1.5 rounded-full border-[3px] border-slate-900/70 shadow-[0_2px_0_rgba(15,23,42,0.2)]"
         >
           {/* Language Selector */}
           <div className="relative">
@@ -347,7 +347,7 @@ function HomePage() {
               {locale === 'zh-CN' ? 'CN' : 'EN'}
             </button>
             {languageOpen && (
-              <div className="absolute top-full mt-2 right-0 bg-white border-2 border-slate-900/80 rounded-lg shadow-lg overflow-hidden z-50 min-w-[120px]">
+              <div className="absolute top-full mt-2 right-0 bg-white border-[3px] border-slate-900/80 rounded-lg shadow-lg overflow-hidden z-50 min-w-[120px]">
                 <button
                   onClick={() => {
                     setLocale('zh-CN');
@@ -420,12 +420,12 @@ function HomePage() {
         >
           {/* ── Logo ── */}
           <motion.img
-            src="/logo.png"
+            src="/logo_t.png"
             alt="Linksy"
             initial={{ opacity: 0 }}
-            animate={{ opacity: 1, scale: 1.7 }}
+            animate={{ opacity: 1, scale: 1.8 }}
             transition={{ delay: 0.05, duration: 0.1 }}
-            className="h-10 md:h-12 mb-4"
+            className="h-10 md:h-12 mb-5"
           />
 
           {/* ── Slogan ── */}
@@ -445,7 +445,7 @@ function HomePage() {
             transition={{ delay: 0.18, duration: 0.2 }}
             className="w-full"
           >
-            <div className="w-full rounded-[34px] border-[3px] border-slate-900/80 bg-gradient-to-b from-white/95 to-sky-50/90 shadow-[0_2px_0_rgba(15,23,42,0.2)] backdrop-blur-sm transition-colors">
+            <div className="w-full rounded-[34px] border-[4px] border-slate-900/80 bg-gradient-to-b from-white/95 to-sky-50/90 shadow-[0_2px_0_rgba(15,23,42,0.2)] backdrop-blur-sm transition-colors">
               {/* ── Greeting + Profile + Agents ── */}
               <div className="relative z-20 flex items-start justify-between">
                 <GreetingBar />
@@ -466,7 +466,7 @@ function HomePage() {
               />
 
               {/* Toolbar row */}
-              <div className="px-5 pb-2 pt-2.5 flex items-center gap-2.5 border-t-2 border-slate-900/25 bg-sky-50/65 rounded-b-[30px]">
+              <div className="px-5 pb-2 pt-2.5 flex items-center gap-2.5 border-t-[3px] border-slate-900/25 bg-sky-50/65 rounded-b-[30px]">
                 <div className="flex-1 min-w-0">
                   <GenerationToolbar
                     language={form.language}
@@ -500,7 +500,7 @@ function HomePage() {
                   onClick={handleGenerate}
                   disabled={!canGenerate}
                   className={cn(
-                    'shrink-0 h-11 rounded-full flex items-center justify-center gap-1.5 transition-colors px-5 border-2 text-sm font-black',
+                    'shrink-0 h-11 rounded-full flex items-center justify-center gap-1.5 transition-colors px-5 border-[3px] text-sm font-black',
                     canGenerate
                       ? 'bg-orange-400 border-slate-900/70 text-white hover:bg-orange-500 cursor-pointer'
                       : 'bg-slate-200 border-slate-300 text-slate-500 cursor-not-allowed',
@@ -550,10 +550,10 @@ function HomeSidebar({
 }) {
   const { t } = useI18n();
   return (
-    <aside className="hidden lg:flex fixed left-0 top-0 bottom-0 z-30 w-[272px] rounded-none bg-sky-200/75 border-r-[3px] border-r-slate-900/90 backdrop-blur-sm shadow-[0_2px_0_rgba(15,23,42,0.2)] flex-col overflow-hidden">
-      <div className="px-4 pt-4 pb-3 border-b-2 border-slate-900/70 bg-sky-100/35">
+    <aside className="hidden lg:flex fixed left-0 top-0 bottom-0 z-30 w-[272px] rounded-none bg-sky-200/75 border-r-[4px] border-r-slate-900/90 backdrop-blur-sm shadow-[0_2px_0_rgba(15,23,42,0.2)] flex-col overflow-hidden">
+      <div className="px-4 pt-4 pb-3 border-b-[3px] border-slate-900/70 bg-sky-100/35">
         <div className="flex items-center gap-2">
-          <img src="/logo_t.png" alt="Linksy" className="h-12 w-auto" />
+          <img src="/logo.png" alt="Linksy" className="h-15 w-auto" />
         </div>
         <p className="mt-1 text-[11px] text-slate-700/85">
           {locale === 'zh-CN'
@@ -564,7 +564,7 @@ function HomeSidebar({
 
       <div className="flex-1 overflow-y-auto px-3 py-3 space-y-3 scrollbar-hide">
         {sections.length === 0 ? (
-          <div className="rounded-2xl border-2 border-dashed border-slate-900/35 bg-white/65 p-3 text-[12px] leading-relaxed text-slate-600">
+          <div className="rounded-2xl border-[3px] border-dashed border-slate-900/35 bg-white/65 p-3 text-[12px] leading-relaxed text-slate-600">
             {locale === 'zh-CN' ? '还没有课堂记录。' : 'No classroom history yet.'}
           </div>
         ) : (
@@ -589,7 +589,7 @@ function HomeSidebar({
                       }
                     }}
                     className={cn(
-                      'group/item w-full rounded-[16px] border-2 border-slate-900/70 px-2.5 py-2 text-left transition-colors shadow-[0_2px_0_rgba(15,23,42,0.2)]',
+                      'group/item w-full rounded-[16px] border-[3px] border-slate-900/70 px-2.5 py-2 text-left transition-colors shadow-[0_2px_0_rgba(15,23,42,0.2)]',
                       index % 2 === 0 ? 'bg-white/92' : 'bg-sky-50/85',
                       'hover:bg-white hover:border-slate-900/85',
                     )}
@@ -733,7 +733,7 @@ function GreetingBar() {
       {/* ── Collapsed pill (always in flow) ── */}
       {!open && (
         <div
-          className="flex items-center gap-2.5 cursor-pointer transition-colors group rounded-full px-2.5 py-1.5 border-2 border-slate-900/70 bg-white/90 text-slate-700 hover:border-slate-900/85 hover:bg-sky-50"
+          className="flex items-center gap-2.5 cursor-pointer transition-colors group rounded-full px-2.5 py-1.5 border-[3px] border-slate-900/70 bg-white/90 text-slate-700 hover:border-slate-900/85 hover:bg-sky-50"
           onClick={() => setOpen(true)}
         >
           <div className="shrink-0 relative">
@@ -777,7 +777,7 @@ function GreetingBar() {
             transition={{ duration: 0.2, ease: [0.25, 0.1, 0.25, 1] }}
             className="absolute left-4 top-3.5 z-50 w-72"
           >
-            <div className="rounded-2xl bg-white/96 backdrop-blur-sm border-2 border-slate-900/70 px-3 py-2.5 shadow-[0_2px_0_rgba(15,23,42,0.15)]">
+            <div className="rounded-2xl bg-white/96 backdrop-blur-sm border-[3px] border-slate-900/70 px-3 py-2.5 shadow-[0_2px_0_rgba(15,23,42,0.15)]">
               {/* ── Row: avatar + name ── */}
               <div
                 className="flex items-center gap-2.5 cursor-pointer transition-colors"
@@ -829,7 +829,7 @@ function GreetingBar() {
                         onBlur={commitName}
                         maxLength={20}
                         placeholder={t('profile.defaultNickname')}
-                        className="flex-1 min-w-0 h-6 bg-transparent border-b border-slate-900/25 text-[13px] font-semibold text-slate-800 outline-none placeholder:text-slate-400"
+                        className="flex-1 min-w-0 h-6 bg-transparent border-b-[2px] border-slate-900/25 text-[13px] font-semibold text-slate-800 outline-none placeholder:text-slate-400"
                       />
                       <button
                         onClick={commitName}

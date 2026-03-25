@@ -6,7 +6,7 @@ export const commonZhCN = {
     loading: '加载中...',
   },
   home: {
-    slogan: '多智能体互动课堂中的生成式学习',
+    slogan: '善用灵犀，一点就通。',
     greeting: '嗨，',
   },
   toolbar: {
@@ -47,7 +47,7 @@ export const commonEnUS = {
     loading: 'Loading...',
   },
   home: {
-    slogan: 'Generative Learning in Multi-Agent Interactive Classroom',
+    slogan: 'Master Linksy, grasp it instantly.',
     greeting: 'Hi, ',
   },
   toolbar: {

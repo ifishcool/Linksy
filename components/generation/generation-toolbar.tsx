@@ -362,7 +362,7 @@ export function GenerationToolbar({
       )}
 
       {/* ── Language pill ── */}
-      <Tooltip>
+      {/* <Tooltip>
         <TooltipTrigger asChild>
           <button
             onClick={() => onLanguageChange(language === 'zh-CN' ? 'en-US' : 'zh-CN')}
@@ -373,7 +373,7 @@ export function GenerationToolbar({
           </button>
         </TooltipTrigger>
         <TooltipContent>{t('toolbar.languageHint')}</TooltipContent>
-      </Tooltip>
+      </Tooltip> */}
 
       {/* ── Separator ── */}
       {showMediaControl && <div className="w-px h-5 bg-slate-200/80 mx-0.5" />}

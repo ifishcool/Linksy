@@ -882,14 +882,14 @@ export function Stage({
               }`}
             >
               <div
-                className={`max-w-[74%] rounded-2xl border-[3px] border-slate-900/80 bg-white/96 px-3 py-2 flex items-start gap-2 shadow-[0_2px_0_rgba(15,23,42,0.18)] ${
+                className={`max-w-[74%] rounded-2xl border-[4px] border-slate-900/80 bg-white/96 px-3 py-2 flex items-start gap-2 shadow-[0_2px_0_rgba(15,23,42,0.18)] ${
                   speakerDisplay.side === 'left'
                     ? 'rounded-bl-md border-sky-500/80'
                     : 'rounded-br-md border-orange-500/80'
                 }`}
               >
                 <div
-                  className={`w-8 h-8 rounded-full overflow-hidden border-2 bg-white shrink-0 flex items-center justify-center ${
+                  className={`w-8 h-8 rounded-full overflow-hidden border-[3px] bg-white shrink-0 flex items-center justify-center ${
                     speakerDisplay.side === 'left' ? 'border-sky-500/80' : 'border-orange-500/80'
                   }`}
                 >
