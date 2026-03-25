@@ -167,14 +167,7 @@ export function CanvasToolbar({
 
       {/* ── Center: unified playback controls ── */}
       <div className="flex-1 flex items-center justify-center min-w-0">
-        <div
-          className={cn(
-            'inline-flex items-center gap-0.5 px-1 h-7',
-            isPresenting
-              ? '' /* Single visual layer in fullscreen — buttons sit inside outer pill directly */
-              : 'bg-gray-100/60 dark:bg-gray-800/60 rounded-lg',
-          )}
-        >
+        <div className={cn('inline-flex items-center gap-0.5 px-1 h-7')}>
           {/* Volume with vertical popover slider */}
           {onToggleMute && (
             <div
@@ -200,18 +193,15 @@ export function CanvasToolbar({
                 <VolumeIcon muted={!!ttsMuted} volume={ttsVolume} disabled={!ttsEnabled} />
               </button>
 
-              {/* Vertical volume slider (pops up above) */}
+              {/* Volume slider (left popout) */}
               <div
                 className={cn(
-                  'absolute bottom-full left-1/2 -translate-x-1/2 mb-2 flex flex-col items-center',
+                  'absolute right-full top-1/2 -translate-y-1/2 mr-1.5 flex items-center z-[100]',
                   'transition-all duration-200 ease-out pointer-events-none opacity-0',
                   volumeHover && ttsEnabled && 'pointer-events-auto opacity-100',
                 )}
               >
-                <div className="bg-white border-2 border-slate-900/70 rounded-xl px-2 py-2.5 flex flex-col items-center gap-1.5">
-                  <span className="text-[10px] text-slate-400 tabular-nums font-medium select-none">
-                    {Math.round(effectiveVolume * 100)}
-                  </span>
+                <div className="bg-white border-2 border-slate-900/70 rounded-xl px-2.5 py-1.5 flex items-center gap-2">
                   <input
                     type="range"
                     min={0}
@@ -225,9 +215,8 @@ export function CanvasToolbar({
                     }}
                     className={cn(
                       'appearance-none cursor-pointer',
-                      'h-16 w-1 rounded-full',
+                      'h-1 w-16 rounded-full',
                       'bg-sky-200',
-                      '[writing-mode:vertical-lr] [direction:rtl]',
                       '[&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-3 [&::-webkit-slider-thumb]:h-3',
                       '[&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-sky-500',
                       '[&::-webkit-slider-thumb]:cursor-pointer',
@@ -235,9 +224,12 @@ export function CanvasToolbar({
                       '[&::-moz-range-thumb]:rounded-full [&::-moz-range-thumb]:bg-sky-500 [&::-moz-range-thumb]:border-0',
                     )}
                   />
+                  <span className="text-[10px] text-slate-500 tabular-nums font-bold select-none w-7 text-right">
+                    {Math.round(effectiveVolume * 100)}
+                  </span>
                 </div>
-                {/* Arrow pointing down */}
-                <div className="w-2 h-2 bg-white border-b border-r border-sky-200 rotate-45 -mt-[5px]" />
+                {/* Arrow pointing right */}
+                <div className="w-2 h-2 bg-white border-t border-r border-slate-900/30 rotate-45 -ml-[5px]" />
               </div>
             </div>
           )}
@@ -250,13 +242,13 @@ export function CanvasToolbar({
                   <button
                     onClick={onCycleSpeed}
                     className={cn(
-                      'w-9 h-6 rounded-lg border border-slate-900/20 flex items-center justify-center',
+                      'w-9 h-6 rounded-lg border border-slate-900/70 flex items-center justify-center',
                       'transition-all duration-150 outline-none cursor-pointer',
                       'text-[11px] font-bold tabular-nums leading-none',
                       'active:scale-90',
                       playbackSpeed !== 1
-                        ? 'text-sky-700 bg-sky-200/70 border-sky-400/50'
-                        : 'text-slate-600 hover:text-slate-700 bg-white/80',
+                        ? 'text-slate-900 bg-sky-200/70 border-slate-900/70'
+                        : 'text-slate-600 hover:text-slate-700 bg-white/80 hover:border-slate-900/85',
                     )}
                     aria-label="Playback speed"
                   >
@@ -313,7 +305,7 @@ export function CanvasToolbar({
               onClick={onPlayPause}
               className={cn(
                 ctrlBtn,
-                'w-8 h-7',
+                'w-7 h-7',
                 engineState === 'playing' ? 'text-sky-700 bg-sky-100' : 'text-slate-600',
               )}
               aria-label={engineState === 'playing' ? 'Pause' : 'Play'}
@@ -333,7 +325,7 @@ export function CanvasToolbar({
               disabled={!canGoNext}
               className={cn(
                 ctrlBtn,
-                'w-6 h-6 text-slate-500 disabled:opacity-20 disabled:pointer-events-none',
+                'w-7 h-7 text-slate-500 disabled:opacity-20 disabled:pointer-events-none',
               )}
               aria-label="Next scene"
             >
@@ -396,7 +388,7 @@ export function CanvasToolbar({
             onClick={onTogglePresentation}
             className={cn(
               ctrlBtn,
-              'w-6 h-6',
+              'w-7 h-7',
               isPresenting
                 ? 'text-violet-600 dark:text-violet-400'
                 : 'text-gray-500 dark:text-gray-400',

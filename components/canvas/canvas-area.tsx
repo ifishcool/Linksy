@@ -41,6 +41,15 @@ export function CanvasArea({
   onTogglePresentation,
   showStopDiscussion,
   onStopDiscussion,
+  ttsEnabled,
+  ttsMuted,
+  ttsVolume,
+  onToggleMute,
+  onVolumeChange,
+  autoPlayLecture,
+  onToggleAutoPlay,
+  playbackSpeed,
+  onCycleSpeed,
   hideToolbar,
   isPendingScene,
   isGenerationFailed,
@@ -242,6 +251,15 @@ export function CanvasArea({
           onTogglePresentation={onTogglePresentation}
           showStopDiscussion={showStopDiscussion}
           onStopDiscussion={onStopDiscussion}
+          ttsEnabled={ttsEnabled}
+          ttsMuted={ttsMuted}
+          ttsVolume={ttsVolume}
+          onToggleMute={onToggleMute}
+          onVolumeChange={onVolumeChange}
+          autoPlayLecture={autoPlayLecture}
+          onToggleAutoPlay={onToggleAutoPlay}
+          playbackSpeed={playbackSpeed}
+          onCycleSpeed={onCycleSpeed}
         />
       )}
     </div>

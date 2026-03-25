@@ -570,13 +570,10 @@ function HomeSidebar({
         ) : (
           sections.map((section) => (
             <div key={section.key} className="space-y-1.5">
-              <div className="px-1 flex items-center justify-between">
+              <div className="px-1">
                 <p className="text-[11px] font-black tracking-wide text-sky-700/95">
                   {section.label}
                 </p>
-                <span className="text-[10px] font-bold rounded-full bg-white/85 border border-slate-900/20 px-1.5 py-px text-slate-500">
-                  {section.items.length}
-                </span>
               </div>
               <div className="space-y-1">
                 {section.items.map((item, index) => (

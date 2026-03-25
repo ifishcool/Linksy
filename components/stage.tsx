@@ -4,7 +4,7 @@ import { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import { useStageStore } from '@/lib/store';
 import { PENDING_SCENE_ID } from '@/lib/store/stage';
 import { useCanvasStore } from '@/lib/store/canvas';
-import { useSettingsStore } from '@/lib/store/settings';
+import { PLAYBACK_SPEEDS, useSettingsStore } from '@/lib/store/settings';
 import { useI18n } from '@/lib/hooks/use-i18n';
 import { SceneSidebar } from './stage/scene-sidebar';
 import { Header } from './header';
@@ -62,6 +62,12 @@ export function Stage({
   const setChatAreaWidth = useSettingsStore((s) => s.setChatAreaWidth);
   const chatAreaCollapsed = useSettingsStore((s) => s.chatAreaCollapsed);
   const setChatAreaCollapsed = useSettingsStore((s) => s.setChatAreaCollapsed);
+  const ttsEnabled = useSettingsStore((s) => s.ttsEnabled);
+  const autoPlayLecture = useSettingsStore((s) => s.autoPlayLecture);
+  const setAutoPlayLecture = useSettingsStore((s) => s.setAutoPlayLecture);
+  const setTTSMuted = useSettingsStore((s) => s.setTTSMuted);
+  const setTTSVolume = useSettingsStore((s) => s.setTTSVolume);
+  const setPlaybackSpeed = useSettingsStore((s) => s.setPlaybackSpeed);
 
   // PlaybackEngine state
   const [engineMode, setEngineMode] = useState<EngineMode>('idle');
@@ -466,6 +472,23 @@ export function Stage({
     audioPlayerRef.current.setPlaybackRate(playbackSpeed);
   }, [playbackSpeed]);
 
+  const handleToggleMute = useCallback(() => {
+    setTTSMuted(!ttsMuted);
+  }, [setTTSMuted, ttsMuted]);
+
+  const handleVolumeChange = useCallback(
+    (volume: number) => {
+      setTTSVolume(volume);
+    },
+    [setTTSVolume],
+  );
+
+  const handleCycleSpeed = useCallback(() => {
+    const idx = PLAYBACK_SPEEDS.indexOf(playbackSpeed);
+    const next = PLAYBACK_SPEEDS[(idx + 1) % PLAYBACK_SPEEDS.length];
+    setPlaybackSpeed(next);
+  }, [playbackSpeed, setPlaybackSpeed]);
+
   /**
    * Handle discussion SSE — POST /api/chat and push events to engine
    */
@@ -804,6 +827,15 @@ export function Stage({
               (chatIsStreaming && (chatSessionType === 'qa' || chatSessionType === 'discussion'))
             }
             onStopDiscussion={handleStopDiscussion}
+            ttsEnabled={ttsEnabled}
+            ttsMuted={ttsMuted}
+            ttsVolume={ttsVolume}
+            onToggleMute={handleToggleMute}
+            onVolumeChange={handleVolumeChange}
+            autoPlayLecture={autoPlayLecture}
+            onToggleAutoPlay={() => setAutoPlayLecture(!autoPlayLecture)}
+            playbackSpeed={playbackSpeed}
+            onCycleSpeed={handleCycleSpeed}
             hideToolbar={false}
             isPendingScene={isPendingScene}
             isGenerationFailed={
