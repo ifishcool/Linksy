@@ -529,9 +529,9 @@ function HomePage() {
         </motion.div>
 
         {/* Footer — flows with content, at the very end */}
-        <div className="mt-8 pb-5 text-center text-xs text-muted-foreground/50">
+        {/* <div className="mt-8 pb-5 text-center text-xs text-muted-foreground/50">
           Linksy Kids Learning
-        </div>
+        </div> */}
       </div>
     </div>
   );
@@ -555,11 +555,11 @@ function HomeSidebar({
         <div className="flex items-center gap-2">
           <img src="/logo.png" alt="Linksy" className="h-15 w-auto" />
         </div>
-        <p className="mt-1 text-[11px] text-slate-700/85">
+        {/* <p className="mt-1 text-[11px] text-slate-700/85">
           {locale === 'zh-CN'
             ? '多智能体互动课堂中的生成式学习'
             : 'Generative Learning in Multi-Agent Interactive Classroom'}
-        </p>
+        </p> */}
       </div>
 
       <div className="flex-1 overflow-y-auto px-3 py-3 space-y-3 scrollbar-hide">
