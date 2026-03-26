@@ -160,7 +160,7 @@ export function Roundtable({
   };
 
   return (
-    <div className="h-[80px] w-full relative z-10 border-t-[4px] border-slate-900/90 bg-[#ffd449]">
+    <div className="h-[80px] w-full relative z-10 border-t-[5px] border-slate-900/90 bg-[#ffd449]">
       <div className="h-full px-3.5 flex items-center gap-2.5">
         <button
           onClick={(e) => {
@@ -169,7 +169,7 @@ export function Roundtable({
           }}
           disabled={!asrEnabled || isSendCooldown}
           className={cn(
-            'shrink-0 w-10 h-10 rounded-xl border-[4px] border-slate-900/85 flex items-center justify-center transition-all active:scale-95',
+            'shrink-0 w-10 h-10 rounded-xl border-[5px] border-slate-900/85 flex items-center justify-center transition-all active:scale-95',
             !asrEnabled || isSendCooldown
               ? 'bg-slate-100 text-slate-300 cursor-not-allowed'
               : isVoiceOpen
@@ -182,7 +182,7 @@ export function Roundtable({
 
         <div
           className={cn(
-            'flex-1 rounded-xl border-[4px] px-3.5 py-1.5 flex items-center transition-colors',
+            'flex-1 rounded-xl border-[5px] px-3.5 py-1.5 flex items-center transition-colors',
             isCueUser
               ? 'border-emerald-500 bg-emerald-50/80 ring-2 ring-emerald-300/70'
               : 'border-slate-900/85 bg-white',
@@ -213,7 +213,7 @@ export function Roundtable({
           onClick={handleSendMessage}
           disabled={!inputValue.trim() || isSendCooldown}
           className={cn(
-            'shrink-0 h-10 px-4.5 text-white rounded-xl transition border-[4px] border-slate-900/85 font-black active:scale-95',
+            'shrink-0 h-10 px-4.5 text-white rounded-xl transition border-[5px] border-slate-900/85 font-black active:scale-95',
             !inputValue.trim() || isSendCooldown
               ? 'bg-slate-400 cursor-not-allowed'
               : 'bg-[#ff7f3f] hover:brightness-95',
@@ -228,7 +228,7 @@ export function Roundtable({
       </div>
 
       {isVoiceOpen && (
-        <div className="absolute right-3.5 -top-7 rounded-full border-[3px] border-slate-900/75 bg-white px-2.5 py-1 text-[11px] font-bold text-orange-600">
+        <div className="absolute right-3.5 -top-7 rounded-full border-[4px] border-slate-900/75 bg-white px-2.5 py-1 text-[11px] font-bold text-orange-600">
           {isProcessing ? t('roundtable.processing') : t('roundtable.listening')}
         </div>
       )}

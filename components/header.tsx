@@ -83,12 +83,12 @@ export function Header({ currentSceneTitle }: HeaderProps) {
               onClick={() => {
                 setLanguageOpen(!languageOpen);
               }}
-              className="flex items-center gap-1 h-10 px-4 rounded-full text-xs font-black text-slate-900 bg-[#56e0a7] border-[3px] border-slate-900 hover:brightness-95 transition-all"
+              className="flex items-center gap-1 h-10 px-4 rounded-full text-xs font-black text-slate-900 bg-[#56e0a7] border-[4px] border-slate-900 hover:brightness-95 transition-all"
             >
               {locale === 'zh-CN' ? 'CN' : 'EN'}
             </button>
             {languageOpen && (
-              <div className="absolute top-full mt-2 right-0 bg-white border-2 border-slate-900 rounded-xl overflow-hidden z-50 min-w-[120px]">
+              <div className="absolute top-full mt-2 right-0 bg-white border-[3px] border-slate-900 rounded-xl overflow-hidden z-50 min-w-[120px]">
                 <button
                   onClick={() => {
                     setLocale('zh-CN');
@@ -122,7 +122,7 @@ export function Header({ currentSceneTitle }: HeaderProps) {
             <button
               onClick={() => setSettingsOpen(true)}
               className={cn(
-                'h-10 px-4 rounded-full text-xs font-black text-slate-900 bg-[#b495ff] border-[3px] border-slate-900 hover:brightness-95 transition-all group flex items-center gap-1.5',
+                'h-10 px-4 rounded-full text-xs font-black text-slate-900 bg-[#b495ff] border-[4px] border-slate-900 hover:brightness-95 transition-all group flex items-center gap-1.5',
                 needsSetup && 'animate-setup-glow',
               )}
             >
@@ -158,7 +158,7 @@ export function Header({ currentSceneTitle }: HeaderProps) {
                 : t('share.notReady')
             }
             className={cn(
-              'shrink-0 h-10 px-3 rounded-full border-[3px] border-slate-900 transition-all flex items-center justify-center bg-white',
+              'shrink-0 h-10 px-3 rounded-full border-[4px] border-slate-900 transition-all flex items-center justify-center bg-white',
               canExport && !isExporting
                 ? 'text-slate-600 hover:bg-sky-50 hover:text-sky-700'
                 : 'text-slate-300 cursor-not-allowed opacity-50 bg-slate-100',

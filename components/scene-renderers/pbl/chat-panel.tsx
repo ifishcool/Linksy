@@ -72,7 +72,7 @@ export function ChatPanel({
   return (
     <div className="flex flex-col h-full bg-[#fff8db]">
       {/* Header */}
-      <div className="px-4 py-3 border-b-2 border-slate-900/70 bg-[#ffd449]">
+      <div className="px-4 py-3 border-b-[3px] border-slate-900/70 bg-[#ffd449]">
         <h2 className="font-black text-sm text-slate-900">{t('pbl.chat.title')}</h2>
         {currentIssue && (
           <p className="text-xs text-slate-700/80 mt-0.5 font-medium">
@@ -105,7 +105,7 @@ export function ChatPanel({
       </div>
 
       {/* Input */}
-      <div className="border-t-2 border-slate-900/70 p-3 bg-[#ffd449]">
+      <div className="border-t-[3px] border-slate-900/70 p-3 bg-[#ffd449]">
         <div className="flex items-center gap-2 text-[10px] text-slate-700/80 mb-2 px-1 font-semibold">
           <span>{t('pbl.chat.mentionHint')}</span>
         </div>
@@ -124,7 +124,7 @@ export function ChatPanel({
             placeholder={t('pbl.chat.placeholder')}
             disabled={isLoading}
             rows={1}
-            className="flex-1 resize-none rounded-2xl border-[3px] border-slate-900/80 bg-white px-4 py-2.5 text-sm text-slate-700 placeholder:text-slate-400 focus:outline-none disabled:opacity-50"
+            className="flex-1 resize-none rounded-2xl border-[4px] border-slate-900/80 bg-white px-4 py-2.5 text-sm text-slate-700 placeholder:text-slate-400 focus:outline-none disabled:opacity-50"
           />
           <SpeechButton
             size="md"
@@ -140,7 +140,7 @@ export function ChatPanel({
           <button
             onClick={handleSubmit}
             disabled={!input.trim() || isLoading}
-            className="shrink-0 h-10 w-10 rounded-xl border-[3px] border-slate-900/80 flex items-center justify-center transition-colors bg-[#ff7f3f] text-white hover:brightness-95 disabled:opacity-50"
+            className="shrink-0 h-10 w-10 rounded-xl border-[4px] border-slate-900/80 flex items-center justify-center transition-colors bg-[#ff7f3f] text-white hover:brightness-95 disabled:opacity-50"
           >
             <ArrowUp className="w-4 h-4" />
           </button>

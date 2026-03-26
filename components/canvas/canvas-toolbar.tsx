@@ -54,7 +54,7 @@ export interface CanvasToolbarProps {
 
 /* Compact control button */
 const ctrlBtn = cn(
-  'relative w-7 h-7 rounded-xl border-2 border-slate-900/80 bg-white flex items-center justify-center',
+  'relative w-7 h-7 rounded-xl border-[3px] border-slate-900/80 bg-white flex items-center justify-center',
   'transition-all duration-150 outline-none cursor-pointer',
   'hover:brightness-95 active:scale-90',
 );
@@ -201,7 +201,7 @@ export function CanvasToolbar({
                   volumeHover && ttsEnabled && 'pointer-events-auto opacity-100',
                 )}
               >
-                <div className="bg-white border-2 border-slate-900/70 rounded-xl px-2.5 py-1.5 flex items-center gap-2">
+                <div className="bg-white border-[3px] border-slate-900/70 rounded-xl px-2.5 py-1.5 flex items-center gap-2">
                   <input
                     type="range"
                     min={0}
@@ -242,7 +242,7 @@ export function CanvasToolbar({
                   <button
                     onClick={onCycleSpeed}
                     className={cn(
-                      'w-9 h-6 rounded-lg border border-slate-900/70 flex items-center justify-center',
+                      'w-9 h-6 rounded-lg border-[2px] border-slate-900/70 flex items-center justify-center',
                       'transition-all duration-150 outline-none cursor-pointer',
                       'text-[11px] font-bold tabular-nums leading-none',
                       'active:scale-90',
@@ -287,7 +287,7 @@ export function CanvasToolbar({
                 onStopDiscussion();
               }}
               className={cn(
-                'flex items-center gap-1.5 h-7 px-3 rounded-xl border-2 border-slate-900/80',
+                'flex items-center gap-1.5 h-7 px-3 rounded-xl border-[3px] border-slate-900/80',
                 'bg-[#ff8e8e] text-slate-900',
                 'text-[11px] font-black whitespace-nowrap',
                 'hover:brightness-95 active:scale-95 transition-all cursor-pointer',

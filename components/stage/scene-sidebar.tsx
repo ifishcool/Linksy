@@ -134,7 +134,7 @@ export function SceneSidebar({
           </button>
           <button
             onClick={() => onCollapseChange(true)}
-            className="w-9 h-9 shrink-0 rounded-2xl flex items-center justify-center bg-white text-sky-600 border-[3px] border-slate-900/80 hover:bg-sky-50 hover:text-sky-700 active:scale-90 transition-all duration-200"
+            className="w-9 h-9 shrink-0 rounded-2xl flex items-center justify-center bg-white text-sky-600 border-[4px] border-slate-900/80 hover:bg-sky-50 hover:text-sky-700 active:scale-90 transition-all duration-200"
           >
             <PanelLeftClose className="w-4 h-4" />
           </button>
@@ -163,7 +163,7 @@ export function SceneSidebar({
                   }
                 }}
                 className={cn(
-                  'group relative rounded-[18px] transition-all duration-200 cursor-pointer flex flex-col gap-2 p-2 border-[3px] border-slate-900/75',
+                  'group relative rounded-[18px] transition-all duration-200 cursor-pointer flex flex-col gap-2 p-2 border-[4px] border-slate-900/75',
                   isActive
                     ? 'bg-white/95 ring-2 ring-orange-400/70'
                     : index % 2 === 0
@@ -340,7 +340,7 @@ export function SceneSidebar({
                     }
                   }}
                   className={cn(
-                    'group relative rounded-[18px] flex flex-col gap-2 p-2 transition-all duration-200 border-[3px] border-slate-900/75',
+                    'group relative rounded-[18px] flex flex-col gap-2 p-2 transition-all duration-200 border-[4px] border-slate-900/75',
                     isFailed
                       ? 'opacity-100 cursor-default bg-white/85'
                       : 'cursor-pointer bg-white/90 hover:bg-white/95',

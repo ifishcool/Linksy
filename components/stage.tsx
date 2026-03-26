@@ -20,6 +20,7 @@ import type { Action, DiscussionAction, SpeechAction } from '@/lib/types/action'
 import { ChatArea, type ChatAreaRef } from '@/components/chat/chat-area';
 import { agentsToParticipants, useAgentRegistry } from '@/lib/orchestration/registry/store';
 import type { AgentConfig } from '@/lib/orchestration/registry/types';
+import type { Participant } from '@/lib/types/roundtable';
 import {
   AlertDialog,
   AlertDialogContent,
@@ -113,11 +114,19 @@ export function Stage({
 
   // Selected agents from settings store (Zustand)
   const selectedAgentIds = useSettingsStore((s) => s.selectedAgentIds);
+  const agentsRecord = useAgentRegistry((s) => s.agents);
 
   // Generate participants from selected agents
   const participants = useMemo(
     () => agentsToParticipants(selectedAgentIds, t),
     [selectedAgentIds, t],
+  );
+  const studentParticipants = useMemo(
+    () =>
+      participants
+        .filter((p): p is Participant => p.role !== 'user')
+        .map((p) => ({ ...p, persona: agentsRecord[p.id]?.persona })),
+    [agentsRecord, participants],
   );
 
   const selectedAgents = useMemo(
@@ -831,11 +840,11 @@ export function Stage({
           }}
           suppressHydrationWarning
         >
-          <CanvasArea
-            currentScene={currentScene}
-            currentSceneIndex={currentSceneIndex}
-            scenesCount={totalScenesCount}
-            mode={mode}
+            <CanvasArea
+              currentScene={currentScene}
+              currentSceneIndex={currentSceneIndex}
+              scenesCount={totalScenesCount}
+              mode={mode}
             engineState={canvasEngineState}
             isLiveSession={
               chatIsStreaming || isTopicPending || engineMode === 'live' || !!chatSessionType
@@ -865,15 +874,16 @@ export function Stage({
             onCycleSpeed={handleCycleSpeed}
             hideToolbar={false}
             isPendingScene={isPendingScene}
-            isGenerationFailed={
-              isPendingScene && failedOutlines.some((f) => f.id === generatingOutlines[0]?.id)
-            }
-            onRetryGeneration={
-              onRetryOutline && generatingOutlines[0]
-                ? () => onRetryOutline(generatingOutlines[0].id)
-                : undefined
-            }
-          />
+              isGenerationFailed={
+                isPendingScene && failedOutlines.some((f) => f.id === generatingOutlines[0]?.id)
+              }
+              onRetryGeneration={
+                onRetryOutline && generatingOutlines[0]
+                  ? () => onRetryOutline(generatingOutlines[0].id)
+                  : undefined
+              }
+              studentParticipants={studentParticipants}
+            />
 
           {mode === 'playback' && speakerDisplay && (
             <div

@@ -8,8 +8,10 @@ import { SceneRenderer } from '@/components/stage/scene-renderer';
 import { SceneProvider } from '@/lib/contexts/scene-context';
 import { Whiteboard } from '@/components/whiteboard';
 import { CanvasToolbar } from '@/components/canvas/canvas-toolbar';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import type { CanvasToolbarProps } from '@/components/canvas/canvas-toolbar';
 import type { Scene, StageMode } from '@/lib/types/stage';
+import type { Participant } from '@/lib/types/roundtable';
 import { useI18n } from '@/lib/hooks/use-i18n';
 
 interface CanvasAreaProps extends CanvasToolbarProps {
@@ -19,6 +21,7 @@ interface CanvasAreaProps extends CanvasToolbarProps {
   readonly isPendingScene?: boolean;
   readonly isGenerationFailed?: boolean;
   readonly onRetryGeneration?: () => void;
+  readonly studentParticipants?: Array<Participant & { persona?: string }>;
 }
 
 export function CanvasArea({
@@ -54,6 +57,7 @@ export function CanvasArea({
   isPendingScene,
   isGenerationFailed,
   onRetryGeneration,
+  studentParticipants,
 }: CanvasAreaProps) {
   const { t } = useI18n();
   const showControls = mode === 'playback' && !whiteboardOpen;
@@ -96,9 +100,43 @@ export function CanvasArea({
           'flex-1 min-h-0 w-full relative overflow-hidden flex items-center justify-center p-[clamp(12px,3vw,40px)] pt-0 transition-colors duration-500',
         )}
       >
+        {studentParticipants && studentParticipants.length > 0 && (
+          <TooltipProvider delayDuration={120}>
+            <div className="absolute right-4 top-1/2 -translate-y-1/2 z-[120] flex flex-col items-center gap-3">
+              {studentParticipants.map((student) => (
+                <Tooltip key={student.id}>
+                  <TooltipTrigger asChild>
+                    <button
+                      type="button"
+                      className="w-12 h-12 rounded-full border-[4px] border-slate-900/85 bg-white shadow-[0_2px_0_rgba(15,23,42,0.18)] overflow-hidden flex items-center justify-center transition-transform hover:scale-[1.03] active:scale-[0.98]"
+                    >
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img
+                        src={student.avatar}
+                        alt={student.name}
+                        className="w-full h-full object-cover"
+                      />
+                    </button>
+                  </TooltipTrigger>
+                  <TooltipContent
+                    side="left"
+                    className="rounded-xl border-[3px] border-slate-900/80 bg-white px-3 py-2 text-xs text-slate-700 shadow-[0_6px_0_rgba(15,23,42,0.15)]"
+                  >
+                    <div className="font-black text-slate-800">{student.name}</div>
+                    {student.persona && (
+                      <div className="text-[11px] text-slate-600 mt-1 max-w-[220px] whitespace-normal break-words">
+                        性格：{student.persona}
+                      </div>
+                    )}
+                  </TooltipContent>
+                </Tooltip>
+              ))}
+            </div>
+          </TooltipProvider>
+        )}
         <div
           className={cn(
-            'aspect-[16/9] h-full max-h-full max-w-full bg-[#f8f8f8] rounded-[20px] overflow-hidden relative transition-all duration-700 border-[4px] border-slate-900/90',
+            'aspect-[16/9] h-full max-h-full max-w-full bg-[#f8f8f8] rounded-[20px] overflow-hidden relative transition-all duration-700 border-[5px] border-slate-900/90',
             showControls && !isLiveSession && currentScene?.type === 'slide' && 'cursor-pointer',
             currentScene?.type === 'interactive' ? 'bg-white' : 'bg-[#f8f8f8]',
           )}
