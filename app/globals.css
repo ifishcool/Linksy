@@ -235,3 +235,22 @@
     transform: translateX(100%);
   }
 }
+
+/* Home page scale for mobile landscape */
+.home-scale {
+  --home-design-width: 940;
+  --home-design-height: 620;
+  --home-scale: min(
+    1,
+    calc((100vw - 24px) / var(--home-design-width)),
+    calc((100dvh - 120px) / var(--home-design-height))
+  );
+  width: calc(var(--home-design-width) * 1px);
+  max-width: 100%;
+  transform: scale(var(--home-scale));
+  transform-origin: top center;
+}
+
+.home-scale-wrap {
+  overflow: visible;
+}

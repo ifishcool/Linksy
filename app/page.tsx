@@ -330,7 +330,7 @@ function HomePage() {
         }}
       />
 
-      <div className="relative min-h-[100dvh] w-full flex flex-col items-center justify-center p-4 md:p-8 lg:pl-[296px] lg:pr-6">
+      <div className="relative min-h-[100dvh] w-full flex flex-col items-center justify-center p-3 sm:p-4  pl-[200px] sm:pl-[220px] lg:pl-[296px] pr-3 sm:pr-6">
         {/* ═══ Top-right pill (unchanged) ═══ */}
         <div
           ref={toolbarRef}
@@ -416,116 +416,122 @@ function HomePage() {
           initial={{ opacity: 0, y: 8 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.25, ease: 'easeOut' }}
-          className="relative z-20 w-full max-w-[940px] flex flex-col items-center pt-2 md:pt-4"
+          className="relative z-20 w-full flex flex-col items-center pt-2 md:pt-4"
         >
-          {/* ── Logo ── */}
-          <motion.img
-            src={locale === 'zh-CN' ? '/logo_t.png' : '/logo_t_e.png'}
-            alt="Linksy"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1, scale: 1.8 }}
-            transition={{ delay: 0.05, duration: 0.1 }}
-            className="h-10 md:h-12 mb-5"
-          />
+          <div className="home-scale-wrap w-full flex justify-center">
+            <div className="home-scale flex flex-col items-center max-w-full">
+              {/* ── Logo ── */}
+              <motion.img
+                src={locale === 'zh-CN' ? '/logo_t.png' : '/logo_t_e.png'}
+                alt="Linksy"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1, scale: 1.8 }}
+                transition={{ delay: 0.05, duration: 0.1 }}
+                className="h-10 md:h-12 mb-5 mt-5"
+              />
 
-          {/* ── Slogan ── */}
-          <motion.p
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ delay: 0.12, duration: 0.2 }}
-            className="text-sm text-slate-500 mb-6"
-          >
-            {t('home.slogan')}
-          </motion.p>
+              {/* ── Slogan ── */}
+              <motion.p
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={{ delay: 0.12, duration: 0.2 }}
+                className="text-sm text-slate-500 mb-6"
+              >
+                {t('home.slogan')}
+              </motion.p>
 
-          {/* ── Unified input area ── */}
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ delay: 0.18, duration: 0.2 }}
-            className="w-full"
-          >
-            <div className="w-full rounded-[34px] border-[4px] border-slate-900/80 bg-gradient-to-b from-white/95 to-sky-50/90 shadow-[0_2px_0_rgba(15,23,42,0.2)] backdrop-blur-sm transition-colors">
-              {/* ── Greeting + Profile + Agents ── */}
-              <div className="relative z-20 flex items-start justify-between">
-                <GreetingBar />
-                <div className="pr-3 pt-3.5 shrink-0">
+              {/* ── Greeting + Agents (outside input) ── */}
+              <div className="w-full flex flex-row items-center gap-2.5 justify-start mb-2">
+                <div className="flex items-center justify-start shrink-0">
+                  <GreetingBar />
+                </div>
+                <div className="flex items-center justify-start w-auto">
                   <AgentBar />
                 </div>
               </div>
 
-              {/* Textarea */}
-              <textarea
-                ref={textareaRef}
-                placeholder={t('upload.requirementPlaceholder')}
-                className="w-full resize-none border-0 bg-transparent px-6 pt-4 pb-4 text-[16px] leading-relaxed text-slate-700 placeholder:text-slate-400 focus:outline-none min-h-[250px] max-h-[380px]"
-                value={form.requirement}
-                onChange={(e) => updateForm('requirement', e.target.value)}
-                onKeyDown={handleKeyDown}
-                rows={4}
-              />
-
-              {/* Toolbar row */}
-              <div className="px-5 pb-2 pt-2.5 flex items-center gap-2.5 border-t-[3px] border-slate-900/25 bg-sky-50/65 rounded-b-[30px]">
-                <div className="flex-1 min-w-0">
-                  <GenerationToolbar
-                    language={form.language}
-                    onLanguageChange={(lang) => updateForm('language', lang)}
-                    webSearch={form.webSearch}
-                    onWebSearchChange={(v) => updateForm('webSearch', v)}
-                    onSettingsOpen={(section) => {
-                      setSettingsSection(section);
-                      setSettingsOpen(true);
-                    }}
-                    pdfFile={form.pdfFile}
-                    onPdfFileChange={(f) => updateForm('pdfFile', f)}
-                    onPdfError={setError}
-                  />
-                </div>
-
-                {/* Voice input */}
-                <SpeechButton
-                  size="md"
-                  onTranscription={(text) => {
-                    setForm((prev) => {
-                      const next = prev.requirement + (prev.requirement ? ' ' : '') + text;
-                      updateRequirementCache(next);
-                      return { ...prev, requirement: next };
-                    });
-                  }}
-                />
-
-                {/* Send button */}
-                <button
-                  onClick={handleGenerate}
-                  disabled={!canGenerate}
-                  className={cn(
-                    'shrink-0 h-11 rounded-full flex items-center justify-center gap-1.5 transition-colors px-5 border-[3px] text-sm font-black',
-                    canGenerate
-                      ? 'bg-orange-400 border-slate-900/70 text-white hover:bg-orange-500 cursor-pointer'
-                      : 'bg-slate-200 border-slate-300 text-slate-500 cursor-not-allowed',
-                  )}
-                >
-                  <span>{t('toolbar.enterClassroom')}</span>
-                  <ArrowUp className="size-3.5" />
-                </button>
-              </div>
-            </div>
-          </motion.div>
-
-          {/* ── Error ── */}
-          <AnimatePresence>
-            {error && (
+              {/* ── Unified input area ── */}
               <motion.div
-                initial={{ opacity: 0, height: 0 }}
-                animate={{ opacity: 1, height: 'auto' }}
-                exit={{ opacity: 0, height: 0 }}
-                className="mt-3 w-full p-3 bg-destructive/10 border border-destructive/20 rounded-lg"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={{ delay: 0.18, duration: 0.2 }}
+                className="w-full"
               >
-                <p className="text-sm text-destructive">{error}</p>
+                <div className="w-full rounded-[34px] border-[4px] border-slate-900/80 bg-gradient-to-b from-white/95 to-sky-50/90 shadow-[0_2px_0_rgba(15,23,42,0.2)] backdrop-blur-sm transition-colors">
+                  {/* Textarea */}
+                  <textarea
+                    ref={textareaRef}
+                    placeholder={t('upload.requirementPlaceholder')}
+                    className="w-full resize-none border-0 bg-transparent px-6 pt-4 pb-4 text-[16px] leading-relaxed text-slate-700 placeholder:text-slate-400 focus:outline-none min-h-[200px] max-h-[380px]"
+                    value={form.requirement}
+                    onChange={(e) => updateForm('requirement', e.target.value)}
+                    onKeyDown={handleKeyDown}
+                    rows={4}
+                  />
+
+                  {/* Toolbar row */}
+                  <div className="px-5 pb-2 pt-2.5 flex items-center gap-2.5 border-t-[3px] border-slate-900/25 rounded-b-[30px]">
+                    <div className="flex-1 min-w-0">
+                      <GenerationToolbar
+                        language={form.language}
+                        onLanguageChange={(lang) => updateForm('language', lang)}
+                        webSearch={form.webSearch}
+                        onWebSearchChange={(v) => updateForm('webSearch', v)}
+                        onSettingsOpen={(section) => {
+                          setSettingsSection(section);
+                          setSettingsOpen(true);
+                        }}
+                        pdfFile={form.pdfFile}
+                        onPdfFileChange={(f) => updateForm('pdfFile', f)}
+                        onPdfError={setError}
+                      />
+                    </div>
+
+                    {/* Voice input */}
+                    <SpeechButton
+                      size="md"
+                      onTranscription={(text) => {
+                        setForm((prev) => {
+                          const next = prev.requirement + (prev.requirement ? ' ' : '') + text;
+                          updateRequirementCache(next);
+                          return { ...prev, requirement: next };
+                        });
+                      }}
+                    />
+
+                    {/* Send button */}
+                    <button
+                      onClick={handleGenerate}
+                      disabled={!canGenerate}
+                      className={cn(
+                        'shrink-0 h-11 rounded-full flex items-center justify-center gap-1.5 transition-colors px-5 border-[3px] text-sm font-black',
+                        canGenerate
+                          ? 'bg-orange-400 border-slate-900/70 text-white hover:bg-orange-500 cursor-pointer'
+                          : 'bg-slate-200 border-slate-300 text-slate-500 cursor-not-allowed',
+                      )}
+                    >
+                      <span>{t('toolbar.enterClassroom')}</span>
+                      <ArrowUp className="size-3.5" />
+                    </button>
+                  </div>
+                </div>
               </motion.div>
-            )}
-          </AnimatePresence>
+
+              {/* ── Error ── */}
+              <AnimatePresence>
+                {error && (
+                  <motion.div
+                    initial={{ opacity: 0, height: 0 }}
+                    animate={{ opacity: 1, height: 'auto' }}
+                    exit={{ opacity: 0, height: 0 }}
+                    className="mt-3 w-full p-3 bg-destructive/10 border border-destructive/20 rounded-lg"
+                  >
+                    <p className="text-sm text-destructive">{error}</p>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </div>
+          </div>
         </motion.div>
 
         {/* Footer — flows with content, at the very end */}
@@ -550,13 +556,13 @@ function HomeSidebar({
 }) {
   const { t } = useI18n();
   return (
-    <aside className="hidden lg:flex fixed left-0 top-0 bottom-0 z-30 w-[272px] rounded-none bg-sky-200/75 border-r-[4px] border-r-slate-900/90 backdrop-blur-sm shadow-[0_2px_0_rgba(15,23,42,0.2)] flex-col overflow-hidden">
+    <aside className="fixed left-0 top-0 bottom-0 z-30 w-[180px] sm:w-[200px] lg:w-[272px] rounded-none bg-sky-200/75 border-r-[4px] border-r-slate-900/90 backdrop-blur-sm shadow-[0_2px_0_rgba(15,23,42,0.2)] flex-col overflow-hidden">
       <div className="px-4 pt-4 pb-3 border-b-[3px] border-slate-900/70 bg-sky-100/35">
         <div className="flex items-center gap-2">
           <img
             src={locale === 'zh-CN' ? '/logo.png' : '/logo_e.png'}
             alt="Linksy"
-            className="h-15 w-auto"
+            className="h-10 sm:h-12 w-auto"
           />
         </div>
         {/* <p className="mt-1 text-[11px] text-slate-700/85">
@@ -725,7 +731,7 @@ function GreetingBar() {
   };
 
   return (
-    <div ref={containerRef} className="relative pl-4 pr-2 pt-3.5 pb-1 w-auto">
+    <div ref={containerRef} className="relative  w-auto">
       <input
         ref={avatarInputRef}
         type="file"
@@ -734,42 +740,40 @@ function GreetingBar() {
         onChange={handleAvatarUpload}
       />
 
-      {/* ── Collapsed pill (always in flow) ── */}
-      {!open && (
-        <div
-          className="flex items-center gap-2.5 cursor-pointer transition-colors group rounded-full px-2.5 py-1.5 border-[3px] border-slate-900/70 bg-white/90 text-slate-700 hover:border-slate-900/85 hover:bg-sky-50"
-          onClick={() => setOpen(true)}
-        >
-          <div className="shrink-0 relative">
-            <div className="size-8 rounded-full overflow-hidden ring-2 ring-slate-900/25 group-hover:ring-slate-900/40 transition-colors">
-              <img src={avatar} alt="" className="size-full object-cover" />
-            </div>
-            <div className="absolute -bottom-0.5 -right-0.5 size-3.5 rounded-full bg-orange-100 border border-orange-200 flex items-center justify-center opacity-80 group-hover:opacity-100 transition-opacity">
-              <Pencil className="size-[7px] text-orange-600" />
-            </div>
+      {/* ── Collapsed pill (always visible) ── */}
+      <div
+        className="flex items-center h-12 gap-2.5 cursor-pointer transition-colors group rounded-full px-2.5 py-1.5 border-[3px] border-slate-900/70 bg-white/90 text-slate-700 hover:border-slate-900/85 hover:bg-sky-50"
+        onClick={() => setOpen(true)}
+      >
+        <div className="shrink-0 relative">
+          <div className="size-8 rounded-full overflow-hidden ring-2 ring-slate-900/25 group-hover:ring-slate-900/40 transition-colors">
+            <img src={avatar} alt="" className="size-full object-cover" />
           </div>
-          <div className="flex-1 min-w-0">
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <span className="leading-none select-none flex items-center gap-1">
-                  <span>
-                    <span className="text-xs text-slate-500 group-hover:text-slate-700 transition-colors">
-                      {t('home.greeting')}
-                    </span>
-                    <span className="text-[13px] font-semibold text-slate-800 group-hover:text-slate-900 transition-colors">
-                      {displayName}
-                    </span>
-                  </span>
-                  <ChevronDown className="size-3 text-slate-400 group-hover:text-slate-600 transition-colors shrink-0" />
-                </span>
-              </TooltipTrigger>
-              <TooltipContent side="bottom" sideOffset={4}>
-                {t('profile.editTooltip')}
-              </TooltipContent>
-            </Tooltip>
+          <div className="absolute -bottom-0.5 -right-0.5 size-3.5 rounded-full bg-orange-100 border border-orange-200 flex items-center justify-center opacity-80 group-hover:opacity-100 transition-opacity">
+            <Pencil className="size-[7px] text-orange-600" />
           </div>
         </div>
-      )}
+        <div className="flex-1 min-w-0">
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <span className="leading-none select-none flex items-center gap-1">
+                <span>
+                  <span className="text-xs text-slate-500 group-hover:text-slate-700 transition-colors">
+                    {t('home.greeting')}
+                  </span>
+                  <span className="text-[13px] font-semibold text-slate-800 group-hover:text-slate-900 transition-colors">
+                    {displayName}
+                  </span>
+                </span>
+                <ChevronDown className="size-3 text-slate-400 group-hover:text-slate-600 transition-colors shrink-0" />
+              </span>
+            </TooltipTrigger>
+            <TooltipContent side="bottom" sideOffset={4}>
+              {t('profile.editTooltip')}
+            </TooltipContent>
+          </Tooltip>
+        </div>
+      </div>
 
       {/* ── Expanded panel (absolute, floating) ── */}
       <AnimatePresence>
@@ -779,7 +783,7 @@ function GreetingBar() {
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: -4, scale: 0.97 }}
             transition={{ duration: 0.2, ease: [0.25, 0.1, 0.25, 1] }}
-            className="absolute left-4 top-3.5 z-50 w-72"
+            className="absolute left-0 top-full mt-2 z-50 w-72"
           >
             <div className="rounded-2xl bg-white/96 backdrop-blur-sm border-[3px] border-slate-900/70 px-3 py-2.5 shadow-[0_2px_0_rgba(15,23,42,0.15)]">
               {/* ── Row: avatar + name ── */}

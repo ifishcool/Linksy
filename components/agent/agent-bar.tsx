@@ -148,19 +148,19 @@ export function AgentBar() {
   );
 
   return (
-    <div ref={containerRef} className="relative w-80">
+    <div ref={containerRef} className="relative w-auto max-w-full sm:w-80">
       {/* ── Header row — always in document flow ── */}
       <Tooltip>
         <TooltipTrigger asChild>
           <button
             className={cn(
-              'group flex items-center gap-2 cursor-pointer rounded-full px-2.5 py-2 transition-colors w-full',
+              'group inline-flex items-center h-12 gap-2 cursor-pointer rounded-full px-2.5 py-2 transition-colors w-auto',
               'border-[3px] border-slate-900/70 bg-white/90 text-slate-700 hover:border-slate-900/85 hover:bg-sky-50',
             )}
             onClick={() => setOpen(!open)}
           >
             {/* Left side — text changes based on open/close */}
-            <span className="text-xs text-slate-600 group-hover:text-slate-800 transition-colors hidden sm:block font-medium flex-1 text-left">
+            <span className="text-xs text-slate-600 group-hover:text-slate-800 transition-colors hidden md:block font-medium flex-1 text-left">
               {open ? t('agentBar.expandedTitle') : t('agentBar.readyToLearn')}
             </span>
 
@@ -190,7 +190,7 @@ export function AgentBar() {
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: -4, scale: 0.97 }}
             transition={{ duration: 0.2, ease: [0.25, 0.1, 0.25, 1] }}
-            className="absolute right-0 top-full mt-1 z-50 w-80"
+            className="absolute left-0 top-full mt-2 z-50 w-80"
           >
             <div className="rounded-2xl bg-white/96 backdrop-blur-sm border-[3px] border-slate-900/70 shadow-[0_2px_0_rgba(15,23,42,0.15)] px-2.5 py-2">
               {/* Mode tabs — full width, 50/50 */}
