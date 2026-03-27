@@ -114,7 +114,7 @@ export function GenerationToolbar({
   const pillActive = `${pillCls} border-sky-200 bg-sky-100 text-sky-700`;
   const pillLanguage = `${pillCls} border-sky-400 bg-sky-500 text-white hover:bg-sky-600`;
   const showModelControl = false;
-  const showMediaControl = false;
+  const showMediaControl = true;
 
   return (
     <div className="flex items-center gap-1.5 flex-nowrap overflow-x-auto scrollbar-hide pr-1">

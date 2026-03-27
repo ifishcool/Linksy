@@ -125,7 +125,7 @@ export function CanvasArea({
                     <div className="font-black text-slate-800">{student.name}</div>
                     {student.persona && (
                       <div className="text-[11px] text-slate-600 mt-1 max-w-[220px] whitespace-normal break-words">
-                        性格：{student.persona}
+                        {student.persona}
                       </div>
                     )}
                   </TooltipContent>
