@@ -195,6 +195,49 @@ function HomePage() {
     );
   };
 
+  const handleGenerateComic = async () => {
+    if (!currentModelId) {
+      showSetupToast(
+        <BotOff className="size-4.5 text-amber-600" />,
+        t('settings.modelNotConfigured'),
+        t('settings.setupNeeded'),
+      );
+      setSettingsOpen(true);
+      return;
+    }
+
+    if (!form.requirement.trim()) {
+      setError(t('upload.requirementRequired'));
+      return;
+    }
+
+    setError(null);
+
+    try {
+      const userProfile = useUserProfileStore.getState();
+      const requirements: UserRequirements = {
+        requirement: form.requirement,
+        language: form.language,
+        userNickname: userProfile.nickname || undefined,
+        userBio: userProfile.bio || undefined,
+        webSearch: form.webSearch || undefined,
+      };
+
+      const comicSession = {
+        sessionId: nanoid(),
+        requirements,
+        pages: null,
+        currentStep: 'generating' as const,
+      };
+
+      sessionStorage.setItem('comicSession', JSON.stringify(comicSession));
+      router.push('/comic-preview');
+    } catch (err) {
+      log.error('Error preparing comic generation:', err);
+      setError(err instanceof Error ? err.message : t('upload.generateFailed'));
+    }
+  };
+
   const handleGenerate = async () => {
     // Validate setup before proceeding
     if (!currentModelId) {
@@ -512,6 +555,20 @@ function HomePage() {
                     >
                       <span>{t('toolbar.enterClassroom')}</span>
                       <ArrowUp className="size-3.5" />
+                    </button>
+
+                    <button
+                      onClick={handleGenerateComic}
+                      disabled={!canGenerate}
+                      className={cn(
+                        'shrink-0 h-11 rounded-full flex items-center justify-center gap-1.5 transition-colors px-5 border-[3px] text-sm font-black',
+                        canGenerate
+                          ? 'bg-white border-slate-900/70 text-slate-700 hover:bg-sky-50 cursor-pointer'
+                          : 'bg-slate-200 border-slate-300 text-slate-500 cursor-not-allowed',
+                      )}
+                    >
+                      <span>{t('toolbar.generateComic')}</span>
+                      <ImagePlus className="size-3.5" />
                     </button>
                   </div>
                 </div>
