@@ -161,6 +161,13 @@ function HomePage() {
     toast.success(locale === 'zh-CN' ? '已退出登录' : 'Signed out');
   };
 
+  const ensureAuthenticated = () => {
+    if (authEmail) return true;
+    toast.error(locale === 'zh-CN' ? '请先登录后继续' : 'Please sign in first');
+    router.push('/auth');
+    return false;
+  };
+
   // Close dropdowns when clicking outside
   useEffect(() => {
     if (!languageOpen) return;
@@ -242,6 +249,8 @@ function HomePage() {
   };
 
   const handleGenerateComic = async () => {
+    if (!ensureAuthenticated()) return;
+
     if (!currentModelId) {
       showSetupToast(
         <BotOff className="size-4.5 text-amber-600" />,
@@ -285,6 +294,8 @@ function HomePage() {
   };
 
   const handleGenerate = async () => {
+    if (!ensureAuthenticated()) return;
+
     // Validate setup before proceeding
     if (!currentModelId) {
       showSetupToast(
@@ -412,6 +423,7 @@ function HomePage() {
         sections={sidebarSections}
         locale={locale}
         onOpenClassroom={(id) => {
+          if (!ensureAuthenticated()) return;
           if (id.startsWith('comic_')) {
             router.push(`/comic-preview?historyId=${encodeURIComponent(id)}`);
             return;
