@@ -380,7 +380,7 @@ export async function saveGeneratedAgents(
     avatar: string;
     color: string;
     priority: number;
-    voiceConfig?: { providerId: string; voiceId: string };
+    voiceConfig?: { providerId: string; modelId?: string; voiceId: string };
   }>,
 ): Promise<string[]> {
   const { db } = await import('@/lib/utils/database');
@@ -413,6 +413,7 @@ export async function saveGeneratedAgents(
         ? {
             voiceConfig: {
               providerId: voiceConfig.providerId as TTSProviderId,
+              modelId: voiceConfig.modelId,
               voiceId: voiceConfig.voiceId,
             },
           }

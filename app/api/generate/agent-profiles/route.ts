@@ -196,12 +196,22 @@ Return a JSON object with this exact structure:
 
     // ── Build output with IDs ──
     const agents = parsed.agents.map((agent, index) => {
-      // Parse voice "providerId::voiceId" format
-      let voiceConfig: { providerId: string; voiceId: string } | undefined;
+      // Parse voice config:
+      // - legacy: "providerId::voiceId"
+      // - model-aware: "providerId::modelId::voiceId"
+      let voiceConfig: { providerId: string; modelId?: string; voiceId: string } | undefined;
       if (agent.voice && agent.voice.includes('::')) {
-        const [providerId, voiceId] = agent.voice.split('::');
-        if (providerId && voiceId) {
-          voiceConfig = { providerId, voiceId };
+        const parts = agent.voice.split('::');
+        if (parts.length >= 3) {
+          const [providerId, modelId, voiceId] = parts;
+          if (providerId && voiceId) {
+            voiceConfig = { providerId, modelId: modelId || undefined, voiceId };
+          }
+        } else {
+          const [providerId, voiceId] = parts;
+          if (providerId && voiceId) {
+            voiceConfig = { providerId, voiceId };
+          }
         }
       }
 

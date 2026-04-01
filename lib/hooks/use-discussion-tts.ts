@@ -20,6 +20,7 @@ interface QueueItem {
   text: string;
   agentId: string | null;
   providerId: TTSProviderId;
+  modelId?: string;
   voiceId: string;
 }
 
@@ -31,6 +32,7 @@ export function useDiscussionTTS({ enabled, agents, onAudioStateChange }: Discus
   const playbackSpeed = useSettingsStore((s) => s.playbackSpeed);
   // Global lecture voice — used as fallback for teacher agent
   const globalTtsProviderId = useSettingsStore((s) => s.ttsProviderId);
+  const globalTtsModelId = useSettingsStore((s) => s.ttsModelId);
   const globalTtsVoice = useSettingsStore((s) => s.ttsVoice);
 
   const queueRef = useRef<QueueItem[]>([]);
@@ -77,13 +79,15 @@ export function useDiscussionTTS({ enabled, agents, onAudioStateChange }: Discus
   }, [agents]);
 
   const resolveVoiceForAgent = useCallback(
-    (agentId: string | null): { providerId: TTSProviderId; voiceId: string } => {
+    (agentId: string | null): { providerId: TTSProviderId; modelId?: string; voiceId: string } => {
       const providers = getAvailableProvidersWithVoices(ttsProvidersConfig);
       if (!agentId) {
         if (providers.length > 0) {
+          const group = providers[0].modelGroups[0];
           return {
             providerId: providers[0].providerId,
-            voiceId: providers[0].voices[0]?.id ?? 'default',
+            modelId: group?.modelId || undefined,
+            voiceId: group?.voices[0]?.id || providers[0].voices[0]?.id || 'default',
           };
         }
         return { providerId: 'browser-native-tts', voiceId: 'default' };
@@ -91,21 +95,27 @@ export function useDiscussionTTS({ enabled, agents, onAudioStateChange }: Discus
       const agent = agents.find((a) => a.id === agentId);
       if (!agent) {
         if (providers.length > 0) {
+          const group = providers[0].modelGroups[0];
           return {
             providerId: providers[0].providerId,
-            voiceId: providers[0].voices[0]?.id ?? 'default',
+            modelId: group?.modelId || undefined,
+            voiceId: group?.voices[0]?.id || providers[0].voices[0]?.id || 'default',
           };
         }
         return { providerId: 'browser-native-tts', voiceId: 'default' };
       }
       // Teacher: always use global lecture voice (single source of truth with settings)
       if (agent.role === 'teacher') {
-        return { providerId: globalTtsProviderId, voiceId: globalTtsVoice };
+        return {
+          providerId: globalTtsProviderId,
+          modelId: globalTtsModelId,
+          voiceId: globalTtsVoice,
+        };
       }
       const index = agentIndexMap.current.get(agentId) ?? 0;
       return resolveAgentVoice(agent, index, providers);
     },
-    [agents, ttsProvidersConfig, globalTtsProviderId, globalTtsVoice],
+    [agents, ttsProvidersConfig, globalTtsProviderId, globalTtsModelId, globalTtsVoice],
   );
 
   const processQueue = useCallback(async () => {
@@ -146,6 +156,8 @@ export function useDiscussionTTS({ enabled, agents, onAudioStateChange }: Discus
           text: item.text,
           audioId: item.partId,
           ttsProviderId: item.providerId,
+          ttsModelId: item.modelId,
+          ttsModel: providerConfig?.model,
           ttsVoice: item.voiceId,
           ttsSpeed: ttsSpeed,
           ttsApiKey: providerConfig?.apiKey,
@@ -201,8 +213,16 @@ export function useDiscussionTTS({ enabled, agents, onAudioStateChange }: Discus
     (messageId: string, partId: string, fullText: string, agentId: string | null) => {
       if (!enabled || ttsMuted || !fullText.trim()) return;
 
-      const { providerId, voiceId } = resolveVoiceForAgent(agentId);
-      queueRef.current.push({ messageId, partId, text: fullText, agentId, providerId, voiceId });
+      const { providerId, modelId, voiceId } = resolveVoiceForAgent(agentId);
+      queueRef.current.push({
+        messageId,
+        partId,
+        text: fullText,
+        agentId,
+        providerId,
+        modelId,
+        voiceId,
+      });
 
       if (!isPlayingRef.current) {
         processQueueRef.current();

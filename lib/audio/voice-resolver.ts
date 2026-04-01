@@ -4,6 +4,7 @@ import { TTS_PROVIDERS } from '@/lib/audio/constants';
 
 export interface ResolvedVoice {
   providerId: TTSProviderId;
+  modelId?: string;
   voiceId: string;
 }
 
@@ -18,23 +19,40 @@ export function resolveAgentVoice(
   availableProviders: ProviderWithVoices[],
 ): ResolvedVoice {
   // Agent-specific config
-  if (agent.voiceConfig) {
+  const voiceConfig = agent.voiceConfig;
+  if (voiceConfig) {
     // Browser-native voices are dynamic (not in static registry), so skip validation
-    if (agent.voiceConfig.providerId === 'browser-native-tts') {
-      return agent.voiceConfig;
+    if (voiceConfig.providerId === 'browser-native-tts') {
+      return voiceConfig;
     }
-    const list = getServerVoiceList(agent.voiceConfig.providerId);
-    if (list.includes(agent.voiceConfig.voiceId)) {
-      return agent.voiceConfig;
+    const provider = availableProviders.find((p) => p.providerId === voiceConfig.providerId);
+    if (provider) {
+      if (voiceConfig.modelId) {
+        const group = provider.modelGroups.find((g) => g.modelId === voiceConfig.modelId);
+        if (group?.voices.some((v) => v.id === voiceConfig.voiceId)) {
+          return voiceConfig;
+        }
+      }
+      if (provider.voices.some((v) => v.id === voiceConfig.voiceId)) {
+        return voiceConfig;
+      }
+    }
+
+    const list = getServerVoiceList(voiceConfig.providerId);
+    if (list.includes(voiceConfig.voiceId)) {
+      return voiceConfig;
     }
   }
 
   // Fallback: first available provider, deterministic voice
   if (availableProviders.length > 0) {
     const first = availableProviders[0];
+    const firstGroup = first.modelGroups[0];
+    const fallbackVoices = firstGroup?.voices?.length ? firstGroup.voices : first.voices;
     return {
       providerId: first.providerId,
-      voiceId: first.voices[agentIndex % first.voices.length].id,
+      modelId: firstGroup?.modelId || undefined,
+      voiceId: fallbackVoices[agentIndex % fallbackVoices.length].id,
     };
   }
 
@@ -56,6 +74,11 @@ export interface ProviderWithVoices {
   providerId: TTSProviderId;
   providerName: string;
   voices: Array<{ id: string; name: string }>;
+  modelGroups: Array<{
+    modelId: string;
+    modelName: string;
+    voices: Array<{ id: string; name: string }>;
+  }>;
 }
 
 /**
@@ -66,7 +89,12 @@ export interface ProviderWithVoices {
 export function getAvailableProvidersWithVoices(
   ttsProvidersConfig: Record<
     string,
-    { apiKey?: string; enabled?: boolean; isServerConfigured?: boolean }
+    {
+      apiKey?: string;
+      enabled?: boolean;
+      isServerConfigured?: boolean;
+      customModels?: Array<{ id: string; name: string }>;
+    }
   >,
 ): ProviderWithVoices[] {
   const result: ProviderWithVoices[] = [];
@@ -81,10 +109,36 @@ export function getAvailableProvidersWithVoices(
     const isServerConfigured = providerConfig?.isServerConfigured === true;
 
     if (hasApiKey || isServerConfigured) {
+      const customModels = providerConfig?.customModels || [];
+      const builtInModels = config.supportsModelSelection
+        ? config.models.map((m) => ({ id: m.id, name: m.name }))
+        : [];
+
+      const modelGroups = [
+        ...builtInModels,
+        ...customModels.filter((m) => !builtInModels.some((b) => b.id === m.id)),
+      ];
+
+      const normalizedModelGroups =
+        modelGroups.length > 0
+          ? modelGroups.map((m) => ({
+              modelId: m.id,
+              modelName: m.name,
+              voices: config.voices.map((v) => ({ id: v.id, name: v.name })),
+            }))
+          : [
+              {
+                modelId: '',
+                modelName: config.name,
+                voices: config.voices.map((v) => ({ id: v.id, name: v.name })),
+              },
+            ];
+
       result.push({
         providerId,
         providerName: config.name,
         voices: config.voices.map((v) => ({ id: v.id, name: v.name })),
+        modelGroups: normalizedModelGroups,
       });
     }
   }
