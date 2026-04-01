@@ -38,9 +38,11 @@ export interface SettingsState {
 
   // Audio settings (new unified audio configuration)
   ttsProviderId: TTSProviderId;
+  ttsModelId: string;
   ttsVoice: string;
   ttsSpeed: number;
   asrProviderId: ASRProviderId;
+  asrModelId: string;
   asrLanguage: string;
 
   // Audio provider configurations
@@ -49,7 +51,9 @@ export interface SettingsState {
     {
       apiKey: string;
       baseUrl: string;
+      model?: string;
       enabled: boolean;
+      customModels?: Array<{ id: string; name: string }>;
       isServerConfigured?: boolean;
       serverBaseUrl?: string;
     }
@@ -61,6 +65,7 @@ export interface SettingsState {
       apiKey: string;
       baseUrl: string;
       enabled: boolean;
+      customModels?: Array<{ id: string; name: string }>;
       isServerConfigured?: boolean;
       serverBaseUrl?: string;
     }
@@ -171,17 +176,30 @@ export interface SettingsState {
 
   // Audio actions
   setTTSProvider: (providerId: TTSProviderId) => void;
+  setTTSModelId: (modelId: string) => void;
   setTTSVoice: (voice: string) => void;
   setTTSSpeed: (speed: number) => void;
   setASRProvider: (providerId: ASRProviderId) => void;
+  setASRModelId: (modelId: string) => void;
   setASRLanguage: (language: string) => void;
   setTTSProviderConfig: (
     providerId: TTSProviderId,
-    config: Partial<{ apiKey: string; baseUrl: string; enabled: boolean }>,
+    config: Partial<{
+      apiKey: string;
+      baseUrl: string;
+      enabled: boolean;
+      model?: string;
+      customModels: Array<{ id: string; name: string }>;
+    }>,
   ) => void;
   setASRProviderConfig: (
     providerId: ASRProviderId,
-    config: Partial<{ apiKey: string; baseUrl: string; enabled: boolean }>,
+    config: Partial<{
+      apiKey: string;
+      baseUrl: string;
+      enabled: boolean;
+      customModels: Array<{ id: string; name: string }>;
+    }>,
   ) => void;
   setTTSEnabled: (enabled: boolean) => void;
   setASREnabled: (enabled: boolean) => void;
@@ -254,12 +272,26 @@ const getDefaultProvidersConfig = (): ProvidersConfig => {
   return config;
 };
 
+const getDefaultTTSModelId = (providerId: TTSProviderId): string => {
+  const provider = TTS_PROVIDERS[providerId];
+  if (!provider?.supportsModelSelection) return '';
+  return provider.models[0]?.id || '';
+};
+
+const getDefaultASRModelId = (providerId: ASRProviderId): string => {
+  const provider = ASR_PROVIDERS[providerId];
+  if (!provider?.supportsModelSelection) return '';
+  return provider.models[0]?.id || '';
+};
+
 // Initialize default audio config
 const getDefaultAudioConfig = () => ({
   ttsProviderId: 'browser-native-tts' as TTSProviderId,
+  ttsModelId: getDefaultTTSModelId('browser-native-tts'),
   ttsVoice: 'default',
   ttsSpeed: 1.0,
   asrProviderId: 'browser-native' as ASRProviderId,
+  asrModelId: getDefaultASRModelId('browser-native'),
   asrLanguage: 'zh',
   ttsProvidersConfig: {
     'openai-tts': { apiKey: '', baseUrl: '', enabled: true },
@@ -268,8 +300,9 @@ const getDefaultAudioConfig = () => ({
     'qwen-tts': { apiKey: '', baseUrl: '', enabled: false },
     'doubao-tts': { apiKey: '', baseUrl: '', enabled: false },
     'elevenlabs-tts': { apiKey: '', baseUrl: '', enabled: false },
+    'minimax-tts': { apiKey: '', baseUrl: '', model: 'speech-2.8-turbo', enabled: false },
     'browser-native-tts': { apiKey: '', baseUrl: '', enabled: true },
-  } as Record<TTSProviderId, { apiKey: string; baseUrl: string; enabled: boolean }>,
+  } as Record<TTSProviderId, { apiKey: string; baseUrl: string; model?: string; enabled: boolean }>,
   asrProvidersConfig: {
     'openai-whisper': { apiKey: '', baseUrl: '', enabled: true },
     'browser-native': { apiKey: '', baseUrl: '', enabled: true },
@@ -294,6 +327,7 @@ const getDefaultImageConfig = () => ({
     seedream: { apiKey: '', baseUrl: '', enabled: false },
     'qwen-image': { apiKey: '', baseUrl: '', enabled: false },
     'nano-banana': { apiKey: '', baseUrl: '', enabled: false },
+    'minimax-image': { apiKey: '', baseUrl: '', enabled: false },
     'grok-image': { apiKey: '', baseUrl: '', enabled: false },
   } as Record<ImageProviderId, { apiKey: string; baseUrl: string; enabled: boolean }>,
 });
@@ -307,6 +341,7 @@ const getDefaultVideoConfig = () => ({
     kling: { apiKey: '', baseUrl: '', enabled: false },
     veo: { apiKey: '', baseUrl: '', enabled: false },
     sora: { apiKey: '', baseUrl: '', enabled: false },
+    'minimax-video': { apiKey: '', baseUrl: '', enabled: false },
     'grok-video': { apiKey: '', baseUrl: '', enabled: false },
   } as Record<VideoProviderId, { apiKey: string; baseUrl: string; enabled: boolean }>,
 });
@@ -600,9 +635,12 @@ export const useSettingsStore = create<SettingsState>()(
             const shouldUpdateVoice = state.ttsProviderId !== providerId;
             return {
               ttsProviderId: providerId,
+              ttsModelId: getDefaultTTSModelId(providerId),
               ...(shouldUpdateVoice && { ttsVoice: DEFAULT_TTS_VOICES[providerId] }),
             };
           }),
+
+        setTTSModelId: (modelId) => set({ ttsModelId: modelId }),
 
         setTTSVoice: (voice) => set({ ttsVoice: voice }),
 
@@ -616,9 +654,12 @@ export const useSettingsStore = create<SettingsState>()(
             const isLanguageValid = supportedLanguages.includes(state.asrLanguage);
             return {
               asrProviderId: providerId,
+              asrModelId: getDefaultASRModelId(providerId),
               ...(isLanguageValid ? {} : { asrLanguage: supportedLanguages[0] || 'auto' }),
             };
           }),
+
+        setASRModelId: (modelId) => set({ asrModelId: modelId }),
 
         setASRLanguage: (language) => set({ asrLanguage: language }),
 
@@ -1092,6 +1133,16 @@ export const useSettingsStore = create<SettingsState>()(
         if (!state.ttsProvidersConfig || !state.asrProvidersConfig) {
           const defaultAudioConfig = getDefaultAudioConfig();
           Object.assign(state, defaultAudioConfig);
+        }
+
+        if (!state.ttsModelId) {
+          const providerId = state.ttsProviderId || ('browser-native-tts' as TTSProviderId);
+          state.ttsModelId = getDefaultTTSModelId(providerId);
+        }
+
+        if (!state.asrModelId) {
+          const providerId = state.asrProviderId || ('browser-native' as ASRProviderId);
+          state.asrModelId = getDefaultASRModelId(providerId);
         }
 
         // Add default PDF config if missing
