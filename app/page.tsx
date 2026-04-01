@@ -39,6 +39,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
+import { getSupabaseClient } from '@/lib/supabase/client';
 const now = Date.now();
 const log = createLogger('Home');
 
@@ -113,8 +114,52 @@ function HomePage() {
   const [languageOpen, setLanguageOpen] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [classrooms, setClassrooms] = useState<StageListItem[]>([]);
+  const supabaseClient = useMemo(() => getSupabaseClient(), []);
+  const [authEmail, setAuthEmail] = useState<string | null>(null);
+  const [authLoading, setAuthLoading] = useState(() => !!supabaseClient);
   const toolbarRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+
+  useEffect(() => {
+    if (!supabaseClient) return;
+
+    let active = true;
+    supabaseClient.auth.getUser().then(({ data }) => {
+      if (!active) return;
+      setAuthEmail(data.user?.email ?? null);
+      setAuthLoading(false);
+    });
+
+    const {
+      data: { subscription },
+    } = supabaseClient.auth.onAuthStateChange((_event, session) => {
+      if (!active) return;
+      setAuthEmail(session?.user?.email ?? null);
+      setAuthLoading(false);
+    });
+
+    return () => {
+      active = false;
+      subscription.unsubscribe();
+    };
+  }, [supabaseClient]);
+
+  const handleAuthAction = async () => {
+    if (!supabaseClient) {
+      router.push('/auth');
+      return;
+    }
+    if (!authEmail) {
+      router.push('/auth');
+      return;
+    }
+    const { error: signOutError } = await supabaseClient.auth.signOut();
+    if (signOutError) {
+      toast.error(signOutError.message);
+      return;
+    }
+    toast.success(locale === 'zh-CN' ? '已退出登录' : 'Signed out');
+  };
 
   // Close dropdowns when clicking outside
   useEffect(() => {
@@ -124,6 +169,7 @@ function HomePage() {
         setLanguageOpen(false);
       }
     };
+
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, [languageOpen]);
@@ -426,6 +472,29 @@ function HomePage() {
           </div>
 
           <div className="w-[1px] h-4 bg-black" />
+
+          <button
+            onClick={() => void handleAuthAction()}
+            className="px-3 py-1.5 rounded-full text-xs font-bold text-slate-600 hover:bg-sky-50 hover:text-sky-700 hover:shadow-sm transition-all"
+          >
+            {authLoading
+              ? locale === 'zh-CN'
+                ? '加载中...'
+                : 'Loading...'
+              : authEmail
+                ? locale === 'zh-CN'
+                  ? '退出登录'
+                  : 'Logout'
+                : locale === 'zh-CN'
+                  ? '登录'
+                  : 'Login'}
+          </button>
+
+          {authEmail ? (
+            <span className="hidden md:inline text-[11px] text-slate-500 max-w-[140px] truncate">
+              {authEmail}
+            </span>
+          ) : null}
 
           {/* Settings Button */}
           <div className="relative">
