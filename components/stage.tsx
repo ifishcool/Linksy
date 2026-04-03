@@ -104,6 +104,7 @@ export function Stage({
 
   // Active bubble ID for playback highlight in chat area (Issue 8)
   const [activeBubbleId, setActiveBubbleId] = useState<string | null>(null);
+  const [isTeacherDialogCollapsed, setIsTeacherDialogCollapsed] = useState(false);
 
   // Scene switch confirmation dialog state
   const [pendingSceneId, setPendingSceneId] = useState<string | null>(null);
@@ -173,6 +174,29 @@ export function Stage({
   const autoStartRef = useRef(false);
   // Discussion buffer-level pause state (distinct from soft-pause which aborts SSE)
   const [isDiscussionPaused, setIsDiscussionPaused] = useState(false);
+  const [isPresenting, setIsPresenting] = useState(false);
+  const stageContainerRef = useRef<HTMLDivElement>(null);
+
+  const handleTogglePresentation = useCallback(async () => {
+    try {
+      if (document.fullscreenElement) {
+        await document.exitFullscreen();
+      } else {
+        await stageContainerRef.current?.requestFullscreen();
+      }
+    } catch {
+      // Ignore browser fullscreen failures.
+    }
+  }, []);
+
+  useEffect(() => {
+    const handleFullscreenChange = () => {
+      setIsPresenting(document.fullscreenElement === stageContainerRef.current);
+    };
+    document.addEventListener('fullscreenchange', handleFullscreenChange);
+    handleFullscreenChange();
+    return () => document.removeEventListener('fullscreenchange', handleFullscreenChange);
+  }, []);
 
   /**
    * Soft-pause: interrupt current agent stream but keep the session active.
@@ -735,7 +759,7 @@ export function Stage({
   // Calculate scene viewer height (subtract Header's 80px height)
   const sceneViewerHeight = (() => {
     const headerHeight = 80; // Header h-20 = 80px
-    const inputBarHeight = 80;
+    const inputBarHeight = 0;
     if (mode === 'playback') {
       return `calc(100% - ${headerHeight + inputBarHeight}px)`;
     }
@@ -751,6 +775,7 @@ export function Stage({
 
     if (isCueUser) {
       return {
+        role: 'user' as const,
         name: t('roundtable.you'),
         text: t('roundtable.yourTurn'),
         side: 'right' as const,
@@ -760,6 +785,7 @@ export function Stage({
 
     if (thinkingState?.stage === 'director') {
       return {
+        role: 'teacher' as const,
         name: teacher?.name || t('roundtable.teacher'),
         text: t('roundtable.thinking'),
         side: 'left' as const,
@@ -772,6 +798,7 @@ export function Stage({
 
     if (playbackView.bubbleRole === 'agent') {
       return {
+        role: 'agent' as const,
         name: speakingParticipant?.name || t('settings.agentRoles.student'),
         text,
         side: 'right' as const,
@@ -781,6 +808,7 @@ export function Stage({
 
     if (playbackView.bubbleRole === 'user') {
       return {
+        role: 'user' as const,
         name: t('roundtable.you'),
         text,
         side: 'right' as const,
@@ -789,6 +817,7 @@ export function Stage({
     }
 
     return {
+      role: 'teacher' as const,
       name: teacher?.name || t('roundtable.teacher'),
       text,
       side: 'left' as const,
@@ -805,6 +834,8 @@ export function Stage({
     t,
   ]);
 
+  const teacherDialogVisible = speakerDisplay?.role !== 'teacher' || !isTeacherDialogCollapsed;
+
   const renderAvatar = (avatar: string | undefined, name: string) => {
     if (!avatar) {
       return <span className="text-xs font-black text-slate-700">{name.slice(0, 1)}</span>;
@@ -818,7 +849,8 @@ export function Stage({
   };
 
   return (
-    <div className="flex-1 flex overflow-hidden ">
+    <div ref={stageContainerRef} className="flex-1 flex overflow-hidden relative">
+      <div className="absolute inset-0 -z-10 bg-[url('/bg.png')] bg-cover bg-center bg-no-repeat pointer-events-none" />
       {/* Scene Sidebar */}
       <SceneSidebar
         collapsed={sidebarCollapsed}
@@ -830,7 +862,11 @@ export function Stage({
       {/* Main Content Area */}
       <div className="flex-1 flex flex-col overflow-hidden min-w-0 relative bg-transparent">
         {/* Header */}
-        <Header currentSceneTitle={currentScene?.title || ''} />
+        <Header
+          currentSceneTitle={currentScene?.title || ''}
+          isPresenting={isPresenting}
+          onTogglePresentation={handleTogglePresentation}
+        />
 
         {/* Canvas Area */}
         <div
@@ -840,11 +876,11 @@ export function Stage({
           }}
           suppressHydrationWarning
         >
-            <CanvasArea
-              currentScene={currentScene}
-              currentSceneIndex={currentSceneIndex}
-              scenesCount={totalScenesCount}
-              mode={mode}
+          <CanvasArea
+            currentScene={currentScene}
+            currentSceneIndex={currentSceneIndex}
+            scenesCount={totalScenesCount}
+            mode={mode}
             engineState={canvasEngineState}
             isLiveSession={
               chatIsStreaming || isTopicPending || engineMode === 'live' || !!chatSessionType
@@ -872,27 +908,29 @@ export function Stage({
             onToggleAutoPlay={() => setAutoPlayLecture(!autoPlayLecture)}
             playbackSpeed={playbackSpeed}
             onCycleSpeed={handleCycleSpeed}
+            isPresenting={isPresenting}
+            onTogglePresentation={handleTogglePresentation}
             hideToolbar={false}
             isPendingScene={isPendingScene}
-              isGenerationFailed={
-                isPendingScene && failedOutlines.some((f) => f.id === generatingOutlines[0]?.id)
-              }
-              onRetryGeneration={
-                onRetryOutline && generatingOutlines[0]
-                  ? () => onRetryOutline(generatingOutlines[0].id)
-                  : undefined
-              }
-              studentParticipants={studentParticipants}
-            />
+            isGenerationFailed={
+              isPendingScene && failedOutlines.some((f) => f.id === generatingOutlines[0]?.id)
+            }
+            onRetryGeneration={
+              onRetryOutline && generatingOutlines[0]
+                ? () => onRetryOutline(generatingOutlines[0].id)
+                : undefined
+            }
+            studentParticipants={studentParticipants}
+          />
 
-          {mode === 'playback' && speakerDisplay && (
+          {mode === 'playback' && speakerDisplay && teacherDialogVisible && (
             <div
-              className={`absolute bottom-11 left-4 right-4 z-[140] pointer-events-none flex ${
+              className={`absolute ${speakerDisplay.side === 'left' ? 'bottom-11' : 'bottom-24'} left-4 right-4 z-[140] pointer-events-none flex ${
                 speakerDisplay.side === 'left' ? 'justify-start' : 'justify-end'
               }`}
             >
               <div
-                className={`max-w-[74%] rounded-2xl border-[4px] border-slate-900/80 bg-white/96 px-3 py-2 flex items-start gap-2 shadow-[0_2px_0_rgba(15,23,42,0.18)] ${
+                className={`pointer-events-auto max-w-[74%] rounded-2xl border-[4px] border-slate-900/80 bg-white/96 px-3 py-2 flex items-start gap-2 shadow-[0_2px_0_rgba(15,23,42,0.18)] ${
                   speakerDisplay.side === 'left'
                     ? 'rounded-bl-md border-sky-500/80'
                     : 'rounded-br-md border-orange-500/80'
@@ -917,9 +955,37 @@ export function Stage({
                     {speakerDisplay.text}
                   </p>
                 </div>
+                {speakerDisplay.role === 'teacher' && (
+                  <button
+                    type="button"
+                    onClick={() => setIsTeacherDialogCollapsed(true)}
+                    aria-label="Close"
+                    className="ml-1 inline-flex h-6 w-6 items-center justify-center rounded-md text-slate-500 transition-colors hover:bg-slate-200/70 hover:text-slate-800"
+                  >
+                    <span aria-hidden>×</span>
+                  </button>
+                )}
               </div>
             </div>
           )}
+
+          {mode === 'playback' &&
+            speakerDisplay &&
+            speakerDisplay.role === 'teacher' &&
+            !teacherDialogVisible && (
+              <button
+                type="button"
+                onClick={() => setIsTeacherDialogCollapsed(false)}
+                className="absolute bottom-11 left-4 z-[140] pointer-events-auto inline-flex items-center gap-2 rounded-full border-[4px] border-slate-900/80 bg-white/95 px-2.5 py-1.5 shadow-[0_2px_0_rgba(15,23,42,0.18)] transition hover:bg-slate-50"
+              >
+                <span className="w-9 h-9 rounded-full overflow-hidden border-[3px] border-sky-500/80 bg-white flex items-center justify-center">
+                  {renderAvatar(speakerDisplay.avatar, speakerDisplay.name)}
+                </span>
+                <span className="max-w-[140px] truncate text-xs font-black text-slate-800">
+                  {speakerDisplay.name}
+                </span>
+              </button>
+            )}
         </div>
 
         {/* Roundtable Area */}

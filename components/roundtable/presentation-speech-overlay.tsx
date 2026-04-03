@@ -1,6 +1,7 @@
 'use client';
 
 import { AnimatePresence, motion } from 'motion/react';
+import { useMemo, useState } from 'react';
 import { useI18n } from '@/lib/hooks/use-i18n';
 import { AvatarDisplay } from '@/components/ui/avatar-display';
 import type { PlaybackView } from '@/lib/playback';
@@ -112,7 +113,13 @@ export function buildPresentationBubbleModel({
 }
 
 /** Reusable bubble card — renders the speech bubble content (avatar, name, text) */
-export function PresentationBubbleCard({ bubble }: { readonly bubble: PresentationBubbleModel }) {
+export function PresentationBubbleCard({
+  bubble,
+  onClose,
+}: {
+  readonly bubble: PresentationBubbleModel;
+  readonly onClose?: () => void;
+}) {
   const { t } = useI18n();
   return (
     <div
@@ -160,6 +167,16 @@ export function PresentationBubbleCard({ bubble }: { readonly bubble: Presentati
             {bubble.name}
           </div>
         </div>
+        {bubble.role === 'teacher' && onClose && (
+          <button
+            type="button"
+            onClick={onClose}
+            aria-label="Close"
+            className="ml-auto inline-flex h-6 w-6 items-center justify-center rounded-md text-gray-500 transition-colors hover:bg-black/5 hover:text-gray-700 dark:text-gray-300 dark:hover:bg-white/10 dark:hover:text-gray-100"
+          >
+            <span aria-hidden>×</span>
+          </button>
+        )}
       </div>
 
       <div className="px-4 pb-3 max-h-[120px] overflow-hidden">
@@ -203,6 +220,7 @@ export function PresentationSpeechOverlay({
   side = 'left',
 }: PresentationSpeechOverlayProps) {
   const { t } = useI18n();
+  const [dismissedTeacherSignature, setDismissedTeacherSignature] = useState<string | null>(null);
   const bubble = buildPresentationBubbleModel({
     playbackView,
     participants,
@@ -214,7 +232,15 @@ export function PresentationSpeechOverlay({
     userAvatar,
   });
 
-  const matchesSide = !!(bubble && bubble.side === side);
+  const teacherSignature = useMemo(
+    () => (bubble && bubble.role === 'teacher' ? `${bubble.key}:${bubble.text}` : null),
+    [bubble],
+  );
+
+  const teacherVisible =
+    bubble?.role !== 'teacher' || dismissedTeacherSignature !== teacherSignature;
+
+  const matchesSide = !!(bubble && bubble.side === side && teacherVisible);
 
   /* ── Left-side overlay: absolute covers stage, renders left bubble + cue ── */
   if (side === 'left') {
@@ -228,12 +254,37 @@ export function PresentationSpeechOverlay({
               animate={{ opacity: 1, x: 0, y: 0 }}
               exit={{ opacity: 0, y: 8 }}
               transition={{ duration: 0.22, ease: [0.21, 1, 0.36, 1] }}
-              className={cn('absolute bottom-6 left-6 z-30', PRESENTATION_BUBBLE_WIDTH)}
+              className={cn(
+                'absolute bottom-6 left-6 z-30 pointer-events-auto',
+                PRESENTATION_BUBBLE_WIDTH,
+              )}
             >
-              <PresentationBubbleCard bubble={bubble} />
+              <PresentationBubbleCard
+                bubble={bubble}
+                onClose={
+                  bubble.role === 'teacher' && teacherSignature
+                    ? () => setDismissedTeacherSignature(teacherSignature)
+                    : undefined
+                }
+              />
             </motion.div>
           )}
         </AnimatePresence>
+
+        {bubble?.role === 'teacher' && teacherSignature && !teacherVisible && (
+          <button
+            type="button"
+            onClick={() => setDismissedTeacherSignature(null)}
+            className="absolute bottom-6 left-6 z-30 pointer-events-auto inline-flex items-center gap-2 rounded-full border border-gray-200/70 bg-white/90 px-2.5 py-1.5 shadow-[0_10px_25px_-18px_rgba(0,0,0,0.55)] backdrop-blur-sm transition hover:bg-white"
+          >
+            <span className="w-9 h-9 rounded-full overflow-hidden border-2 border-purple-200 dark:border-purple-700 bg-white flex items-center justify-center">
+              <AvatarDisplay src={bubble.avatar} alt={bubble.name} />
+            </span>
+            <span className="max-w-[160px] truncate text-xs font-semibold text-gray-800 dark:text-gray-100">
+              {bubble.name}
+            </span>
+          </button>
+        )}
       </div>
     );
   }
@@ -248,9 +299,16 @@ export function PresentationSpeechOverlay({
           animate={{ opacity: 1, x: 0, y: 0 }}
           exit={{ opacity: 0, y: 8 }}
           transition={{ duration: 0.22, ease: [0.21, 1, 0.36, 1] }}
-          className={PRESENTATION_BUBBLE_WIDTH}
+          className={cn(PRESENTATION_BUBBLE_WIDTH, 'pointer-events-auto')}
         >
-          <PresentationBubbleCard bubble={bubble} />
+          <PresentationBubbleCard
+            bubble={bubble}
+            onClose={
+              bubble.role === 'teacher' && teacherSignature
+                ? () => setDismissedTeacherSignature(teacherSignature)
+                : undefined
+            }
+          />
         </motion.div>
       )}
     </AnimatePresence>

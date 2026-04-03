@@ -174,13 +174,13 @@ export function mediaFileKey(stageId: string, elementId: string): string {
 
 // ==================== Database Definition ====================
 
-const DATABASE_NAME = 'MAIC-Database';
+const DATABASE_NAME = 'Linksy-Database';
 const _DATABASE_VERSION = 8;
 
 /**
- * MAIC Database Instance
+ * Linksy Database Instance
  */
-class MAICDatabase extends Dexie {
+class LinksyDatabase extends Dexie {
   // Table definitions
   stages!: EntityTable<StageRecord, 'id'>;
   scenes!: EntityTable<SceneRecord, 'id'>;
@@ -313,7 +313,7 @@ class MAICDatabase extends Dexie {
 }
 
 // Create database instance
-export const db = new MAICDatabase();
+export const db = new LinksyDatabase();
 
 // ==================== Helper Functions ====================
 

@@ -13,8 +13,6 @@ import {
   Volume2,
   VolumeX,
   Repeat,
-  Maximize2,
-  Minimize2,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useStageStore } from '@/lib/store';
@@ -137,8 +135,6 @@ export function CanvasToolbar({
 
   // Effective volume for display
   const effectiveVolume = ttsMuted ? 0 : ttsVolume;
-  const presentationLabel = isPresenting ? t('stage.exitFullscreen') : t('stage.fullscreen');
-
   return (
     <div className={cn('flex items-center gap-2', className)}>
       {/* ── Left: sidebar toggle + page indicator ── */}
@@ -380,29 +376,9 @@ export function CanvasToolbar({
         </div>
       </div>
 
-      {/* ── Right: fullscreen + chat toggle ── */}
+      {/* ── Right: chat toggle ── */}
       <div className="flex items-center justify-end gap-px shrink-0 pr-1">
         <CtrlDivider />
-        {onTogglePresentation && (
-          <button
-            onClick={onTogglePresentation}
-            className={cn(
-              ctrlBtn,
-              'w-7 h-7',
-              isPresenting
-                ? 'text-violet-600 dark:text-violet-400'
-                : 'text-gray-500 dark:text-gray-400',
-            )}
-            aria-label={presentationLabel}
-            title={presentationLabel}
-          >
-            {isPresenting ? (
-              <Minimize2 className="w-3.5 h-3.5" />
-            ) : (
-              <Maximize2 className="w-3.5 h-3.5" />
-            )}
-          </button>
-        )}
         {onToggleChat && (
           <button
             onClick={onToggleChat}

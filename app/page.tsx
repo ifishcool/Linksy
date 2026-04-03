@@ -39,6 +39,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
+import { getSupabaseClient } from '@/lib/supabase/client';
 const now = Date.now();
 const log = createLogger('Home');
 
@@ -113,8 +114,59 @@ function HomePage() {
   const [languageOpen, setLanguageOpen] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [classrooms, setClassrooms] = useState<StageListItem[]>([]);
+  const supabaseClient = useMemo(() => getSupabaseClient(), []);
+  const [authEmail, setAuthEmail] = useState<string | null>(null);
+  const [authLoading, setAuthLoading] = useState(() => !!supabaseClient);
   const toolbarRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+
+  useEffect(() => {
+    if (!supabaseClient) return;
+
+    let active = true;
+    supabaseClient.auth.getUser().then(({ data }) => {
+      if (!active) return;
+      setAuthEmail(data.user?.email ?? null);
+      setAuthLoading(false);
+    });
+
+    const {
+      data: { subscription },
+    } = supabaseClient.auth.onAuthStateChange((_event, session) => {
+      if (!active) return;
+      setAuthEmail(session?.user?.email ?? null);
+      setAuthLoading(false);
+    });
+
+    return () => {
+      active = false;
+      subscription.unsubscribe();
+    };
+  }, [supabaseClient]);
+
+  const handleAuthAction = async () => {
+    if (!supabaseClient) {
+      router.push('/auth');
+      return;
+    }
+    if (!authEmail) {
+      router.push('/auth');
+      return;
+    }
+    const { error: signOutError } = await supabaseClient.auth.signOut();
+    if (signOutError) {
+      toast.error(signOutError.message);
+      return;
+    }
+    toast.success(locale === 'zh-CN' ? '已退出登录' : 'Signed out');
+  };
+
+  const ensureAuthenticated = () => {
+    if (authEmail) return true;
+    toast.error(locale === 'zh-CN' ? '请先登录后继续' : 'Please sign in first');
+    router.push('/auth');
+    return false;
+  };
 
   // Close dropdowns when clicking outside
   useEffect(() => {
@@ -124,6 +176,7 @@ function HomePage() {
         setLanguageOpen(false);
       }
     };
+
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, [languageOpen]);
@@ -195,7 +248,54 @@ function HomePage() {
     );
   };
 
+  const handleGenerateComic = async () => {
+    if (!ensureAuthenticated()) return;
+
+    if (!currentModelId) {
+      showSetupToast(
+        <BotOff className="size-4.5 text-amber-600" />,
+        t('settings.modelNotConfigured'),
+        t('settings.setupNeeded'),
+      );
+      setSettingsOpen(true);
+      return;
+    }
+
+    if (!form.requirement.trim()) {
+      setError(t('upload.requirementRequired'));
+      return;
+    }
+
+    setError(null);
+
+    try {
+      const userProfile = useUserProfileStore.getState();
+      const requirements: UserRequirements = {
+        requirement: form.requirement,
+        language: form.language,
+        userNickname: userProfile.nickname || undefined,
+        userBio: userProfile.bio || undefined,
+        webSearch: form.webSearch || undefined,
+      };
+
+      const comicSession = {
+        sessionId: nanoid(),
+        requirements,
+        pages: null,
+        currentStep: 'generating' as const,
+      };
+
+      sessionStorage.setItem('comicSession', JSON.stringify(comicSession));
+      router.push('/comic-preview');
+    } catch (err) {
+      log.error('Error preparing comic generation:', err);
+      setError(err instanceof Error ? err.message : t('upload.generateFailed'));
+    }
+  };
+
   const handleGenerate = async () => {
+    if (!ensureAuthenticated()) return;
+
     // Validate setup before proceeding
     if (!currentModelId) {
       showSetupToast(
@@ -322,7 +422,14 @@ function HomePage() {
       <HomeSidebar
         sections={sidebarSections}
         locale={locale}
-        onOpenClassroom={(id) => router.push(`/classroom/${id}`)}
+        onOpenClassroom={(id) => {
+          if (!ensureAuthenticated()) return;
+          if (id.startsWith('comic_')) {
+            router.push(`/comic-preview?historyId=${encodeURIComponent(id)}`);
+            return;
+          }
+          router.push(`/classroom/${id}`);
+        }}
         onDeleteClassroom={async (id) => {
           const confirmed = window.confirm(`${t('classroom.deleteConfirmTitle')}?`);
           if (!confirmed) return;
@@ -377,6 +484,29 @@ function HomePage() {
           </div>
 
           <div className="w-[1px] h-4 bg-black" />
+
+          <button
+            onClick={() => void handleAuthAction()}
+            className="px-3 py-1.5 rounded-full text-xs font-bold text-slate-600 hover:bg-sky-50 hover:text-sky-700 hover:shadow-sm transition-all"
+          >
+            {authLoading
+              ? locale === 'zh-CN'
+                ? '加载中...'
+                : 'Loading...'
+              : authEmail
+                ? locale === 'zh-CN'
+                  ? '退出登录'
+                  : 'Logout'
+                : locale === 'zh-CN'
+                  ? '登录'
+                  : 'Login'}
+          </button>
+
+          {authEmail ? (
+            <span className="hidden md:inline text-[11px] text-slate-500 max-w-[140px] truncate">
+              {authEmail}
+            </span>
+          ) : null}
 
           {/* Settings Button */}
           <div className="relative">
@@ -512,6 +642,20 @@ function HomePage() {
                     >
                       <span>{t('toolbar.enterClassroom')}</span>
                       <ArrowUp className="size-3.5" />
+                    </button>
+
+                    <button
+                      onClick={handleGenerateComic}
+                      disabled={!canGenerate}
+                      className={cn(
+                        'shrink-0 h-11 rounded-full flex items-center justify-center gap-1.5 transition-colors px-5 border-[3px] text-sm font-black',
+                        canGenerate
+                          ? 'bg-white border-slate-900/70 text-slate-700 hover:bg-sky-50 cursor-pointer'
+                          : 'bg-slate-200 border-slate-300 text-slate-500 cursor-not-allowed',
+                      )}
+                    >
+                      <span>{t('toolbar.generateComic')}</span>
+                      <ImagePlus className="size-3.5" />
                     </button>
                   </div>
                 </div>

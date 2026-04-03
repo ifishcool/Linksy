@@ -11,25 +11,11 @@ import { callLLM } from '@/lib/ai/llm';
 import { createLogger } from '@/lib/logger';
 import { apiError, apiSuccess } from '@/lib/server/api-response';
 import { resolveModelFromHeaders } from '@/lib/server/resolve-model';
+import { AGENT_COLOR_PALETTE } from '@/lib/constants/agent-defaults';
 
 const log = createLogger('Agent Profiles API');
 
 export const maxDuration = 120;
-
-const COLOR_PALETTE = [
-  '#3b82f6',
-  '#10b981',
-  '#f59e0b',
-  '#ec4899',
-  '#06b6d4',
-  '#8b5cf6',
-  '#f97316',
-  '#14b8a6',
-  '#e11d48',
-  '#6366f1',
-  '#84cc16',
-  '#a855f7',
-];
 
 interface RequestBody {
   stageInfo: { name: string; description?: string };
@@ -124,7 +110,7 @@ Requirements:
   - Pick an avatar that visually matches the agent's personality and role
   - Try to use different avatars for each agent
   - Use the "path" value as the avatar field in the output
-- Each agent must be assigned one color from this list: ${JSON.stringify(COLOR_PALETTE)}
+- Each agent must be assigned one color from this list: ${JSON.stringify(AGENT_COLOR_PALETTE)}
   - Each agent must have a different color
 ${voicePrompt}
 
@@ -196,12 +182,22 @@ Return a JSON object with this exact structure:
 
     // ── Build output with IDs ──
     const agents = parsed.agents.map((agent, index) => {
-      // Parse voice "providerId::voiceId" format
-      let voiceConfig: { providerId: string; voiceId: string } | undefined;
+      // Parse voice config:
+      // - legacy: "providerId::voiceId"
+      // - model-aware: "providerId::modelId::voiceId"
+      let voiceConfig: { providerId: string; modelId?: string; voiceId: string } | undefined;
       if (agent.voice && agent.voice.includes('::')) {
-        const [providerId, voiceId] = agent.voice.split('::');
-        if (providerId && voiceId) {
-          voiceConfig = { providerId, voiceId };
+        const parts = agent.voice.split('::');
+        if (parts.length >= 3) {
+          const [providerId, modelId, voiceId] = parts;
+          if (providerId && voiceId) {
+            voiceConfig = { providerId, modelId: modelId || undefined, voiceId };
+          }
+        } else {
+          const [providerId, voiceId] = parts;
+          if (providerId && voiceId) {
+            voiceConfig = { providerId, voiceId };
+          }
         }
       }
 
@@ -211,7 +207,7 @@ Return a JSON object with this exact structure:
         role: agent.role,
         persona: agent.persona,
         avatar: agent.avatar || availableAvatars[index % availableAvatars.length],
-        color: agent.color || COLOR_PALETTE[index % COLOR_PALETTE.length],
+        color: agent.color || AGENT_COLOR_PALETTE[index % AGENT_COLOR_PALETTE.length],
         priority:
           agent.priority ?? (agent.role === 'teacher' ? 10 : agent.role === 'assistant' ? 7 : 5),
         ...(voiceConfig ? { voiceConfig } : {}),
