@@ -8,6 +8,7 @@ import {
   Check,
   ChevronDown,
   ImagePlus,
+  LogOut,
   Pencil,
   Trash2,
   Settings,
@@ -39,6 +40,8 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog';
 import { getSupabaseClient } from '@/lib/supabase/client';
 const now = Date.now();
 const log = createLogger('Home');
@@ -75,6 +78,8 @@ function HomePage() {
 
   // Model setup state
   const currentModelId = useSettingsStore((s) => s.modelId);
+  const profileAvatar = useUserProfileStore((s) => s.avatar);
+  const profileNickname = useUserProfileStore((s) => s.nickname);
   const [storeHydrated, setStoreHydrated] = useState(false);
 
   // Hydrate client-only state after mount (avoids SSR mismatch)
@@ -116,9 +121,15 @@ function HomePage() {
   const [classrooms, setClassrooms] = useState<StageListItem[]>([]);
   const supabaseClient = useMemo(() => getSupabaseClient(), []);
   const [authEmail, setAuthEmail] = useState<string | null>(null);
+  const [aiLearningScore, setAiLearningScore] = useState(0);
   const [authLoading, setAuthLoading] = useState(() => !!supabaseClient);
+  const [accountPopoverOpen, setAccountPopoverOpen] = useState(false);
+  const [rechargeDialogOpen, setRechargeDialogOpen] = useState(false);
+  const [billingCycle, setBillingCycle] = useState<'monthly' | 'yearly'>('monthly');
+  const [purchasingPackScore, setPurchasingPackScore] = useState<number | null>(null);
   const toolbarRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const displayName = profileNickname || t('profile.defaultNickname');
 
   useEffect(() => {
     if (!supabaseClient) return;
@@ -127,6 +138,7 @@ function HomePage() {
     supabaseClient.auth.getUser().then(({ data }) => {
       if (!active) return;
       setAuthEmail(data.user?.email ?? null);
+      setAiLearningScore(Number(data.user?.user_metadata?.aiLearningScore ?? 0) || 0);
       setAuthLoading(false);
     });
 
@@ -135,6 +147,7 @@ function HomePage() {
     } = supabaseClient.auth.onAuthStateChange((_event, session) => {
       if (!active) return;
       setAuthEmail(session?.user?.email ?? null);
+      setAiLearningScore(Number(session?.user?.user_metadata?.aiLearningScore ?? 0) || 0);
       setAuthLoading(false);
     });
 
@@ -144,13 +157,8 @@ function HomePage() {
     };
   }, [supabaseClient]);
 
-  const handleAuthAction = async () => {
+  const handleSignOut = async () => {
     if (!supabaseClient) {
-      router.push('/auth');
-      return;
-    }
-    if (!authEmail) {
-      router.push('/auth');
       return;
     }
     const { error: signOutError } = await supabaseClient.auth.signOut();
@@ -158,7 +166,63 @@ function HomePage() {
       toast.error(signOutError.message);
       return;
     }
+    setAccountPopoverOpen(false);
     toast.success(locale === 'zh-CN' ? '已退出登录' : 'Signed out');
+  };
+
+  const handleAuthEntry = () => {
+    router.push('/auth');
+  };
+
+  const handleTestScorePackPurchase = async (scoreToAdd: number) => {
+    if (!supabaseClient) {
+      toast.error(locale === 'zh-CN' ? '当前未配置登录服务' : 'Auth service is not configured');
+      return;
+    }
+
+    const {
+      data: { user },
+      error: userError,
+    } = await supabaseClient.auth.getUser();
+
+    if (userError || !user) {
+      toast.error(locale === 'zh-CN' ? '请先登录后再购买' : 'Please sign in before purchasing');
+      if (!user) router.push('/auth');
+      return;
+    }
+
+    const currentScore = Number(user.user_metadata?.aiLearningScore ?? aiLearningScore ?? 0) || 0;
+    const nextScore = currentScore + scoreToAdd;
+
+    setPurchasingPackScore(scoreToAdd);
+    setAiLearningScore(nextScore);
+
+    try {
+      const { data, error } = await supabaseClient.auth.updateUser({
+        data: {
+          ...user.user_metadata,
+          aiLearningScore: nextScore,
+        },
+      });
+
+      if (error) {
+        setAiLearningScore(currentScore);
+        toast.error(error.message);
+        return;
+      }
+
+      setAiLearningScore(Number(data.user?.user_metadata?.aiLearningScore ?? nextScore) || nextScore);
+      toast.success(
+        locale === 'zh-CN'
+          ? `测试成功，已增加 ${scoreToAdd} 学习分`
+          : `Test success: added ${scoreToAdd} AI score`,
+      );
+    } catch {
+      setAiLearningScore(currentScore);
+      toast.error(locale === 'zh-CN' ? '加分失败，请稍后重试' : 'Failed to add score');
+    } finally {
+      setPurchasingPackScore(null);
+    }
   };
 
   const ensureAuthenticated = () => {
@@ -441,7 +505,7 @@ function HomePage() {
         {/* ═══ Top-right pill (unchanged) ═══ */}
         <div
           ref={toolbarRef}
-          className="fixed top-4 right-4 z-50 flex items-center gap-1 bg-white/92 backdrop-blur-md px-2 py-1.5 rounded-full border-[3px] border-slate-900/70 shadow-[0_2px_0_rgba(15,23,42,0.2)]"
+          className="fixed top-4 right-4 z-50 flex items-center gap-0.5 bg-white/92 backdrop-blur-md px-1.5 py-1 rounded-full border-[3px] border-slate-900/70 shadow-[0_2px_0_rgba(15,23,42,0.2)] md:gap-1 md:px-2 md:py-1.5"
         >
           {/* Language Selector */}
           <div className="relative">
@@ -449,7 +513,7 @@ function HomePage() {
               onClick={() => {
                 setLanguageOpen(!languageOpen);
               }}
-              className="flex items-center gap-1 px-3 py-1.5 rounded-full text-xs font-bold text-slate-600 hover:bg-sky-50 hover:text-sky-700 hover:shadow-sm transition-all"
+              className="flex h-8 cursor-pointer items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-bold text-slate-600 hover:bg-sky-50 hover:text-sky-700 hover:shadow-sm transition-all md:h-10 md:px-3 md:py-1.5 md:text-xs"
             >
               {locale === 'zh-CN' ? 'CN' : 'EN'}
             </button>
@@ -483,41 +547,87 @@ function HomePage() {
             )}
           </div>
 
-          <div className="w-[1px] h-4 bg-black" />
+          <div className="mx-0.5 h-4 w-px bg-black md:mx-1 md:h-4" />
 
-          <button
-            onClick={() => void handleAuthAction()}
-            className="px-3 py-1.5 rounded-full text-xs font-bold text-slate-600 hover:bg-sky-50 hover:text-sky-700 hover:shadow-sm transition-all"
-          >
-            {authLoading
-              ? locale === 'zh-CN'
-                ? '加载中...'
-                : 'Loading...'
-              : authEmail
-                ? locale === 'zh-CN'
-                  ? '退出登录'
-                  : 'Logout'
-                : locale === 'zh-CN'
-                  ? '登录'
-                  : 'Login'}
-          </button>
+          {authLoading ? (
+            <div className="px-2.5 py-1 text-[11px] font-bold text-slate-500 md:px-3 md:py-1.5 md:text-xs">
+              {locale === 'zh-CN' ? '加载中...' : 'Loading...'}
+            </div>
+          ) : authEmail ? (
+            <Popover open={accountPopoverOpen} onOpenChange={setAccountPopoverOpen}>
+              <PopoverTrigger asChild>
+                <button className="flex h-8 cursor-pointer items-center gap-1.5 rounded-full px-2 py-1 text-[11px] font-bold text-slate-700 hover:bg-sky-50 hover:text-sky-700 hover:shadow-sm transition-all md:h-auto md:gap-2 md:px-3 md:py-1.5 md:text-xs">
+                  <div className="size-5 rounded-full overflow-hidden border-2 border-slate-900/20 bg-white shrink-0 md:size-6">
+                    <img src={profileAvatar} alt="" className="size-full object-cover" />
+                  </div>
+                  <span>{locale === 'zh-CN' ? '个人中心' : 'Account'}</span>
+                  <span className="inline-flex h-4 min-w-5 items-center justify-center rounded-full border border-sky-200 bg-sky-100 px-1 text-[10px] font-black text-sky-700 md:h-5 md:min-w-7 md:px-1.5 md:text-[11px]">
+                    {aiLearningScore}
+                  </span>
+                  <ChevronDown className="size-3 text-slate-400 md:size-3.5" />
+                </button>
+              </PopoverTrigger>
+              <PopoverContent
+                align="end"
+                alignOffset={-44}
+                side="bottom"
+                sideOffset={18}
+                className="w-[220px] rounded-[18px] border-[3px] border-slate-900/75 bg-white/98 p-0 shadow-[0_8px_0_rgba(15,23,42,0.12)] md:w-[280px] md:rounded-[24px]"
+              >
+                <div className="p-2.5 md:p-4">
+                  <div className="flex items-center gap-2 rounded-[14px] border-[3px] border-slate-900/10 bg-sky-50/60 px-2.5 py-2 md:gap-3 md:rounded-[20px] md:px-3 md:py-3">
+                    <div className="size-10 rounded-full overflow-hidden border-[3px] border-slate-900/70 bg-white shrink-0 md:size-14">
+                      <img src={profileAvatar} alt="" className="size-full object-cover" />
+                    </div>
+                    <div className="min-w-0">
+                      <div className="text-[14px] font-black text-slate-800 truncate md:text-base">
+                        {displayName}
+                      </div>
+                      <div className="text-[10px] leading-tight text-slate-500 break-all md:text-xs">
+                        {authEmail}
+                      </div>
+                    </div>
+                  </div>
 
-          {authEmail ? (
-            <span className="hidden md:inline text-[11px] text-slate-500 max-w-[140px] truncate">
-              {authEmail}
-            </span>
-          ) : null}
+                  <button
+                    onClick={() => {
+                      setAccountPopoverOpen(false);
+                      setRechargeDialogOpen(true);
+                    }}
+                    className="mt-2.5 flex h-10 w-full cursor-pointer items-center justify-center gap-2 rounded-full border-[3px] border-slate-900/75 bg-sky-400 px-3 py-1.5 text-[13px] font-black text-white transition-all hover:bg-sky-500 md:mt-4 md:h-auto md:px-4 md:py-2.5 md:text-sm"
+                  >
+                    <span>{locale === 'zh-CN' ? 'AI学习分充值' : 'Recharge AI Score'}</span>
+                  </button>
+
+                  <button
+                    onClick={() => void handleSignOut()}
+                    className="mt-2 flex h-10 w-full cursor-pointer items-center justify-center gap-2 rounded-full border-[3px] border-slate-900/75 bg-orange-400 px-3 py-1.5 text-[13px] font-black text-white transition-all hover:bg-orange-500 md:mt-3 md:h-auto md:px-4 md:py-2.5 md:text-sm"
+                  >
+                    <LogOut className="size-4" />
+                    <span>{locale === 'zh-CN' ? '退出登录' : 'Logout'}</span>
+                  </button>
+                </div>
+              </PopoverContent>
+            </Popover>
+          ) : (
+            <button
+              onClick={handleAuthEntry}
+              className="flex h-8 cursor-pointer items-center px-2.5 py-1 rounded-full text-[11px] font-bold text-slate-600 hover:bg-sky-50 hover:text-sky-700 hover:shadow-sm transition-all md:h-10 md:px-3 md:py-1.5 md:text-xs"
+            >
+              {locale === 'zh-CN' ? '登录/注册' : 'Login / Register'}
+            </button>
+          )}
 
           {/* Settings Button */}
           <div className="relative">
             <button
               onClick={() => setSettingsOpen(true)}
               className={cn(
-                'p-2 rounded-full text-slate-500 hover:bg-sky-50 hover:text-sky-700 hover:shadow-sm transition-all group',
+                'cursor-pointer p-1.5 rounded-full text-slate-500 hover:bg-sky-50 hover:text-sky-700 hover:shadow-sm transition-all group md:p-2',
                 needsSetup && 'animate-setup-glow',
               )}
             >
-              <Settings className="w-4 h-4 group-hover:rotate-90 transition-transform duration-500" />
+              <Settings className="w-3.5 h-3.5 group-hover:rotate-90 transition-transform duration-500 md:w-4 md:h-4" />
             </button>
             {needsSetup && (
               <>
@@ -540,13 +650,282 @@ function HomePage() {
           }}
           initialSection={settingsSection}
         />
+        <Dialog open={rechargeDialogOpen} onOpenChange={setRechargeDialogOpen}>
+          <DialogContent
+            showCloseButton={false}
+            className="w-[min(920px,calc(100vw-20px))] max-w-none rounded-[24px] border-[4px] border-slate-900/80 bg-[#fff8e6] p-0 shadow-[0_10px_0_rgba(15,23,42,0.15)] md:w-[min(920px,calc(100vw-32px))] md:rounded-[32px]"
+          >
+            <DialogTitle className="sr-only">
+              {locale === 'zh-CN' ? 'AI学习分充值' : 'AI Learning Score Plans'}
+            </DialogTitle>
+
+            <div className="relative max-h-[85vh] overflow-y-auto overflow-x-hidden rounded-[18px] p-3 md:max-h-[88vh] md:rounded-[28px] md:p-6">
+              <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(125,211,252,0.2),transparent_28%),radial-gradient(circle_at_bottom_right,rgba(251,191,36,0.18),transparent_30%)]" />
+
+              <div className="relative flex items-start justify-between gap-3 md:gap-4">
+                <div>
+                  <h3 className="mt-1 text-lg font-black text-slate-900 md:mt-3 md:text-2xl">
+                    {locale === 'zh-CN' ? '选择适合你的学习方案' : 'Choose your learning plan'}
+                  </h3>
+                  <p className="mt-1 pr-2 text-[11px] text-slate-600 md:text-sm">
+                    {locale === 'zh-CN'
+                      ? '学习分可用于更深入的 AI 个性化学习与高级功能体验。'
+                      : 'Use AI score for deeper personalization and advanced learning features.'}
+                  </p>
+                </div>
+
+                <button
+                  onClick={() => setRechargeDialogOpen(false)}
+                  className="shrink-0 cursor-pointer rounded-full border-[3px] border-slate-900/70 bg-white px-2.5 py-1 text-[10px] font-black text-slate-700 transition-colors hover:bg-sky-50 md:px-3 md:py-1.5 md:text-xs"
+                >
+                  {locale === 'zh-CN' ? '关闭' : 'Close'}
+                </button>
+              </div>
+
+              <div className="relative mt-3 flex w-full rounded-[20px] border-[3px] border-slate-900/70 bg-white/90 p-1 shadow-[0_3px_0_rgba(15,23,42,0.08)] md:mt-5 md:inline-flex md:w-auto md:rounded-full">
+                <button
+                  onClick={() => setBillingCycle('monthly')}
+                  className={cn(
+                    'flex flex-1 cursor-pointer items-center justify-center gap-1 rounded-[14px] px-2.5 py-1.5 text-[11px] font-black transition-all md:flex-none md:gap-2 md:rounded-full md:px-4 md:py-2 md:text-sm',
+                    billingCycle === 'monthly'
+                      ? 'bg-slate-900 text-white'
+                      : 'text-slate-600 hover:bg-sky-50',
+                  )}
+                >
+                  <span>{locale === 'zh-CN' ? '连续包月' : 'Monthly'}</span>
+                  <span
+                    className={cn(
+                      'rounded-full px-1.5 py-0.5 text-[8px] font-black md:px-2 md:text-[10px]',
+                      billingCycle === 'monthly'
+                        ? 'bg-white/20 text-sky-100'
+                        : 'bg-sky-100 text-sky-700',
+                    )}
+                  >
+                    {locale === 'zh-CN' ? '灵活' : 'Flexible'}
+                  </span>
+                </button>
+                <button
+                  onClick={() => setBillingCycle('yearly')}
+                  className={cn(
+                    'flex flex-1 cursor-pointer items-center justify-center gap-1 rounded-[14px] px-2.5 py-1.5 text-[11px] font-black transition-all md:flex-none md:gap-2 md:rounded-full md:px-4 md:py-2 md:text-sm',
+                    billingCycle === 'yearly'
+                      ? 'bg-slate-900 text-white'
+                      : 'text-slate-600 hover:bg-sky-50',
+                  )}
+                >
+                  <span>{locale === 'zh-CN' ? '连续包年' : 'Yearly'}</span>
+                  <span
+                    className={cn(
+                      'rounded-full px-1.5 py-0.5 text-[8px] font-black md:px-2 md:text-[10px]',
+                      billingCycle === 'yearly'
+                        ? 'bg-white/20 text-amber-100'
+                        : 'bg-amber-100 text-amber-700',
+                    )}
+                  >
+                    {locale === 'zh-CN' ? '更划算' : 'Best value'}
+                  </span>
+                </button>
+              </div>
+
+              <div className="relative mt-4 grid grid-cols-2 gap-2 md:mt-6 md:gap-4">
+                <div className="rounded-[22px] border-[4px] border-slate-900/75 bg-white px-3.5 py-3.5 shadow-[0_6px_0_rgba(15,23,42,0.12)] md:rounded-[28px] md:px-5 md:py-5">
+                  <div className="flex items-center gap-2">
+                    <h4 className="text-base font-black text-slate-900 md:text-xl">
+                      {locale === 'zh-CN' ? '免费版' : 'Free'}
+                    </h4>
+                    <span className="rounded-full bg-sky-100 px-1.5 py-0.5 text-[9px] font-black text-sky-700 md:px-2 md:text-[11px]">
+                      {locale === 'zh-CN' ? '当前可用' : 'Current'}
+                    </span>
+                  </div>
+                  <div className="mt-1.5 text-[11px] font-bold text-slate-600 md:text-sm">
+                    {locale === 'zh-CN' ? '适合轻度体验与日常学习' : 'Great for getting started and daily study'}
+                  </div>
+                  <div className="mt-3 flex items-end gap-1.5 md:mt-5">
+                    <span className="text-[32px] leading-none font-black text-slate-900 md:text-5xl">
+                      0
+                    </span>
+                    <span className="pb-0.5 text-[11px] font-bold text-slate-500 md:pb-1 md:text-sm">
+                      {locale === 'zh-CN'
+                        ? billingCycle === 'yearly'
+                          ? '元 / 年'
+                          : '元 / 月'
+                        : billingCycle === 'yearly'
+                          ? '/ year'
+                          : '/ month'}
+                    </span>
+                  </div>
+                  <button
+                    className="mt-4 flex h-10 w-full items-center justify-center rounded-full border-[3px] border-slate-900/20 bg-slate-100 text-xs font-black text-slate-400 md:mt-6 md:h-12 md:text-sm"
+                    disabled
+                  >
+                    {locale === 'zh-CN' ? '当前计划' : 'Current plan'}
+                  </button>
+                  <div className="mt-4 space-y-1.5 text-[11px] text-slate-700 md:mt-6 md:space-y-3 md:text-sm">
+                    <div>
+                      {locale === 'zh-CN' ? '• 基础课堂体验' : '• Basic classroom experience'}
+                    </div>
+                    <div>
+                      {locale === 'zh-CN' ? '• 有限 AI 学习分额度' : '• Limited AI score quota'}
+                    </div>
+                    <div>
+                      {locale === 'zh-CN'
+                        ? '• 支持基础个性化教学'
+                        : '• Basic personalized teaching'}
+                    </div>
+                  </div>
+                </div>
+
+                <div className="rounded-[22px] border-[4px] border-slate-900/75 bg-[linear-gradient(180deg,#fff5d6_0%,#ffffff_100%)] px-3.5 py-3.5 shadow-[0_6px_0_rgba(15,23,42,0.12)] md:rounded-[28px] md:px-5 md:py-5">
+                  <div className="flex items-center gap-2">
+                    <h4 className="text-base font-black text-slate-900 md:text-xl">
+                      {locale === 'zh-CN' ? '专业版' : 'Pro'}
+                    </h4>
+                    <span className="rounded-full bg-orange-100 px-1.5 py-0.5 text-[9px] font-black text-orange-700 md:px-2 md:text-[11px]">
+                      {locale === 'zh-CN' ? '推荐' : 'Popular'}
+                    </span>
+                  </div>
+                  <div className="mt-1.5 text-[11px] font-bold text-slate-600 md:text-sm">
+                    {locale === 'zh-CN'
+                      ? '适合长期学习与深度使用'
+                      : 'Best for long-term, deeper learning'}
+                  </div>
+                  <div className="mt-3 flex items-end gap-1.5 md:mt-5">
+                    <span className="text-[32px] leading-none font-black text-slate-900 md:text-5xl">
+                      {billingCycle === 'yearly' ? '188' : '20'}
+                    </span>
+                    <span className="pb-0.5 text-[11px] font-bold text-slate-500 md:pb-1 md:text-sm">
+                      {locale === 'zh-CN'
+                        ? billingCycle === 'yearly'
+                          ? '元 / 年'
+                          : '元 / 月'
+                        : billingCycle === 'yearly'
+                          ? '/ year'
+                          : '/ month'}
+                    </span>
+                    <span className="pb-0.5 text-[8px] font-bold text-slate-400 line-through md:pb-1 md:text-xs">
+                      {locale === 'zh-CN'
+                        ? billingCycle === 'yearly'
+                          ? '原价：240元'
+                          : '原价：29元'
+                        : billingCycle === 'yearly'
+                          ? 'Was 240 CNY'
+                          : 'Was 29 CNY'}
+                    </span>
+                  </div>
+                  <button className="mt-4 flex h-10 w-full cursor-pointer items-center justify-center rounded-full border-[3px] border-slate-900/75 bg-orange-400 text-xs font-black text-white transition-colors hover:bg-orange-500 md:mt-6 md:h-12 md:text-sm">
+                    {locale === 'zh-CN' ? '立即开通' : 'Upgrade now'}
+                  </button>
+                  <div className="mt-4 space-y-1.5 text-[11px] text-slate-700 md:mt-6 md:space-y-3 md:text-sm">
+                    <div>
+                      {locale === 'zh-CN'
+                        ? '• 更高 AI 学习分额度，支持更频繁使用'
+                        : '• Higher AI score quota for frequent usage'}
+                    </div>
+                    <div>
+                      {locale === 'zh-CN'
+                        ? '• 更强的个性化教学与角色互动'
+                        : '• Stronger personalization and role interaction'}
+                    </div>
+                    <div>
+                      {locale === 'zh-CN'
+                        ? '• 优先体验后续高级学习能力'
+                        : '• Early access to advanced learning features'}
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div className="relative mt-4 rounded-[22px] border-[4px] border-slate-900/75 bg-white/90 px-3.5 py-3.5 shadow-[0_6px_0_rgba(15,23,42,0.1)] md:mt-6 md:rounded-[28px] md:px-5 md:py-5">
+                <div className="flex flex-col gap-1 md:flex-row md:items-end md:justify-between">
+                  <div>
+                    <h4 className="text-base font-black text-slate-900 md:text-xl">
+                      {locale === 'zh-CN' ? 'AI学习分额度包' : 'AI Score Packs'}
+                    </h4>
+                    <p className="mt-1 text-[11px] font-bold text-slate-600 md:text-sm">
+                      {locale === 'zh-CN'
+                        ? '可单独购买，随买随用，适合临时补充额度。'
+                        : 'Buy separately anytime for extra usage when you need it.'}
+                    </p>
+                  </div>
+                  <div className="text-[10px] font-bold text-sky-700 md:text-xs">
+                    {locale === 'zh-CN'
+                      ? '兑换比例：10 学习分 = 1 元'
+                      : 'Rate: 10 score = 1 CNY'}
+                  </div>
+                </div>
+
+                <div className="mt-3 grid grid-cols-3 gap-2 md:mt-5 md:gap-3">
+                  {[
+                    {
+                      score: 10,
+                      price: 1,
+                      accent: 'bg-sky-50',
+                      badge: locale === 'zh-CN' ? '入门包' : 'Starter',
+                    },
+                    {
+                      score: 50,
+                      price: 5,
+                      accent: 'bg-orange-50',
+                      badge: locale === 'zh-CN' ? '常用包' : 'Popular',
+                    },
+                    {
+                      score: 100,
+                      price: 10,
+                      accent: 'bg-emerald-50',
+                      badge: locale === 'zh-CN' ? '超值包' : 'Value',
+                    },
+                  ].map((pack) => (
+                    <div
+                      key={pack.score}
+                      className={cn(
+                        'rounded-[16px] border-[3px] border-slate-900/70 px-2.5 py-2.5 shadow-[0_4px_0_rgba(15,23,42,0.08)] md:rounded-[24px] md:px-4 md:py-4',
+                        pack.accent,
+                      )}
+                    >
+                      <div className="flex items-center justify-between gap-2">
+                        <div className="text-[12px] font-black text-slate-900 md:text-lg">
+                          {pack.score}
+                          {locale === 'zh-CN' ? ' 学习分' : ' score'}
+                        </div>
+                        <span className="rounded-full bg-white px-1.5 py-0.5 text-[8px] font-black text-slate-700 md:px-2 md:text-[10px]">
+                          {pack.badge}
+                        </span>
+                      </div>
+                      <div className="mt-2 flex items-end gap-1">
+                        <span className="text-lg font-black text-slate-900 md:text-3xl">
+                          {pack.price}
+                        </span>
+                        <span className="pb-0.5 text-[9px] font-bold text-slate-500 md:pb-1 md:text-xs">
+                          {locale === 'zh-CN' ? '元' : 'CNY'}
+                        </span>
+                      </div>
+                      <button
+                        onClick={() => void handleTestScorePackPurchase(pack.score)}
+                        disabled={purchasingPackScore === pack.score}
+                        className="mt-3 flex h-8 w-full cursor-pointer items-center justify-center rounded-full border-[3px] border-slate-900/75 bg-white text-[10px] font-black text-slate-800 transition-colors hover:bg-slate-50 disabled:cursor-wait disabled:opacity-60 md:h-11 md:text-sm"
+                      >
+                        {purchasingPackScore === pack.score
+                          ? locale === 'zh-CN'
+                            ? '加分中...'
+                            : 'Adding...'
+                          : locale === 'zh-CN'
+                            ? '购买'
+                            : 'Buy'}
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          </DialogContent>
+        </Dialog>
 
         {/* ═══ Hero section: title + input (centered, wider) ═══ */}
         <motion.div
           initial={{ opacity: 0, y: 8 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.25, ease: 'easeOut' }}
-          className="relative z-20 w-full flex flex-col items-center pt-2 md:pt-4"
+          className="relative z-20 w-full flex flex-col items-center pt-16 md:pt-4"
         >
           <div className="home-scale-wrap w-full flex justify-center">
             <div className="home-scale flex flex-col items-center max-w-full">
@@ -557,7 +936,7 @@ function HomePage() {
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1, scale: 1.8 }}
                 transition={{ delay: 0.05, duration: 0.1 }}
-                className="h-10 md:h-12 mb-5 mt-5"
+                className="h-10 md:h-12 mb-4 mt-2 md:mb-5 md:mt-5"
               />
 
               {/* ── Slogan ── */}
