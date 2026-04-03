@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { Suspense, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { ArrowLeft, ChevronLeft, ChevronRight, Loader2, RotateCcw, Sparkles } from 'lucide-react';
 import { TTS_PROVIDERS } from '@/lib/audio/constants';
@@ -475,7 +475,7 @@ async function loadComicHistoryFromStage(historyId: string): Promise<ComicSessio
   };
 }
 
-export default function ComicPreviewPage() {
+function ComicPreviewContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { t } = useI18n();
@@ -1087,5 +1087,13 @@ export default function ComicPreviewPage() {
         </div>
       </div>
     </div>
+  );
+}
+
+export default function ComicPreviewPage() {
+  return (
+    <Suspense fallback={null}>
+      <ComicPreviewContent />
+    </Suspense>
   );
 }
