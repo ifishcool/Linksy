@@ -104,9 +104,7 @@ export function Stage({
 
   // Active bubble ID for playback highlight in chat area (Issue 8)
   const [activeBubbleId, setActiveBubbleId] = useState<string | null>(null);
-  const [dismissedTeacherDialogSignature, setDismissedTeacherDialogSignature] = useState<
-    string | null
-  >(null);
+  const [isTeacherDialogCollapsed, setIsTeacherDialogCollapsed] = useState(false);
 
   // Scene switch confirmation dialog state
   const [pendingSceneId, setPendingSceneId] = useState<string | null>(null);
@@ -738,7 +736,7 @@ export function Stage({
   // Calculate scene viewer height (subtract Header's 80px height)
   const sceneViewerHeight = (() => {
     const headerHeight = 80; // Header h-20 = 80px
-    const inputBarHeight = 80;
+    const inputBarHeight = 0;
     if (mode === 'playback') {
       return `calc(100% - ${headerHeight + inputBarHeight}px)`;
     }
@@ -813,13 +811,7 @@ export function Stage({
     t,
   ]);
 
-  const teacherDialogSignature = useMemo(() => {
-    if (!speakerDisplay || speakerDisplay.role !== 'teacher') return null;
-    return `${speakerDisplay.name}:${speakerDisplay.text}`;
-  }, [speakerDisplay]);
-
-  const teacherDialogVisible =
-    !teacherDialogSignature || dismissedTeacherDialogSignature !== teacherDialogSignature;
+  const teacherDialogVisible = speakerDisplay?.role !== 'teacher' || !isTeacherDialogCollapsed;
 
   const renderAvatar = (avatar: string | undefined, name: string) => {
     if (!avatar) {
@@ -903,7 +895,7 @@ export function Stage({
 
           {mode === 'playback' && speakerDisplay && teacherDialogVisible && (
             <div
-              className={`absolute bottom-11 left-4 right-4 z-[140] pointer-events-none flex ${
+              className={`absolute ${speakerDisplay.side === 'left' ? 'bottom-11' : 'bottom-24'} left-4 right-4 z-[140] pointer-events-none flex ${
                 speakerDisplay.side === 'left' ? 'justify-start' : 'justify-end'
               }`}
             >
@@ -933,10 +925,10 @@ export function Stage({
                     {speakerDisplay.text}
                   </p>
                 </div>
-                {speakerDisplay.role === 'teacher' && teacherDialogSignature && (
+                {speakerDisplay.role === 'teacher' && (
                   <button
                     type="button"
-                    onClick={() => setDismissedTeacherDialogSignature(teacherDialogSignature)}
+                    onClick={() => setIsTeacherDialogCollapsed(true)}
                     aria-label="Close"
                     className="ml-1 inline-flex h-6 w-6 items-center justify-center rounded-md text-slate-500 transition-colors hover:bg-slate-200/70 hover:text-slate-800"
                   >
@@ -950,11 +942,10 @@ export function Stage({
           {mode === 'playback' &&
             speakerDisplay &&
             speakerDisplay.role === 'teacher' &&
-            teacherDialogSignature &&
             !teacherDialogVisible && (
               <button
                 type="button"
-                onClick={() => setDismissedTeacherDialogSignature(null)}
+                onClick={() => setIsTeacherDialogCollapsed(false)}
                 className="absolute bottom-11 left-4 z-[140] pointer-events-auto inline-flex items-center gap-2 rounded-full border-[4px] border-slate-900/80 bg-white/95 px-2.5 py-1.5 shadow-[0_2px_0_rgba(15,23,42,0.18)] transition hover:bg-slate-50"
               >
                 <span className="w-9 h-9 rounded-full overflow-hidden border-[3px] border-sky-500/80 bg-white flex items-center justify-center">

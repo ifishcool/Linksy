@@ -120,14 +120,39 @@ export function CanvasArea({
                   </TooltipTrigger>
                   <TooltipContent
                     side="left"
-                    className="rounded-xl border-[3px] border-slate-900/80 bg-white px-3 py-2 text-xs text-slate-700 shadow-[0_6px_0_rgba(15,23,42,0.15)]"
+                    sideOffset={12}
+                    className="rounded-3xl border-[3px] border-slate-900/80 bg-[#fffdf8] px-4 py-4 text-left text-xs text-slate-700 shadow-[0_6px_0_rgba(15,23,42,0.15)]"
                   >
-                    <div className="font-black text-slate-800">{student.name}</div>
-                    {student.persona && (
-                      <div className="text-[11px] text-slate-600 mt-1 max-w-[220px] whitespace-normal break-words">
-                        {student.persona}
+                    <div className="min-w-[240px] max-w-[320px]">
+                      <div className="flex items-center gap-3">
+                        <div className="h-12 w-12 shrink-0 overflow-hidden rounded-full border-[3px] border-slate-900/80 bg-white shadow-[0_2px_0_rgba(15,23,42,0.12)]">
+                          {/* eslint-disable-next-line @next/next/no-img-element */}
+                          <img
+                            src={student.avatar}
+                            alt={student.name}
+                            className="h-full w-full object-cover"
+                          />
+                        </div>
+                        <div className="min-w-0">
+                          <div className="text-[18px] leading-none font-black text-slate-800">
+                            {student.name}
+                          </div>
+                          <div className="mt-1 inline-flex rounded-full bg-[#8be0b6] px-2.5 py-1 text-[11px] font-black text-slate-900">
+                            {t(`settings.agentRoles.${student.role}`)}
+                          </div>
+                        </div>
                       </div>
-                    )}
+                      <div className="mt-3 h-px w-full bg-slate-900/10" />
+                      {student.persona ? (
+                        <div className="mt-3 text-[14px] leading-7 text-slate-600 whitespace-normal break-words">
+                          {student.persona}
+                        </div>
+                      ) : (
+                        <div className="mt-3 text-[14px] leading-7 text-slate-500">
+                          {t(`settings.agentRoles.${student.role}`)}
+                        </div>
+                      )}
+                    </div>
                   </TooltipContent>
                 </Tooltip>
               ))}
