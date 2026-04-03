@@ -270,6 +270,21 @@ export function PresentationSpeechOverlay({
             </motion.div>
           )}
         </AnimatePresence>
+
+        {bubble?.role === 'teacher' && teacherSignature && !teacherVisible && (
+          <button
+            type="button"
+            onClick={() => setDismissedTeacherSignature(null)}
+            className="absolute bottom-6 left-6 z-30 pointer-events-auto inline-flex items-center gap-2 rounded-full border border-gray-200/70 bg-white/90 px-2.5 py-1.5 shadow-[0_10px_25px_-18px_rgba(0,0,0,0.55)] backdrop-blur-sm transition hover:bg-white"
+          >
+            <span className="w-9 h-9 rounded-full overflow-hidden border-2 border-purple-200 dark:border-purple-700 bg-white flex items-center justify-center">
+              <AvatarDisplay src={bubble.avatar} alt={bubble.name} />
+            </span>
+            <span className="max-w-[160px] truncate text-xs font-semibold text-gray-800 dark:text-gray-100">
+              {bubble.name}
+            </span>
+          </button>
+        )}
       </div>
     );
   }

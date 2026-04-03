@@ -946,6 +946,25 @@ export function Stage({
               </div>
             </div>
           )}
+
+          {mode === 'playback' &&
+            speakerDisplay &&
+            speakerDisplay.role === 'teacher' &&
+            teacherDialogSignature &&
+            !teacherDialogVisible && (
+              <button
+                type="button"
+                onClick={() => setDismissedTeacherDialogSignature(null)}
+                className="absolute bottom-11 left-4 z-[140] pointer-events-auto inline-flex items-center gap-2 rounded-full border-[4px] border-slate-900/80 bg-white/95 px-2.5 py-1.5 shadow-[0_2px_0_rgba(15,23,42,0.18)] transition hover:bg-slate-50"
+              >
+                <span className="w-9 h-9 rounded-full overflow-hidden border-[3px] border-sky-500/80 bg-white flex items-center justify-center">
+                  {renderAvatar(speakerDisplay.avatar, speakerDisplay.name)}
+                </span>
+                <span className="max-w-[140px] truncate text-xs font-black text-slate-800">
+                  {speakerDisplay.name}
+                </span>
+              </button>
+            )}
         </div>
 
         {/* Roundtable Area */}
