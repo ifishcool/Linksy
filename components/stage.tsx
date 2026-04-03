@@ -174,6 +174,29 @@ export function Stage({
   const autoStartRef = useRef(false);
   // Discussion buffer-level pause state (distinct from soft-pause which aborts SSE)
   const [isDiscussionPaused, setIsDiscussionPaused] = useState(false);
+  const [isPresenting, setIsPresenting] = useState(false);
+  const stageContainerRef = useRef<HTMLDivElement>(null);
+
+  const handleTogglePresentation = useCallback(async () => {
+    try {
+      if (document.fullscreenElement) {
+        await document.exitFullscreen();
+      } else {
+        await stageContainerRef.current?.requestFullscreen();
+      }
+    } catch {
+      // Ignore browser fullscreen failures.
+    }
+  }, []);
+
+  useEffect(() => {
+    const handleFullscreenChange = () => {
+      setIsPresenting(document.fullscreenElement === stageContainerRef.current);
+    };
+    document.addEventListener('fullscreenchange', handleFullscreenChange);
+    handleFullscreenChange();
+    return () => document.removeEventListener('fullscreenchange', handleFullscreenChange);
+  }, []);
 
   /**
    * Soft-pause: interrupt current agent stream but keep the session active.
@@ -826,7 +849,8 @@ export function Stage({
   };
 
   return (
-    <div className="flex-1 flex overflow-hidden ">
+    <div ref={stageContainerRef} className="flex-1 flex overflow-hidden relative">
+      <div className="absolute inset-0 -z-10 bg-[url('/bg.png')] bg-cover bg-center bg-no-repeat pointer-events-none" />
       {/* Scene Sidebar */}
       <SceneSidebar
         collapsed={sidebarCollapsed}
@@ -838,7 +862,11 @@ export function Stage({
       {/* Main Content Area */}
       <div className="flex-1 flex flex-col overflow-hidden min-w-0 relative bg-transparent">
         {/* Header */}
-        <Header currentSceneTitle={currentScene?.title || ''} />
+        <Header
+          currentSceneTitle={currentScene?.title || ''}
+          isPresenting={isPresenting}
+          onTogglePresentation={handleTogglePresentation}
+        />
 
         {/* Canvas Area */}
         <div
@@ -880,6 +908,8 @@ export function Stage({
             onToggleAutoPlay={() => setAutoPlayLecture(!autoPlayLecture)}
             playbackSpeed={playbackSpeed}
             onCycleSpeed={handleCycleSpeed}
+            isPresenting={isPresenting}
+            onTogglePresentation={handleTogglePresentation}
             hideToolbar={false}
             isPendingScene={isPendingScene}
             isGenerationFailed={

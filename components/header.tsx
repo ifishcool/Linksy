@@ -1,29 +1,25 @@
 'use client';
 
-import { Settings, ArrowLeft, Loader2, Download, FileDown, Package } from 'lucide-react';
+import { Loader2, Download, FileDown, Maximize2, Minimize2, Package } from 'lucide-react';
 import { useI18n } from '@/lib/hooks/use-i18n';
 import { useState, useEffect, useRef, useCallback } from 'react';
-import { useRouter } from 'next/navigation';
-import { SettingsDialog } from './settings';
 import { cn } from '@/lib/utils';
-import { useSettingsStore } from '@/lib/store/settings';
 import { useStageStore } from '@/lib/store/stage';
 import { useMediaGenerationStore } from '@/lib/store/media-generation';
 import { useExportPPTX } from '@/lib/export/use-export-pptx';
 
 interface HeaderProps {
   readonly currentSceneTitle: string;
+  readonly isPresenting?: boolean;
+  readonly onTogglePresentation?: () => void;
 }
 
-export function Header({ currentSceneTitle }: HeaderProps) {
-  const { t, locale, setLocale } = useI18n();
-  const router = useRouter();
-  const [settingsOpen, setSettingsOpen] = useState(false);
-  const [languageOpen, setLanguageOpen] = useState(false);
-
-  // Model setup state
-  const currentModelId = useSettingsStore((s) => s.modelId);
-  const needsSetup = !currentModelId;
+export function Header({
+  currentSceneTitle,
+  isPresenting = false,
+  onTogglePresentation,
+}: HeaderProps) {
+  const { t } = useI18n();
 
   // Export
   const { exporting: isExporting, exportPPTX, exportResourcePack } = useExportPPTX();
@@ -40,27 +36,22 @@ export function Header({ currentSceneTitle }: HeaderProps) {
     failedOutlines.length === 0 &&
     Object.values(mediaTasks).every((task) => task.status === 'done' || task.status === 'failed');
 
-  const languageRef = useRef<HTMLDivElement>(null);
-
   // Close dropdown when clicking outside
   const handleClickOutside = useCallback(
     (e: MouseEvent) => {
-      if (languageOpen && languageRef.current && !languageRef.current.contains(e.target as Node)) {
-        setLanguageOpen(false);
-      }
       if (exportMenuOpen && exportRef.current && !exportRef.current.contains(e.target as Node)) {
         setExportMenuOpen(false);
       }
     },
-    [languageOpen, exportMenuOpen],
+    [exportMenuOpen],
   );
 
   useEffect(() => {
-    if (languageOpen || exportMenuOpen) {
+    if (exportMenuOpen) {
       document.addEventListener('mousedown', handleClickOutside);
       return () => document.removeEventListener('mousedown', handleClickOutside);
     }
-  }, [languageOpen, exportMenuOpen, handleClickOutside]);
+  }, [exportMenuOpen, handleClickOutside]);
 
   return (
     <>
@@ -77,70 +68,16 @@ export function Header({ currentSceneTitle }: HeaderProps) {
         </div>
 
         <div className="flex items-center gap-2 px-1 py-1 shrink-0">
-          {/* Language Selector */}
-          <div className="relative" ref={languageRef}>
+          {onTogglePresentation && (
             <button
-              onClick={() => {
-                setLanguageOpen(!languageOpen);
-              }}
-              className="flex items-center gap-1 h-10 px-4 rounded-full text-xs font-black text-slate-900 bg-[#56e0a7] border-[4px] border-slate-900 hover:brightness-95 transition-all"
+              onClick={onTogglePresentation}
+              className="h-10 w-10 rounded-full border-[4px] border-slate-900 bg-white text-slate-700 hover:bg-sky-50 hover:text-sky-700 transition-all flex items-center justify-center"
+              aria-label={isPresenting ? t('stage.exitFullscreen') : t('stage.fullscreen')}
+              title={isPresenting ? t('stage.exitFullscreen') : t('stage.fullscreen')}
             >
-              {locale === 'zh-CN' ? 'CN' : 'EN'}
+              {isPresenting ? <Minimize2 className="w-4 h-4" /> : <Maximize2 className="w-4 h-4" />}
             </button>
-            {languageOpen && (
-              <div className="absolute top-full mt-2 right-0 bg-white border-[3px] border-slate-900 rounded-xl overflow-hidden z-50 min-w-[120px]">
-                <button
-                  onClick={() => {
-                    setLocale('zh-CN');
-                    setLanguageOpen(false);
-                  }}
-                  className={cn(
-                    'w-full px-4 py-2 text-left text-sm hover:bg-sky-50 transition-colors',
-                    locale === 'zh-CN' && 'bg-sky-100 text-sky-700 font-bold',
-                  )}
-                >
-                  简体中文
-                </button>
-                <button
-                  onClick={() => {
-                    setLocale('en-US');
-                    setLanguageOpen(false);
-                  }}
-                  className={cn(
-                    'w-full px-4 py-2 text-left text-sm hover:bg-sky-50 transition-colors',
-                    locale === 'en-US' && 'bg-sky-100 text-sky-700 font-bold',
-                  )}
-                >
-                  English
-                </button>
-              </div>
-            )}
-          </div>
-
-          {/* Settings Button */}
-          <div className="relative">
-            <button
-              onClick={() => setSettingsOpen(true)}
-              className={cn(
-                'h-10 px-4 rounded-full text-xs font-black text-slate-900 bg-[#b495ff] border-[4px] border-slate-900 hover:brightness-95 transition-all group flex items-center gap-1.5',
-                needsSetup && 'animate-setup-glow',
-              )}
-            >
-              <Settings className="w-3.5 h-3.5 group-hover:rotate-90 transition-transform duration-500" />
-              <span>{t('settings.title')}</span>
-            </button>
-            {needsSetup && (
-              <>
-                <span className="absolute -top-0.5 -right-0.5 flex h-3 w-3">
-                  <span className="animate-setup-ping absolute inline-flex h-full w-full rounded-full bg-violet-400 opacity-75" />
-                  <span className="relative inline-flex rounded-full h-3 w-3 bg-violet-500" />
-                </span>
-                <span className="animate-setup-float absolute top-full mt-2 right-0 whitespace-nowrap text-[11px] font-medium text-orange-600 bg-orange-50 border border-orange-200 px-2 py-0.5 rounded-full pointer-events-none">
-                  {t('settings.setupNeeded')}
-                </span>
-              </>
-            )}
-          </div>
+          )}
         </div>
 
         {/* Export Dropdown */}
@@ -199,7 +136,6 @@ export function Header({ currentSceneTitle }: HeaderProps) {
           )}
         </div>
       </header>
-      <SettingsDialog open={settingsOpen} onOpenChange={setSettingsOpen} />
     </>
   );
 }
