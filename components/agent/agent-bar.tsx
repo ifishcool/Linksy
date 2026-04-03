@@ -130,7 +130,7 @@ function AgentVoicePill({
             text: previewText,
             audioId: 'voice-preview',
             ttsProviderId: providerId,
-            ttsModelId: modelId || providerConfig?.modelId,
+            ttsModelId: modelId || providerConfig?.model,
             ttsVoice: voiceId,
             ttsSpeed: 1,
             ttsApiKey: providerConfig?.apiKey,
@@ -338,7 +338,7 @@ function TeacherVoicePill({
             text: previewText,
             audioId: 'voice-preview',
             ttsProviderId: providerId,
-            ttsModelId: modelId || providerConfig?.modelId,
+            ttsModelId: modelId || providerConfig?.model,
             ttsVoice: voiceId,
             ttsSpeed: 1,
             ttsApiKey: providerConfig?.apiKey,
@@ -402,7 +402,7 @@ function TeacherVoicePill({
                     : provider.providerName}
                 </div>
                 {group.voices.map((voice) => {
-                  const currentModelId = ttsProvidersConfig[ttsProviderId]?.modelId || '';
+                  const currentModelId = ttsProvidersConfig[ttsProviderId]?.model || '';
                   const isActive =
                     ttsProviderId === provider.providerId &&
                     ttsVoice === voice.id &&
@@ -423,9 +423,9 @@ function TeacherVoicePill({
                         onClick={() => {
                           setTTSProvider(provider.providerId);
                           setTTSVoice(voice.id);
-                          if (group.modelId) {
-                            setTTSProviderConfig(provider.providerId, { modelId: group.modelId });
-                          }
+                        if (group.modelId) {
+                          setTTSProviderConfig(provider.providerId, { model: group.modelId });
+                        }
                           setPopoverOpen(false);
                         }}
                         className={cn(
