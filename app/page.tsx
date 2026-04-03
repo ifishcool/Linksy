@@ -63,6 +63,65 @@ const initialFormState: FormState = {
   webSearch: false,
 };
 
+type BillingCycle = 'monthly' | 'yearly';
+type AccountPlan = {
+  plan: 'free' | 'pro';
+  billingCycle: BillingCycle | null;
+  expiresAt: string | null;
+};
+
+type BillingOrder = {
+  id: string;
+  stripe_session_id: string;
+  product_id: string;
+  product_kind: 'score_pack' | 'pro_pass';
+  billing_cycle: BillingCycle | null;
+  amount_paid: number;
+  currency: string;
+  status: string;
+  entitlement_status: string;
+  score_delta: number;
+  subscription_plan: string | null;
+  subscription_expires_at: string | null;
+  paid_at: string | null;
+  created_at: string;
+};
+
+function readAccountPlanFromMetadata(metadata: Record<string, unknown> | undefined): AccountPlan {
+  const expiresAt =
+    typeof metadata?.subscriptionExpiresAt === 'string' ? metadata.subscriptionExpiresAt : null;
+  const hasActivePro =
+    metadata?.subscriptionPlan === 'pro' &&
+    metadata?.subscriptionStatus === 'active' &&
+    !!expiresAt &&
+    new Date(expiresAt) > new Date();
+
+  return {
+    plan: hasActivePro ? 'pro' : 'free',
+    billingCycle:
+      metadata?.subscriptionBillingCycle === 'monthly' ||
+      metadata?.subscriptionBillingCycle === 'yearly'
+        ? metadata.subscriptionBillingCycle
+        : null,
+    expiresAt: hasActivePro ? expiresAt : null,
+  };
+}
+
+function formatDateTime(dateString: string | null, locale: 'zh-CN' | 'en-US') {
+  if (!dateString) return locale === 'zh-CN' ? '暂无' : 'N/A';
+
+  const date = new Date(dateString);
+  if (Number.isNaN(date.getTime())) {
+    return locale === 'zh-CN' ? '暂无' : 'N/A';
+  }
+
+  return new Intl.DateTimeFormat(locale, {
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+  }).format(date);
+}
+
 function HomePage() {
   const { t, locale, setLocale } = useI18n();
   const router = useRouter();
@@ -122,11 +181,20 @@ function HomePage() {
   const supabaseClient = useMemo(() => getSupabaseClient(), []);
   const [authEmail, setAuthEmail] = useState<string | null>(null);
   const [aiLearningScore, setAiLearningScore] = useState(0);
+  const [accountPlan, setAccountPlan] = useState<AccountPlan>({
+    plan: 'free',
+    billingCycle: null,
+    expiresAt: null,
+  });
   const [authLoading, setAuthLoading] = useState(() => !!supabaseClient);
   const [accountPopoverOpen, setAccountPopoverOpen] = useState(false);
   const [rechargeDialogOpen, setRechargeDialogOpen] = useState(false);
-  const [billingCycle, setBillingCycle] = useState<'monthly' | 'yearly'>('monthly');
+  const [ordersDialogOpen, setOrdersDialogOpen] = useState(false);
+  const [billingCycle, setBillingCycle] = useState<BillingCycle>('monthly');
   const [purchasingPackScore, setPurchasingPackScore] = useState<number | null>(null);
+  const [startingSubscription, setStartingSubscription] = useState(false);
+  const [ordersLoading, setOrdersLoading] = useState(false);
+  const [orders, setOrders] = useState<BillingOrder[]>([]);
   const toolbarRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const displayName = profileNickname || t('profile.defaultNickname');
@@ -139,6 +207,7 @@ function HomePage() {
       if (!active) return;
       setAuthEmail(data.user?.email ?? null);
       setAiLearningScore(Number(data.user?.user_metadata?.aiLearningScore ?? 0) || 0);
+      setAccountPlan(readAccountPlanFromMetadata(data.user?.user_metadata));
       setAuthLoading(false);
     });
 
@@ -148,6 +217,7 @@ function HomePage() {
       if (!active) return;
       setAuthEmail(session?.user?.email ?? null);
       setAiLearningScore(Number(session?.user?.user_metadata?.aiLearningScore ?? 0) || 0);
+      setAccountPlan(readAccountPlanFromMetadata(session?.user?.user_metadata));
       setAuthLoading(false);
     });
 
@@ -156,6 +226,154 @@ function HomePage() {
       subscription.unsubscribe();
     };
   }, [supabaseClient]);
+
+  useEffect(() => {
+    if (typeof window === 'undefined' || !supabaseClient) return;
+
+    const url = new URL(window.location.href);
+    const checkout = url.searchParams.get('checkout');
+    if (!checkout) return;
+
+    const clearParams = () => {
+      url.searchParams.delete('checkout');
+      url.searchParams.delete('sessionId');
+      window.history.replaceState({}, '', url.toString());
+    };
+
+    if (checkout === 'cancelled') {
+      toast.message(locale === 'zh-CN' ? '已取消支付' : 'Payment cancelled');
+      clearParams();
+      return;
+    }
+
+    if (checkout === 'error') {
+      toast.error(locale === 'zh-CN' ? '支付处理失败，请重试' : 'Payment processing failed');
+      clearParams();
+      return;
+    }
+
+    if (checkout !== 'success') return;
+
+    const sessionId = url.searchParams.get('sessionId');
+
+    const applyCheckoutResult = async () => {
+      const {
+        data: { user },
+        error,
+      } = await supabaseClient.auth.getUser();
+
+      if (error || !user) {
+        toast.error(locale === 'zh-CN' ? '请先登录后查看支付结果' : 'Please sign in to continue');
+        clearParams();
+        return;
+      }
+
+      if (!sessionId) {
+        clearParams();
+        return;
+      }
+
+      const {
+        data: { session: authSession },
+      } = await supabaseClient.auth.getSession();
+
+      const token = authSession?.access_token;
+      if (!token) {
+        toast.error(locale === 'zh-CN' ? '登录状态已失效，请重新登录' : 'Session expired');
+        clearParams();
+        return;
+      }
+
+      let statusResult:
+        | {
+            processed: boolean;
+            kind: 'score_pack' | 'pro_pass' | null;
+            scoreDelta: number;
+            billingCycle: BillingCycle | null;
+            currentScore: number;
+            subscriptionExpiresAt: string | null;
+          }
+        | null = null;
+
+      for (let attempt = 0; attempt < 6; attempt++) {
+        const response = await fetch(
+          `/api/stripe/checkout/status?session_id=${encodeURIComponent(sessionId)}`,
+          {
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          },
+        );
+
+        const data = (await response.json().catch(() => ({}))) as {
+          processed?: boolean;
+          kind?: 'score_pack' | 'pro_pass' | null;
+          scoreDelta?: number;
+          billingCycle?: BillingCycle | null;
+          currentScore?: number;
+          subscriptionExpiresAt?: string | null;
+        };
+
+        if (response.ok) {
+          statusResult = {
+            processed: !!data.processed,
+            kind: data.kind ?? null,
+            scoreDelta: Number(data.scoreDelta ?? 0) || 0,
+            billingCycle: data.billingCycle ?? null,
+            currentScore: Number(data.currentScore ?? 0) || 0,
+            subscriptionExpiresAt: data.subscriptionExpiresAt ?? null,
+          };
+
+          if (statusResult.processed) break;
+        }
+
+        await new Promise((resolve) => window.setTimeout(resolve, 1200));
+      }
+
+      if (statusResult?.processed) {
+        setAiLearningScore(statusResult.currentScore);
+        if (statusResult.kind === 'pro_pass') {
+          setAccountPlan({
+            plan: 'pro',
+            billingCycle: statusResult.billingCycle,
+            expiresAt: statusResult.subscriptionExpiresAt,
+          });
+        }
+        if (ordersDialogOpen) {
+          void loadOrders();
+        }
+        if (statusResult.kind === 'score_pack') {
+          toast.success(
+            locale === 'zh-CN'
+              ? `支付成功，已到账 ${statusResult.scoreDelta} 学习分`
+              : `Payment succeeded, ${statusResult.scoreDelta} AI score added`,
+          );
+        } else if (statusResult.kind === 'pro_pass') {
+          toast.success(
+            locale === 'zh-CN'
+              ? statusResult.billingCycle === 'yearly'
+                ? '专业版年卡开通成功'
+                : '专业版月卡开通成功'
+              : statusResult.billingCycle === 'yearly'
+                ? 'Pro yearly pass activated'
+                : 'Pro monthly pass activated',
+          );
+        } else {
+          toast.success(locale === 'zh-CN' ? '支付成功' : 'Payment successful');
+        }
+      } else {
+        toast.message(
+          locale === 'zh-CN'
+            ? '支付成功，权益正在到账，请稍后刷新查看'
+            : 'Payment succeeded, benefits are being applied',
+        );
+      }
+
+      clearParams();
+    };
+
+    void applyCheckoutResult();
+  }, [locale, supabaseClient]);
 
   const handleSignOut = async () => {
     if (!supabaseClient) {
@@ -167,61 +385,119 @@ function HomePage() {
       return;
     }
     setAccountPopoverOpen(false);
+    setOrders([]);
+    setAccountPlan({ plan: 'free', billingCycle: null, expiresAt: null });
     toast.success(locale === 'zh-CN' ? '已退出登录' : 'Signed out');
+  };
+
+  const loadOrders = async () => {
+    if (!supabaseClient) return;
+
+    const {
+      data: { session: authSession },
+    } = await supabaseClient.auth.getSession();
+
+    const token = authSession?.access_token;
+    if (!token) {
+      setOrders([]);
+      return;
+    }
+
+    setOrdersLoading(true);
+    try {
+      const response = await fetch('/api/account/orders', {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      const data = (await response.json().catch(() => ({}))) as {
+        orders?: BillingOrder[];
+        error?: string;
+      };
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Failed to load orders');
+      }
+
+      setOrders(Array.isArray(data.orders) ? data.orders : []);
+    } catch (error) {
+      setOrders([]);
+      toast.error(
+        error instanceof Error
+          ? error.message
+          : locale === 'zh-CN'
+            ? '订单加载失败'
+            : 'Failed to load orders',
+      );
+    } finally {
+      setOrdersLoading(false);
+    }
   };
 
   const handleAuthEntry = () => {
     router.push('/auth');
   };
 
-  const handleTestScorePackPurchase = async (scoreToAdd: number) => {
+  const createCheckoutSession = async (payload: { productId: string }) => {
     if (!supabaseClient) {
       toast.error(locale === 'zh-CN' ? '当前未配置登录服务' : 'Auth service is not configured');
-      return;
+      return null;
     }
 
     const {
       data: { user },
       error: userError,
     } = await supabaseClient.auth.getUser();
+    const {
+      data: { session: authSession },
+    } = await supabaseClient.auth.getSession();
 
     if (userError || !user) {
       toast.error(locale === 'zh-CN' ? '请先登录后再购买' : 'Please sign in before purchasing');
       if (!user) router.push('/auth');
-      return;
+      return null;
     }
 
-    const currentScore = Number(user.user_metadata?.aiLearningScore ?? aiLearningScore ?? 0) || 0;
-    const nextScore = currentScore + scoreToAdd;
+    const response = await fetch('/api/stripe/checkout', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${authSession?.access_token ?? ''}`,
+      },
+      body: JSON.stringify(payload),
+    });
 
+    const data = (await response.json().catch(() => ({}))) as { url?: string; error?: string };
+    if (!response.ok || !data.url) {
+      toast.error(data.error || (locale === 'zh-CN' ? '创建支付失败' : 'Failed to create checkout'));
+      return null;
+    }
+
+    window.location.href = data.url;
+    return data.url;
+  };
+
+  const handleTestScorePackPurchase = async (scoreToAdd: number) => {
     setPurchasingPackScore(scoreToAdd);
-    setAiLearningScore(nextScore);
-
     try {
-      const { data, error } = await supabaseClient.auth.updateUser({
-        data: {
-          ...user.user_metadata,
-          aiLearningScore: nextScore,
-        },
+      await createCheckoutSession({
+        productId:
+          scoreToAdd === 10 ? 'score_pack_10_test' : scoreToAdd === 50 ? 'score_pack_50' : 'score_pack_100',
       });
-
-      if (error) {
-        setAiLearningScore(currentScore);
-        toast.error(error.message);
-        return;
-      }
-
-      setAiLearningScore(Number(data.user?.user_metadata?.aiLearningScore ?? nextScore) || nextScore);
-      toast.success(
-        locale === 'zh-CN'
-          ? `测试成功，已增加 ${scoreToAdd} 学习分`
-          : `Test success: added ${scoreToAdd} AI score`,
-      );
-    } catch {
-      setAiLearningScore(currentScore);
-      toast.error(locale === 'zh-CN' ? '加分失败，请稍后重试' : 'Failed to add score');
     } finally {
       setPurchasingPackScore(null);
+    }
+  };
+
+  const handleStartSubscription = async () => {
+    setStartingSubscription(true);
+    try {
+      await createCheckoutSession({
+        productId: billingCycle === 'yearly' ? 'pro_year_pass' : 'pro_month_pass',
+      });
+    } finally {
+      setStartingSubscription(false);
     }
   };
 
@@ -244,6 +520,11 @@ function HomePage() {
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, [languageOpen]);
+
+  useEffect(() => {
+    if (!ordersDialogOpen || !authEmail) return;
+    void loadOrders();
+  }, [ordersDialogOpen, authEmail]);
 
   const loadClassrooms = async () => {
     try {
@@ -472,6 +753,8 @@ function HomePage() {
   }, [classrooms, locale, t]);
 
   const canGenerate = !!form.requirement.trim();
+  const isCurrentProPlan = accountPlan.plan === 'pro' && !!accountPlan.expiresAt;
+  const isCurrentFreePlan = accountPlan.plan === 'free';
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
     if ((e.metaKey || e.ctrlKey) && e.key === 'Enter') {
@@ -588,6 +871,49 @@ function HomePage() {
                       </div>
                     </div>
                   </div>
+
+                  <div className="mt-2 rounded-[14px] border-[3px] border-slate-900/10 bg-[#fff8e6] px-2.5 py-2 text-[11px] text-slate-700 md:mt-3 md:rounded-[18px] md:px-3 md:py-3 md:text-xs">
+                    <div className="flex items-center justify-between gap-3">
+                      <span className="font-black text-slate-500">
+                        {locale === 'zh-CN' ? '当前套餐' : 'Current plan'}
+                      </span>
+                      <span className="font-black text-slate-900">
+                        {accountPlan.plan === 'pro'
+                          ? locale === 'zh-CN'
+                            ? accountPlan.billingCycle === 'yearly'
+                              ? '专业版年卡'
+                              : '专业版月卡'
+                            : accountPlan.billingCycle === 'yearly'
+                              ? 'Pro Yearly'
+                              : 'Pro Monthly'
+                          : locale === 'zh-CN'
+                            ? '免费版'
+                            : 'Free'}
+                      </span>
+                    </div>
+                    <div className="mt-1 flex items-center justify-between gap-3">
+                      <span className="font-black text-slate-500">
+                        {locale === 'zh-CN' ? '到期时间' : 'Expires on'}
+                      </span>
+                      <span className="font-bold text-slate-700">
+                        {accountPlan.plan === 'pro'
+                          ? formatDateTime(accountPlan.expiresAt, locale)
+                          : locale === 'zh-CN'
+                            ? '长期有效'
+                            : 'No expiration'}
+                      </span>
+                    </div>
+                  </div>
+
+                  <button
+                    onClick={() => {
+                      setAccountPopoverOpen(false);
+                      setOrdersDialogOpen(true);
+                    }}
+                    className="mt-2.5 flex h-10 w-full cursor-pointer items-center justify-center gap-2 rounded-full border-[3px] border-slate-900/75 bg-white px-3 py-1.5 text-[13px] font-black text-slate-800 transition-all hover:bg-sky-50 md:mt-3 md:h-auto md:px-4 md:py-2.5 md:text-sm"
+                  >
+                    <span>{locale === 'zh-CN' ? '个人订单' : 'My orders'}</span>
+                  </button>
 
                   <button
                     onClick={() => {
@@ -755,10 +1081,21 @@ function HomePage() {
                     </span>
                   </div>
                   <button
-                    className="mt-4 flex h-10 w-full items-center justify-center rounded-full border-[3px] border-slate-900/20 bg-slate-100 text-xs font-black text-slate-400 md:mt-6 md:h-12 md:text-sm"
+                    className={cn(
+                      'mt-4 flex h-10 w-full items-center justify-center rounded-full border-[3px] text-xs font-black md:mt-6 md:h-12 md:text-sm',
+                      isCurrentFreePlan
+                        ? 'border-slate-900/20 bg-slate-100 text-slate-400'
+                        : 'border-slate-900/15 bg-white/70 text-slate-300',
+                    )}
                     disabled
                   >
-                    {locale === 'zh-CN' ? '当前计划' : 'Current plan'}
+                    {isCurrentFreePlan
+                      ? locale === 'zh-CN'
+                        ? '当前计划'
+                        : 'Current plan'
+                      : locale === 'zh-CN'
+                        ? '基础方案'
+                        : 'Basic plan'}
                   </button>
                   <div className="mt-4 space-y-1.5 text-[11px] text-slate-700 md:mt-6 md:space-y-3 md:text-sm">
                     <div>
@@ -812,8 +1149,27 @@ function HomePage() {
                           : 'Was 29 CNY'}
                     </span>
                   </div>
-                  <button className="mt-4 flex h-10 w-full cursor-pointer items-center justify-center rounded-full border-[3px] border-slate-900/75 bg-orange-400 text-xs font-black text-white transition-colors hover:bg-orange-500 md:mt-6 md:h-12 md:text-sm">
-                    {locale === 'zh-CN' ? '立即开通' : 'Upgrade now'}
+                  <button
+                    onClick={() => void handleStartSubscription()}
+                    disabled={startingSubscription || isCurrentProPlan}
+                    className={cn(
+                      'mt-4 flex h-10 w-full items-center justify-center rounded-full border-[3px] text-xs font-black transition-colors md:mt-6 md:h-12 md:text-sm',
+                      isCurrentProPlan
+                        ? 'border-slate-900/20 bg-slate-100 text-slate-400'
+                        : 'cursor-pointer border-slate-900/75 bg-orange-400 text-white hover:bg-orange-500 disabled:cursor-wait disabled:opacity-60',
+                    )}
+                  >
+                    {isCurrentProPlan
+                      ? locale === 'zh-CN'
+                        ? '当前计划'
+                        : 'Current plan'
+                      : startingSubscription
+                      ? locale === 'zh-CN'
+                        ? '跳转中...'
+                        : 'Redirecting...'
+                      : locale === 'zh-CN'
+                        ? '立即开通'
+                        : 'Upgrade now'}
                   </button>
                   <div className="mt-4 space-y-1.5 text-[11px] text-slate-700 md:mt-6 md:space-y-3 md:text-sm">
                     <div>
@@ -849,8 +1205,8 @@ function HomePage() {
                   </div>
                   <div className="text-[10px] font-bold text-sky-700 md:text-xs">
                     {locale === 'zh-CN'
-                      ? '兑换比例：10 学习分 = 1 元'
-                      : 'Rate: 10 score = 1 CNY'}
+                      ? '测试说明：Stripe 最低支付金额限制下，10 学习分临时按 4 元测试'
+                      : 'Testing note: the 10-score pack is temporarily 4 CNY due to Stripe minimum charge limits'}
                   </div>
                 </div>
 
@@ -858,9 +1214,9 @@ function HomePage() {
                   {[
                     {
                       score: 10,
-                      price: 1,
+                      price: 4,
                       accent: 'bg-sky-50',
-                      badge: locale === 'zh-CN' ? '入门包' : 'Starter',
+                      badge: locale === 'zh-CN' ? '测试包' : 'Test',
                     },
                     {
                       score: 50,
@@ -914,6 +1270,175 @@ function HomePage() {
                       </button>
                     </div>
                   ))}
+                </div>
+              </div>
+            </div>
+          </DialogContent>
+        </Dialog>
+        <Dialog open={ordersDialogOpen} onOpenChange={setOrdersDialogOpen}>
+          <DialogContent
+            showCloseButton={false}
+            className="w-[min(760px,calc(100vw-20px))] max-w-none rounded-[24px] border-[4px] border-slate-900/80 bg-[#fff8e6] p-0 shadow-[0_10px_0_rgba(15,23,42,0.15)] md:w-[min(760px,calc(100vw-32px))] md:rounded-[32px]"
+          >
+            <DialogTitle className="sr-only">
+              {locale === 'zh-CN' ? '个人订单' : 'My orders'}
+            </DialogTitle>
+
+            <div className="relative max-h-[82vh] overflow-y-auto overflow-x-hidden rounded-[18px] p-3 pretty-scrollbar md:max-h-[86vh] md:rounded-[28px] md:p-6">
+              <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(125,211,252,0.2),transparent_28%),radial-gradient(circle_at_bottom_right,rgba(251,191,36,0.18),transparent_30%)]" />
+
+              <div className="relative flex items-start justify-between gap-3">
+                <div>
+                  <h3 className="mt-1 text-lg font-black text-slate-900 md:text-2xl">
+                    {locale === 'zh-CN' ? '个人订单' : 'My orders'}
+                  </h3>
+                  <p className="mt-1 text-[11px] text-slate-600 md:text-sm">
+                    {locale === 'zh-CN'
+                      ? '这里会保存你的购买记录，便于后续查单、对账和售后处理。'
+                      : 'Your purchase history is saved here for review and support.'}
+                  </p>
+                </div>
+
+                <button
+                  onClick={() => setOrdersDialogOpen(false)}
+                  className="shrink-0 cursor-pointer rounded-full border-[3px] border-slate-900/70 bg-white px-2.5 py-1 text-[10px] font-black text-slate-700 transition-colors hover:bg-sky-50 md:px-3 md:py-1.5 md:text-xs"
+                >
+                  {locale === 'zh-CN' ? '关闭' : 'Close'}
+                </button>
+              </div>
+
+              <div className="relative mt-4 rounded-[22px] border-[4px] border-slate-900/75 bg-white/90 px-3 py-3 shadow-[0_6px_0_rgba(15,23,42,0.1)] md:mt-6 md:rounded-[28px] md:px-5 md:py-5">
+                <div className="grid grid-cols-2 gap-2 md:grid-cols-4 md:gap-3">
+                  <div className="rounded-[18px] border-[3px] border-slate-900/10 bg-sky-50/60 px-3 py-2.5">
+                    <div className="text-[10px] font-black text-slate-500 md:text-xs">
+                      {locale === 'zh-CN' ? '当前套餐' : 'Current plan'}
+                    </div>
+                    <div className="mt-1 text-sm font-black text-slate-900 md:text-base">
+                      {accountPlan.plan === 'pro'
+                        ? locale === 'zh-CN'
+                          ? accountPlan.billingCycle === 'yearly'
+                            ? '专业版年卡'
+                            : '专业版月卡'
+                          : accountPlan.billingCycle === 'yearly'
+                            ? 'Pro Yearly'
+                            : 'Pro Monthly'
+                        : locale === 'zh-CN'
+                          ? '免费版'
+                          : 'Free'}
+                    </div>
+                  </div>
+                  <div className="rounded-[18px] border-[3px] border-slate-900/10 bg-orange-50/70 px-3 py-2.5">
+                    <div className="text-[10px] font-black text-slate-500 md:text-xs">
+                      {locale === 'zh-CN' ? '到期时间' : 'Expires on'}
+                    </div>
+                    <div className="mt-1 text-sm font-black text-slate-900 md:text-base">
+                      {accountPlan.plan === 'pro'
+                        ? formatDateTime(accountPlan.expiresAt, locale)
+                        : locale === 'zh-CN'
+                          ? '长期有效'
+                          : 'No expiration'}
+                    </div>
+                  </div>
+                  <div className="rounded-[18px] border-[3px] border-slate-900/10 bg-emerald-50/70 px-3 py-2.5">
+                    <div className="text-[10px] font-black text-slate-500 md:text-xs">
+                      {locale === 'zh-CN' ? 'AI学习分' : 'AI score'}
+                    </div>
+                    <div className="mt-1 text-sm font-black text-slate-900 md:text-base">
+                      {aiLearningScore}
+                    </div>
+                  </div>
+                  <div className="rounded-[18px] border-[3px] border-slate-900/10 bg-white px-3 py-2.5">
+                    <div className="text-[10px] font-black text-slate-500 md:text-xs">
+                      {locale === 'zh-CN' ? '订单数量' : 'Orders'}
+                    </div>
+                    <div className="mt-1 text-sm font-black text-slate-900 md:text-base">
+                      {orders.length}
+                    </div>
+                  </div>
+                </div>
+
+                <div className="mt-4 flex items-center justify-between gap-3 md:mt-5">
+                  <div className="text-sm font-black text-slate-900 md:text-base">
+                    {locale === 'zh-CN' ? '购买记录' : 'Purchase history'}
+                  </div>
+                  <button
+                    onClick={() => void loadOrders()}
+                    className="cursor-pointer rounded-full border-[3px] border-slate-900/70 bg-white px-3 py-1 text-[11px] font-black text-slate-700 transition-colors hover:bg-sky-50 md:px-3.5 md:py-1.5 md:text-xs"
+                  >
+                    {locale === 'zh-CN' ? '刷新' : 'Refresh'}
+                  </button>
+                </div>
+
+                <div className="mt-3 space-y-2 md:space-y-3">
+                  {ordersLoading ? (
+                    <div className="rounded-[18px] border-[3px] border-dashed border-slate-900/25 bg-white/80 px-4 py-8 text-center text-sm font-bold text-slate-500">
+                      {locale === 'zh-CN' ? '订单加载中...' : 'Loading orders...'}
+                    </div>
+                  ) : orders.length === 0 ? (
+                    <div className="rounded-[18px] border-[3px] border-dashed border-slate-900/25 bg-white/80 px-4 py-8 text-center text-sm font-bold text-slate-500">
+                      {locale === 'zh-CN' ? '还没有订单记录。' : 'No orders yet.'}
+                    </div>
+                  ) : (
+                    orders.map((order) => (
+                      <div
+                        key={order.id}
+                        className="rounded-[18px] border-[3px] border-slate-900/10 bg-white px-3 py-3 shadow-[0_3px_0_rgba(15,23,42,0.06)] md:px-4"
+                      >
+                        <div className="flex flex-wrap items-start justify-between gap-3">
+                          <div>
+                            <div className="text-sm font-black text-slate-900 md:text-base">
+                              {order.product_kind === 'score_pack'
+                                ? locale === 'zh-CN'
+                                  ? `${order.score_delta} 学习分额度包`
+                                  : `${order.score_delta} score pack`
+                                : locale === 'zh-CN'
+                                  ? order.billing_cycle === 'yearly'
+                                    ? '专业版年卡'
+                                    : '专业版月卡'
+                                  : order.billing_cycle === 'yearly'
+                                    ? 'Pro yearly pass'
+                                    : 'Pro monthly pass'}
+                            </div>
+                            <div className="mt-1 text-[11px] text-slate-500 md:text-xs">
+                              {locale === 'zh-CN' ? '订单时间：' : 'Ordered on: '}
+                              {formatDateTime(order.paid_at ?? order.created_at, locale)}
+                            </div>
+                            <div className="mt-1 text-[11px] text-slate-500 md:text-xs">
+                              Session ID: {order.stripe_session_id}
+                            </div>
+                          </div>
+                          <div className="text-right">
+                            <div className="text-lg font-black text-slate-900 md:text-2xl">
+                              {(order.amount_paid / 100).toFixed(order.amount_paid % 100 === 0 ? 0 : 2)}
+                              <span className="ml-1 text-xs font-bold text-slate-500 uppercase md:text-sm">
+                                {order.currency}
+                              </span>
+                            </div>
+                            <div className="mt-1 inline-flex rounded-full bg-emerald-100 px-2 py-0.5 text-[10px] font-black text-emerald-700 md:text-xs">
+                              {order.entitlement_status === 'applied'
+                                ? locale === 'zh-CN'
+                                  ? '已到账'
+                                  : 'Applied'
+                                : order.entitlement_status === 'failed'
+                                  ? locale === 'zh-CN'
+                                    ? '发放失败'
+                                    : 'Failed'
+                                  : locale === 'zh-CN'
+                                    ? '处理中'
+                                    : 'Processing'}
+                            </div>
+                          </div>
+                        </div>
+
+                        {order.product_kind === 'pro_pass' && order.subscription_expires_at ? (
+                          <div className="mt-2 text-[11px] font-bold text-slate-600 md:text-xs">
+                            {locale === 'zh-CN' ? '权益到期：' : 'Access until: '}
+                            {formatDateTime(order.subscription_expires_at, locale)}
+                          </div>
+                        ) : null}
+                      </div>
+                    ))
+                  )}
                 </div>
               </div>
             </div>

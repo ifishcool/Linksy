@@ -233,7 +233,8 @@ export function PresentationSpeechOverlay({
   });
 
   const teacherSignature = useMemo(
-    () => (bubble && bubble.role === 'teacher' ? `${bubble.key}:${bubble.text}` : null),
+    () =>
+      bubble && bubble.role === 'teacher' ? `${bubble.key}:${bubble.text}:${Date.now()}` : null,
     [bubble],
   );
 

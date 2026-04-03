@@ -295,6 +295,68 @@ export interface Database {
           updated_at?: string;
         };
       };
+      billing_orders: {
+        Row: {
+          id: string;
+          user_id: string;
+          stripe_session_id: string;
+          stripe_payment_intent_id: string | null;
+          product_id: string;
+          product_kind: 'score_pack' | 'pro_pass';
+          billing_cycle: 'monthly' | 'yearly' | null;
+          amount_paid: number;
+          currency: string;
+          status: string;
+          entitlement_status: string;
+          score_delta: number;
+          subscription_plan: string | null;
+          subscription_expires_at: string | null;
+          paid_at: string | null;
+          raw_event: Json | null;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          user_id: string;
+          stripe_session_id: string;
+          stripe_payment_intent_id?: string | null;
+          product_id: string;
+          product_kind: 'score_pack' | 'pro_pass';
+          billing_cycle?: 'monthly' | 'yearly' | null;
+          amount_paid: number;
+          currency?: string;
+          status?: string;
+          entitlement_status?: string;
+          score_delta?: number;
+          subscription_plan?: string | null;
+          subscription_expires_at?: string | null;
+          paid_at?: string | null;
+          raw_event?: Json | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          id?: string;
+          user_id?: string;
+          stripe_session_id?: string;
+          stripe_payment_intent_id?: string | null;
+          product_id?: string;
+          product_kind?: 'score_pack' | 'pro_pass';
+          billing_cycle?: 'monthly' | 'yearly' | null;
+          amount_paid?: number;
+          currency?: string;
+          status?: string;
+          entitlement_status?: string;
+          score_delta?: number;
+          subscription_plan?: string | null;
+          subscription_expires_at?: string | null;
+          paid_at?: string | null;
+          raw_event?: Json | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+      };
     };
     Views: {
       [_ in never]: never;
