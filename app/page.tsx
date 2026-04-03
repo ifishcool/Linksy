@@ -8,6 +8,7 @@ import {
   Check,
   ChevronDown,
   ImagePlus,
+  LogOut,
   Pencil,
   Trash2,
   Settings,
@@ -39,6 +40,8 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog';
 import { getSupabaseClient } from '@/lib/supabase/client';
 const now = Date.now();
 const log = createLogger('Home');
@@ -60,6 +63,65 @@ const initialFormState: FormState = {
   webSearch: false,
 };
 
+type BillingCycle = 'monthly' | 'yearly';
+type AccountPlan = {
+  plan: 'free' | 'pro';
+  billingCycle: BillingCycle | null;
+  expiresAt: string | null;
+};
+
+type BillingOrder = {
+  id: string;
+  stripe_session_id: string;
+  product_id: string;
+  product_kind: 'score_pack' | 'pro_pass';
+  billing_cycle: BillingCycle | null;
+  amount_paid: number;
+  currency: string;
+  status: string;
+  entitlement_status: string;
+  score_delta: number;
+  subscription_plan: string | null;
+  subscription_expires_at: string | null;
+  paid_at: string | null;
+  created_at: string;
+};
+
+function readAccountPlanFromMetadata(metadata: Record<string, unknown> | undefined): AccountPlan {
+  const expiresAt =
+    typeof metadata?.subscriptionExpiresAt === 'string' ? metadata.subscriptionExpiresAt : null;
+  const hasActivePro =
+    metadata?.subscriptionPlan === 'pro' &&
+    metadata?.subscriptionStatus === 'active' &&
+    !!expiresAt &&
+    new Date(expiresAt) > new Date();
+
+  return {
+    plan: hasActivePro ? 'pro' : 'free',
+    billingCycle:
+      metadata?.subscriptionBillingCycle === 'monthly' ||
+      metadata?.subscriptionBillingCycle === 'yearly'
+        ? metadata.subscriptionBillingCycle
+        : null,
+    expiresAt: hasActivePro ? expiresAt : null,
+  };
+}
+
+function formatDateTime(dateString: string | null, locale: 'zh-CN' | 'en-US') {
+  if (!dateString) return locale === 'zh-CN' ? '暂无' : 'N/A';
+
+  const date = new Date(dateString);
+  if (Number.isNaN(date.getTime())) {
+    return locale === 'zh-CN' ? '暂无' : 'N/A';
+  }
+
+  return new Intl.DateTimeFormat(locale, {
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+  }).format(date);
+}
+
 function HomePage() {
   const { t, locale, setLocale } = useI18n();
   const router = useRouter();
@@ -75,6 +137,8 @@ function HomePage() {
 
   // Model setup state
   const currentModelId = useSettingsStore((s) => s.modelId);
+  const profileAvatar = useUserProfileStore((s) => s.avatar);
+  const profileNickname = useUserProfileStore((s) => s.nickname);
   const [storeHydrated, setStoreHydrated] = useState(false);
 
   // Hydrate client-only state after mount (avoids SSR mismatch)
@@ -116,9 +180,24 @@ function HomePage() {
   const [classrooms, setClassrooms] = useState<StageListItem[]>([]);
   const supabaseClient = useMemo(() => getSupabaseClient(), []);
   const [authEmail, setAuthEmail] = useState<string | null>(null);
+  const [aiLearningScore, setAiLearningScore] = useState(0);
+  const [accountPlan, setAccountPlan] = useState<AccountPlan>({
+    plan: 'free',
+    billingCycle: null,
+    expiresAt: null,
+  });
   const [authLoading, setAuthLoading] = useState(() => !!supabaseClient);
+  const [accountPopoverOpen, setAccountPopoverOpen] = useState(false);
+  const [rechargeDialogOpen, setRechargeDialogOpen] = useState(false);
+  const [ordersDialogOpen, setOrdersDialogOpen] = useState(false);
+  const [billingCycle, setBillingCycle] = useState<BillingCycle>('monthly');
+  const [purchasingPackScore, setPurchasingPackScore] = useState<number | null>(null);
+  const [startingSubscription, setStartingSubscription] = useState(false);
+  const [ordersLoading, setOrdersLoading] = useState(false);
+  const [orders, setOrders] = useState<BillingOrder[]>([]);
   const toolbarRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const displayName = profileNickname || t('profile.defaultNickname');
 
   useEffect(() => {
     if (!supabaseClient) return;
@@ -127,6 +206,8 @@ function HomePage() {
     supabaseClient.auth.getUser().then(({ data }) => {
       if (!active) return;
       setAuthEmail(data.user?.email ?? null);
+      setAiLearningScore(Number(data.user?.user_metadata?.aiLearningScore ?? 0) || 0);
+      setAccountPlan(readAccountPlanFromMetadata(data.user?.user_metadata));
       setAuthLoading(false);
     });
 
@@ -135,6 +216,8 @@ function HomePage() {
     } = supabaseClient.auth.onAuthStateChange((_event, session) => {
       if (!active) return;
       setAuthEmail(session?.user?.email ?? null);
+      setAiLearningScore(Number(session?.user?.user_metadata?.aiLearningScore ?? 0) || 0);
+      setAccountPlan(readAccountPlanFromMetadata(session?.user?.user_metadata));
       setAuthLoading(false);
     });
 
@@ -144,13 +227,156 @@ function HomePage() {
     };
   }, [supabaseClient]);
 
-  const handleAuthAction = async () => {
-    if (!supabaseClient) {
-      router.push('/auth');
+  useEffect(() => {
+    if (typeof window === 'undefined' || !supabaseClient) return;
+
+    const url = new URL(window.location.href);
+    const checkout = url.searchParams.get('checkout');
+    if (!checkout) return;
+
+    const clearParams = () => {
+      url.searchParams.delete('checkout');
+      url.searchParams.delete('sessionId');
+      window.history.replaceState({}, '', url.toString());
+    };
+
+    if (checkout === 'cancelled') {
+      toast.message(locale === 'zh-CN' ? '已取消支付' : 'Payment cancelled');
+      clearParams();
       return;
     }
-    if (!authEmail) {
-      router.push('/auth');
+
+    if (checkout === 'error') {
+      toast.error(locale === 'zh-CN' ? '支付处理失败，请重试' : 'Payment processing failed');
+      clearParams();
+      return;
+    }
+
+    if (checkout !== 'success') return;
+
+    const sessionId = url.searchParams.get('sessionId');
+
+    const applyCheckoutResult = async () => {
+      const {
+        data: { user },
+        error,
+      } = await supabaseClient.auth.getUser();
+
+      if (error || !user) {
+        toast.error(locale === 'zh-CN' ? '请先登录后查看支付结果' : 'Please sign in to continue');
+        clearParams();
+        return;
+      }
+
+      if (!sessionId) {
+        clearParams();
+        return;
+      }
+
+      const {
+        data: { session: authSession },
+      } = await supabaseClient.auth.getSession();
+
+      const token = authSession?.access_token;
+      if (!token) {
+        toast.error(locale === 'zh-CN' ? '登录状态已失效，请重新登录' : 'Session expired');
+        clearParams();
+        return;
+      }
+
+      let statusResult:
+        | {
+            processed: boolean;
+            kind: 'score_pack' | 'pro_pass' | null;
+            scoreDelta: number;
+            billingCycle: BillingCycle | null;
+            currentScore: number;
+            subscriptionExpiresAt: string | null;
+          }
+        | null = null;
+
+      for (let attempt = 0; attempt < 6; attempt++) {
+        const response = await fetch(
+          `/api/stripe/checkout/status?session_id=${encodeURIComponent(sessionId)}`,
+          {
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          },
+        );
+
+        const data = (await response.json().catch(() => ({}))) as {
+          processed?: boolean;
+          kind?: 'score_pack' | 'pro_pass' | null;
+          scoreDelta?: number;
+          billingCycle?: BillingCycle | null;
+          currentScore?: number;
+          subscriptionExpiresAt?: string | null;
+        };
+
+        if (response.ok) {
+          statusResult = {
+            processed: !!data.processed,
+            kind: data.kind ?? null,
+            scoreDelta: Number(data.scoreDelta ?? 0) || 0,
+            billingCycle: data.billingCycle ?? null,
+            currentScore: Number(data.currentScore ?? 0) || 0,
+            subscriptionExpiresAt: data.subscriptionExpiresAt ?? null,
+          };
+
+          if (statusResult.processed) break;
+        }
+
+        await new Promise((resolve) => window.setTimeout(resolve, 1200));
+      }
+
+      if (statusResult?.processed) {
+        setAiLearningScore(statusResult.currentScore);
+        if (statusResult.kind === 'pro_pass') {
+          setAccountPlan({
+            plan: 'pro',
+            billingCycle: statusResult.billingCycle,
+            expiresAt: statusResult.subscriptionExpiresAt,
+          });
+        }
+        if (ordersDialogOpen) {
+          void loadOrders();
+        }
+        if (statusResult.kind === 'score_pack') {
+          toast.success(
+            locale === 'zh-CN'
+              ? `支付成功，已到账 ${statusResult.scoreDelta} 学习分`
+              : `Payment succeeded, ${statusResult.scoreDelta} AI score added`,
+          );
+        } else if (statusResult.kind === 'pro_pass') {
+          toast.success(
+            locale === 'zh-CN'
+              ? statusResult.billingCycle === 'yearly'
+                ? '专业版年卡开通成功'
+                : '专业版月卡开通成功'
+              : statusResult.billingCycle === 'yearly'
+                ? 'Pro yearly pass activated'
+                : 'Pro monthly pass activated',
+          );
+        } else {
+          toast.success(locale === 'zh-CN' ? '支付成功' : 'Payment successful');
+        }
+      } else {
+        toast.message(
+          locale === 'zh-CN'
+            ? '支付成功，权益正在到账，请稍后刷新查看'
+            : 'Payment succeeded, benefits are being applied',
+        );
+      }
+
+      clearParams();
+    };
+
+    void applyCheckoutResult();
+  }, [locale, supabaseClient]);
+
+  const handleSignOut = async () => {
+    if (!supabaseClient) {
       return;
     }
     const { error: signOutError } = await supabaseClient.auth.signOut();
@@ -158,7 +384,121 @@ function HomePage() {
       toast.error(signOutError.message);
       return;
     }
+    setAccountPopoverOpen(false);
+    setOrders([]);
+    setAccountPlan({ plan: 'free', billingCycle: null, expiresAt: null });
     toast.success(locale === 'zh-CN' ? '已退出登录' : 'Signed out');
+  };
+
+  const loadOrders = async () => {
+    if (!supabaseClient) return;
+
+    const {
+      data: { session: authSession },
+    } = await supabaseClient.auth.getSession();
+
+    const token = authSession?.access_token;
+    if (!token) {
+      setOrders([]);
+      return;
+    }
+
+    setOrdersLoading(true);
+    try {
+      const response = await fetch('/api/account/orders', {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      const data = (await response.json().catch(() => ({}))) as {
+        orders?: BillingOrder[];
+        error?: string;
+      };
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Failed to load orders');
+      }
+
+      setOrders(Array.isArray(data.orders) ? data.orders : []);
+    } catch (error) {
+      setOrders([]);
+      toast.error(
+        error instanceof Error
+          ? error.message
+          : locale === 'zh-CN'
+            ? '订单加载失败'
+            : 'Failed to load orders',
+      );
+    } finally {
+      setOrdersLoading(false);
+    }
+  };
+
+  const handleAuthEntry = () => {
+    router.push('/auth');
+  };
+
+  const createCheckoutSession = async (payload: { productId: string }) => {
+    if (!supabaseClient) {
+      toast.error(locale === 'zh-CN' ? '当前未配置登录服务' : 'Auth service is not configured');
+      return null;
+    }
+
+    const {
+      data: { user },
+      error: userError,
+    } = await supabaseClient.auth.getUser();
+    const {
+      data: { session: authSession },
+    } = await supabaseClient.auth.getSession();
+
+    if (userError || !user) {
+      toast.error(locale === 'zh-CN' ? '请先登录后再购买' : 'Please sign in before purchasing');
+      if (!user) router.push('/auth');
+      return null;
+    }
+
+    const response = await fetch('/api/stripe/checkout', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${authSession?.access_token ?? ''}`,
+      },
+      body: JSON.stringify(payload),
+    });
+
+    const data = (await response.json().catch(() => ({}))) as { url?: string; error?: string };
+    if (!response.ok || !data.url) {
+      toast.error(data.error || (locale === 'zh-CN' ? '创建支付失败' : 'Failed to create checkout'));
+      return null;
+    }
+
+    window.location.href = data.url;
+    return data.url;
+  };
+
+  const handleTestScorePackPurchase = async (scoreToAdd: number) => {
+    setPurchasingPackScore(scoreToAdd);
+    try {
+      await createCheckoutSession({
+        productId:
+          scoreToAdd === 10 ? 'score_pack_10_test' : scoreToAdd === 50 ? 'score_pack_50' : 'score_pack_100',
+      });
+    } finally {
+      setPurchasingPackScore(null);
+    }
+  };
+
+  const handleStartSubscription = async () => {
+    setStartingSubscription(true);
+    try {
+      await createCheckoutSession({
+        productId: billingCycle === 'yearly' ? 'pro_year_pass' : 'pro_month_pass',
+      });
+    } finally {
+      setStartingSubscription(false);
+    }
   };
 
   const ensureAuthenticated = () => {
@@ -180,6 +520,11 @@ function HomePage() {
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, [languageOpen]);
+
+  useEffect(() => {
+    if (!ordersDialogOpen || !authEmail) return;
+    void loadOrders();
+  }, [ordersDialogOpen, authEmail]);
 
   const loadClassrooms = async () => {
     try {
@@ -408,6 +753,8 @@ function HomePage() {
   }, [classrooms, locale, t]);
 
   const canGenerate = !!form.requirement.trim();
+  const isCurrentProPlan = accountPlan.plan === 'pro' && !!accountPlan.expiresAt;
+  const isCurrentFreePlan = accountPlan.plan === 'free';
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
     if ((e.metaKey || e.ctrlKey) && e.key === 'Enter') {
@@ -441,7 +788,7 @@ function HomePage() {
         {/* ═══ Top-right pill (unchanged) ═══ */}
         <div
           ref={toolbarRef}
-          className="fixed top-4 right-4 z-50 flex items-center gap-1 bg-white/92 backdrop-blur-md px-2 py-1.5 rounded-full border-[3px] border-slate-900/70 shadow-[0_2px_0_rgba(15,23,42,0.2)]"
+          className="fixed top-4 right-4 z-50 flex items-center gap-0.5 bg-white/92 backdrop-blur-md px-1.5 py-1 rounded-full border-[3px] border-slate-900/70 shadow-[0_2px_0_rgba(15,23,42,0.2)] md:gap-1 md:px-2 md:py-1.5"
         >
           {/* Language Selector */}
           <div className="relative">
@@ -449,7 +796,7 @@ function HomePage() {
               onClick={() => {
                 setLanguageOpen(!languageOpen);
               }}
-              className="flex items-center gap-1 px-3 py-1.5 rounded-full text-xs font-bold text-slate-600 hover:bg-sky-50 hover:text-sky-700 hover:shadow-sm transition-all"
+              className="flex h-8 cursor-pointer items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-bold text-slate-600 hover:bg-sky-50 hover:text-sky-700 hover:shadow-sm transition-all md:h-10 md:px-3 md:py-1.5 md:text-xs"
             >
               {locale === 'zh-CN' ? 'CN' : 'EN'}
             </button>
@@ -483,41 +830,130 @@ function HomePage() {
             )}
           </div>
 
-          <div className="w-[1px] h-4 bg-black" />
+          <div className="mx-0.5 h-4 w-px bg-black md:mx-1 md:h-4" />
 
-          <button
-            onClick={() => void handleAuthAction()}
-            className="px-3 py-1.5 rounded-full text-xs font-bold text-slate-600 hover:bg-sky-50 hover:text-sky-700 hover:shadow-sm transition-all"
-          >
-            {authLoading
-              ? locale === 'zh-CN'
-                ? '加载中...'
-                : 'Loading...'
-              : authEmail
-                ? locale === 'zh-CN'
-                  ? '退出登录'
-                  : 'Logout'
-                : locale === 'zh-CN'
-                  ? '登录'
-                  : 'Login'}
-          </button>
+          {authLoading ? (
+            <div className="px-2.5 py-1 text-[11px] font-bold text-slate-500 md:px-3 md:py-1.5 md:text-xs">
+              {locale === 'zh-CN' ? '加载中...' : 'Loading...'}
+            </div>
+          ) : authEmail ? (
+            <Popover open={accountPopoverOpen} onOpenChange={setAccountPopoverOpen}>
+              <PopoverTrigger asChild>
+                <button className="flex h-8 cursor-pointer items-center gap-1.5 rounded-full px-2 py-1 text-[11px] font-bold text-slate-700 hover:bg-sky-50 hover:text-sky-700 hover:shadow-sm transition-all md:h-auto md:gap-2 md:px-3 md:py-1.5 md:text-xs">
+                  <div className="size-5 rounded-full overflow-hidden border-2 border-slate-900/20 bg-white shrink-0 md:size-6">
+                    <img src={profileAvatar} alt="" className="size-full object-cover" />
+                  </div>
+                  <span>{locale === 'zh-CN' ? '个人中心' : 'Account'}</span>
+                  <span className="inline-flex h-4 min-w-5 items-center justify-center rounded-full border border-sky-200 bg-sky-100 px-1 text-[10px] font-black text-sky-700 md:h-5 md:min-w-7 md:px-1.5 md:text-[11px]">
+                    {aiLearningScore}
+                  </span>
+                  <ChevronDown className="size-3 text-slate-400 md:size-3.5" />
+                </button>
+              </PopoverTrigger>
+              <PopoverContent
+                align="end"
+                alignOffset={-44}
+                side="bottom"
+                sideOffset={18}
+                className="w-[220px] rounded-[18px] border-[3px] border-slate-900/75 bg-white/98 p-0 shadow-[0_8px_0_rgba(15,23,42,0.12)] md:w-[280px] md:rounded-[24px]"
+              >
+                <div className="p-2.5 md:p-4">
+                  <div className="flex items-center gap-2 rounded-[14px] border-[3px] border-slate-900/10 bg-sky-50/60 px-2.5 py-2 md:gap-3 md:rounded-[20px] md:px-3 md:py-3">
+                    <div className="size-10 rounded-full overflow-hidden border-[3px] border-slate-900/70 bg-white shrink-0 md:size-14">
+                      <img src={profileAvatar} alt="" className="size-full object-cover" />
+                    </div>
+                    <div className="min-w-0">
+                      <div className="text-[14px] font-black text-slate-800 truncate md:text-base">
+                        {displayName}
+                      </div>
+                      <div className="text-[10px] leading-tight text-slate-500 break-all md:text-xs">
+                        {authEmail}
+                      </div>
+                    </div>
+                  </div>
 
-          {authEmail ? (
-            <span className="hidden md:inline text-[11px] text-slate-500 max-w-[140px] truncate">
-              {authEmail}
-            </span>
-          ) : null}
+                  <div className="mt-2 rounded-[14px] border-[3px] border-slate-900/10 bg-[#fff8e6] px-2.5 py-2 text-[11px] text-slate-700 md:mt-3 md:rounded-[18px] md:px-3 md:py-3 md:text-xs">
+                    <div className="flex items-center justify-between gap-3">
+                      <span className="font-black text-slate-500">
+                        {locale === 'zh-CN' ? '当前套餐' : 'Current plan'}
+                      </span>
+                      <span className="font-black text-slate-900">
+                        {accountPlan.plan === 'pro'
+                          ? locale === 'zh-CN'
+                            ? accountPlan.billingCycle === 'yearly'
+                              ? '专业版年卡'
+                              : '专业版月卡'
+                            : accountPlan.billingCycle === 'yearly'
+                              ? 'Pro Yearly'
+                              : 'Pro Monthly'
+                          : locale === 'zh-CN'
+                            ? '免费版'
+                            : 'Free'}
+                      </span>
+                    </div>
+                    <div className="mt-1 flex items-center justify-between gap-3">
+                      <span className="font-black text-slate-500">
+                        {locale === 'zh-CN' ? '到期时间' : 'Expires on'}
+                      </span>
+                      <span className="font-bold text-slate-700">
+                        {accountPlan.plan === 'pro'
+                          ? formatDateTime(accountPlan.expiresAt, locale)
+                          : locale === 'zh-CN'
+                            ? '长期有效'
+                            : 'No expiration'}
+                      </span>
+                    </div>
+                  </div>
+
+                  <button
+                    onClick={() => {
+                      setAccountPopoverOpen(false);
+                      setOrdersDialogOpen(true);
+                    }}
+                    className="mt-2.5 flex h-10 w-full cursor-pointer items-center justify-center gap-2 rounded-full border-[3px] border-slate-900/75 bg-white px-3 py-1.5 text-[13px] font-black text-slate-800 transition-all hover:bg-sky-50 md:mt-3 md:h-auto md:px-4 md:py-2.5 md:text-sm"
+                  >
+                    <span>{locale === 'zh-CN' ? '个人订单' : 'My orders'}</span>
+                  </button>
+
+                  <button
+                    onClick={() => {
+                      setAccountPopoverOpen(false);
+                      setRechargeDialogOpen(true);
+                    }}
+                    className="mt-2.5 flex h-10 w-full cursor-pointer items-center justify-center gap-2 rounded-full border-[3px] border-slate-900/75 bg-sky-400 px-3 py-1.5 text-[13px] font-black text-white transition-all hover:bg-sky-500 md:mt-4 md:h-auto md:px-4 md:py-2.5 md:text-sm"
+                  >
+                    <span>{locale === 'zh-CN' ? 'AI学习分充值' : 'Recharge AI Score'}</span>
+                  </button>
+
+                  <button
+                    onClick={() => void handleSignOut()}
+                    className="mt-2 flex h-10 w-full cursor-pointer items-center justify-center gap-2 rounded-full border-[3px] border-slate-900/75 bg-orange-400 px-3 py-1.5 text-[13px] font-black text-white transition-all hover:bg-orange-500 md:mt-3 md:h-auto md:px-4 md:py-2.5 md:text-sm"
+                  >
+                    <LogOut className="size-4" />
+                    <span>{locale === 'zh-CN' ? '退出登录' : 'Logout'}</span>
+                  </button>
+                </div>
+              </PopoverContent>
+            </Popover>
+          ) : (
+            <button
+              onClick={handleAuthEntry}
+              className="flex h-8 cursor-pointer items-center px-2.5 py-1 rounded-full text-[11px] font-bold text-slate-600 hover:bg-sky-50 hover:text-sky-700 hover:shadow-sm transition-all md:h-10 md:px-3 md:py-1.5 md:text-xs"
+            >
+              {locale === 'zh-CN' ? '登录/注册' : 'Login / Register'}
+            </button>
+          )}
 
           {/* Settings Button */}
           <div className="relative">
             <button
               onClick={() => setSettingsOpen(true)}
               className={cn(
-                'p-2 rounded-full text-slate-500 hover:bg-sky-50 hover:text-sky-700 hover:shadow-sm transition-all group',
+                'cursor-pointer p-1.5 rounded-full text-slate-500 hover:bg-sky-50 hover:text-sky-700 hover:shadow-sm transition-all group md:p-2',
                 needsSetup && 'animate-setup-glow',
               )}
             >
-              <Settings className="w-4 h-4 group-hover:rotate-90 transition-transform duration-500" />
+              <Settings className="w-3.5 h-3.5 group-hover:rotate-90 transition-transform duration-500 md:w-4 md:h-4" />
             </button>
             {needsSetup && (
               <>
@@ -540,13 +976,481 @@ function HomePage() {
           }}
           initialSection={settingsSection}
         />
+        <Dialog open={rechargeDialogOpen} onOpenChange={setRechargeDialogOpen}>
+          <DialogContent
+            showCloseButton={false}
+            className="w-[min(920px,calc(100vw-20px))] max-w-none rounded-[24px] border-[4px] border-slate-900/80 bg-[#fff8e6] p-0 shadow-[0_10px_0_rgba(15,23,42,0.15)] md:w-[min(920px,calc(100vw-32px))] md:rounded-[32px]"
+          >
+            <DialogTitle className="sr-only">
+              {locale === 'zh-CN' ? 'AI学习分充值' : 'AI Learning Score Plans'}
+            </DialogTitle>
+
+            <div className="relative max-h-[85vh] overflow-y-auto overflow-x-hidden rounded-[18px] p-3 md:max-h-[88vh] md:rounded-[28px] md:p-6">
+              <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(125,211,252,0.2),transparent_28%),radial-gradient(circle_at_bottom_right,rgba(251,191,36,0.18),transparent_30%)]" />
+
+              <div className="relative flex items-start justify-between gap-3 md:gap-4">
+                <div>
+                  <h3 className="mt-1 text-lg font-black text-slate-900 md:mt-3 md:text-2xl">
+                    {locale === 'zh-CN' ? '选择适合你的学习方案' : 'Choose your learning plan'}
+                  </h3>
+                  <p className="mt-1 pr-2 text-[11px] text-slate-600 md:text-sm">
+                    {locale === 'zh-CN'
+                      ? '学习分可用于更深入的 AI 个性化学习与高级功能体验。'
+                      : 'Use AI score for deeper personalization and advanced learning features.'}
+                  </p>
+                </div>
+
+                <button
+                  onClick={() => setRechargeDialogOpen(false)}
+                  className="shrink-0 cursor-pointer rounded-full border-[3px] border-slate-900/70 bg-white px-2.5 py-1 text-[10px] font-black text-slate-700 transition-colors hover:bg-sky-50 md:px-3 md:py-1.5 md:text-xs"
+                >
+                  {locale === 'zh-CN' ? '关闭' : 'Close'}
+                </button>
+              </div>
+
+              <div className="relative mt-3 flex w-full rounded-[20px] border-[3px] border-slate-900/70 bg-white/90 p-1 shadow-[0_3px_0_rgba(15,23,42,0.08)] md:mt-5 md:inline-flex md:w-auto md:rounded-full">
+                <button
+                  onClick={() => setBillingCycle('monthly')}
+                  className={cn(
+                    'flex flex-1 cursor-pointer items-center justify-center gap-1 rounded-[14px] px-2.5 py-1.5 text-[11px] font-black transition-all md:flex-none md:gap-2 md:rounded-full md:px-4 md:py-2 md:text-sm',
+                    billingCycle === 'monthly'
+                      ? 'bg-slate-900 text-white'
+                      : 'text-slate-600 hover:bg-sky-50',
+                  )}
+                >
+                  <span>{locale === 'zh-CN' ? '连续包月' : 'Monthly'}</span>
+                  <span
+                    className={cn(
+                      'rounded-full px-1.5 py-0.5 text-[8px] font-black md:px-2 md:text-[10px]',
+                      billingCycle === 'monthly'
+                        ? 'bg-white/20 text-sky-100'
+                        : 'bg-sky-100 text-sky-700',
+                    )}
+                  >
+                    {locale === 'zh-CN' ? '灵活' : 'Flexible'}
+                  </span>
+                </button>
+                <button
+                  onClick={() => setBillingCycle('yearly')}
+                  className={cn(
+                    'flex flex-1 cursor-pointer items-center justify-center gap-1 rounded-[14px] px-2.5 py-1.5 text-[11px] font-black transition-all md:flex-none md:gap-2 md:rounded-full md:px-4 md:py-2 md:text-sm',
+                    billingCycle === 'yearly'
+                      ? 'bg-slate-900 text-white'
+                      : 'text-slate-600 hover:bg-sky-50',
+                  )}
+                >
+                  <span>{locale === 'zh-CN' ? '连续包年' : 'Yearly'}</span>
+                  <span
+                    className={cn(
+                      'rounded-full px-1.5 py-0.5 text-[8px] font-black md:px-2 md:text-[10px]',
+                      billingCycle === 'yearly'
+                        ? 'bg-white/20 text-amber-100'
+                        : 'bg-amber-100 text-amber-700',
+                    )}
+                  >
+                    {locale === 'zh-CN' ? '更划算' : 'Best value'}
+                  </span>
+                </button>
+              </div>
+
+              <div className="relative mt-4 grid grid-cols-2 gap-2 md:mt-6 md:gap-4">
+                <div className="rounded-[22px] border-[4px] border-slate-900/75 bg-white px-3.5 py-3.5 shadow-[0_6px_0_rgba(15,23,42,0.12)] md:rounded-[28px] md:px-5 md:py-5">
+                  <div className="flex items-center gap-2">
+                    <h4 className="text-base font-black text-slate-900 md:text-xl">
+                      {locale === 'zh-CN' ? '免费版' : 'Free'}
+                    </h4>
+                    <span className="rounded-full bg-sky-100 px-1.5 py-0.5 text-[9px] font-black text-sky-700 md:px-2 md:text-[11px]">
+                      {locale === 'zh-CN' ? '当前可用' : 'Current'}
+                    </span>
+                  </div>
+                  <div className="mt-1.5 text-[11px] font-bold text-slate-600 md:text-sm">
+                    {locale === 'zh-CN' ? '适合轻度体验与日常学习' : 'Great for getting started and daily study'}
+                  </div>
+                  <div className="mt-3 flex items-end gap-1.5 md:mt-5">
+                    <span className="text-[32px] leading-none font-black text-slate-900 md:text-5xl">
+                      0
+                    </span>
+                    <span className="pb-0.5 text-[11px] font-bold text-slate-500 md:pb-1 md:text-sm">
+                      {locale === 'zh-CN'
+                        ? billingCycle === 'yearly'
+                          ? '元 / 年'
+                          : '元 / 月'
+                        : billingCycle === 'yearly'
+                          ? '/ year'
+                          : '/ month'}
+                    </span>
+                  </div>
+                  <button
+                    className={cn(
+                      'mt-4 flex h-10 w-full items-center justify-center rounded-full border-[3px] text-xs font-black md:mt-6 md:h-12 md:text-sm',
+                      isCurrentFreePlan
+                        ? 'border-slate-900/20 bg-slate-100 text-slate-400'
+                        : 'border-slate-900/15 bg-white/70 text-slate-300',
+                    )}
+                    disabled
+                  >
+                    {isCurrentFreePlan
+                      ? locale === 'zh-CN'
+                        ? '当前计划'
+                        : 'Current plan'
+                      : locale === 'zh-CN'
+                        ? '基础方案'
+                        : 'Basic plan'}
+                  </button>
+                  <div className="mt-4 space-y-1.5 text-[11px] text-slate-700 md:mt-6 md:space-y-3 md:text-sm">
+                    <div>
+                      {locale === 'zh-CN' ? '• 基础课堂体验' : '• Basic classroom experience'}
+                    </div>
+                    <div>
+                      {locale === 'zh-CN' ? '• 有限 AI 学习分额度' : '• Limited AI score quota'}
+                    </div>
+                    <div>
+                      {locale === 'zh-CN'
+                        ? '• 支持基础个性化教学'
+                        : '• Basic personalized teaching'}
+                    </div>
+                  </div>
+                </div>
+
+                <div className="rounded-[22px] border-[4px] border-slate-900/75 bg-[linear-gradient(180deg,#fff5d6_0%,#ffffff_100%)] px-3.5 py-3.5 shadow-[0_6px_0_rgba(15,23,42,0.12)] md:rounded-[28px] md:px-5 md:py-5">
+                  <div className="flex items-center gap-2">
+                    <h4 className="text-base font-black text-slate-900 md:text-xl">
+                      {locale === 'zh-CN' ? '专业版' : 'Pro'}
+                    </h4>
+                    <span className="rounded-full bg-orange-100 px-1.5 py-0.5 text-[9px] font-black text-orange-700 md:px-2 md:text-[11px]">
+                      {locale === 'zh-CN' ? '推荐' : 'Popular'}
+                    </span>
+                  </div>
+                  <div className="mt-1.5 text-[11px] font-bold text-slate-600 md:text-sm">
+                    {locale === 'zh-CN'
+                      ? '适合长期学习与深度使用'
+                      : 'Best for long-term, deeper learning'}
+                  </div>
+                  <div className="mt-3 flex items-end gap-1.5 md:mt-5">
+                    <span className="text-[32px] leading-none font-black text-slate-900 md:text-5xl">
+                      {billingCycle === 'yearly' ? '188' : '20'}
+                    </span>
+                    <span className="pb-0.5 text-[11px] font-bold text-slate-500 md:pb-1 md:text-sm">
+                      {locale === 'zh-CN'
+                        ? billingCycle === 'yearly'
+                          ? '元 / 年'
+                          : '元 / 月'
+                        : billingCycle === 'yearly'
+                          ? '/ year'
+                          : '/ month'}
+                    </span>
+                    <span className="pb-0.5 text-[8px] font-bold text-slate-400 line-through md:pb-1 md:text-xs">
+                      {locale === 'zh-CN'
+                        ? billingCycle === 'yearly'
+                          ? '原价：240元'
+                          : '原价：29元'
+                        : billingCycle === 'yearly'
+                          ? 'Was 240 CNY'
+                          : 'Was 29 CNY'}
+                    </span>
+                  </div>
+                  <button
+                    onClick={() => void handleStartSubscription()}
+                    disabled={startingSubscription || isCurrentProPlan}
+                    className={cn(
+                      'mt-4 flex h-10 w-full items-center justify-center rounded-full border-[3px] text-xs font-black transition-colors md:mt-6 md:h-12 md:text-sm',
+                      isCurrentProPlan
+                        ? 'border-slate-900/20 bg-slate-100 text-slate-400'
+                        : 'cursor-pointer border-slate-900/75 bg-orange-400 text-white hover:bg-orange-500 disabled:cursor-wait disabled:opacity-60',
+                    )}
+                  >
+                    {isCurrentProPlan
+                      ? locale === 'zh-CN'
+                        ? '当前计划'
+                        : 'Current plan'
+                      : startingSubscription
+                      ? locale === 'zh-CN'
+                        ? '跳转中...'
+                        : 'Redirecting...'
+                      : locale === 'zh-CN'
+                        ? '立即开通'
+                        : 'Upgrade now'}
+                  </button>
+                  <div className="mt-4 space-y-1.5 text-[11px] text-slate-700 md:mt-6 md:space-y-3 md:text-sm">
+                    <div>
+                      {locale === 'zh-CN'
+                        ? '• 更高 AI 学习分额度，支持更频繁使用'
+                        : '• Higher AI score quota for frequent usage'}
+                    </div>
+                    <div>
+                      {locale === 'zh-CN'
+                        ? '• 更强的个性化教学与角色互动'
+                        : '• Stronger personalization and role interaction'}
+                    </div>
+                    <div>
+                      {locale === 'zh-CN'
+                        ? '• 优先体验后续高级学习能力'
+                        : '• Early access to advanced learning features'}
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div className="relative mt-4 rounded-[22px] border-[4px] border-slate-900/75 bg-white/90 px-3.5 py-3.5 shadow-[0_6px_0_rgba(15,23,42,0.1)] md:mt-6 md:rounded-[28px] md:px-5 md:py-5">
+                <div className="flex flex-col gap-1 md:flex-row md:items-end md:justify-between">
+                  <div>
+                    <h4 className="text-base font-black text-slate-900 md:text-xl">
+                      {locale === 'zh-CN' ? 'AI学习分额度包' : 'AI Score Packs'}
+                    </h4>
+                    <p className="mt-1 text-[11px] font-bold text-slate-600 md:text-sm">
+                      {locale === 'zh-CN'
+                        ? '可单独购买，随买随用，适合临时补充额度。'
+                        : 'Buy separately anytime for extra usage when you need it.'}
+                    </p>
+                  </div>
+                  <div className="text-[10px] font-bold text-sky-700 md:text-xs">
+                    {locale === 'zh-CN'
+                      ? '测试说明：Stripe 最低支付金额限制下，10 学习分临时按 4 元测试'
+                      : 'Testing note: the 10-score pack is temporarily 4 CNY due to Stripe minimum charge limits'}
+                  </div>
+                </div>
+
+                <div className="mt-3 grid grid-cols-3 gap-2 md:mt-5 md:gap-3">
+                  {[
+                    {
+                      score: 10,
+                      price: 4,
+                      accent: 'bg-sky-50',
+                      badge: locale === 'zh-CN' ? '测试包' : 'Test',
+                    },
+                    {
+                      score: 50,
+                      price: 5,
+                      accent: 'bg-orange-50',
+                      badge: locale === 'zh-CN' ? '常用包' : 'Popular',
+                    },
+                    {
+                      score: 100,
+                      price: 10,
+                      accent: 'bg-emerald-50',
+                      badge: locale === 'zh-CN' ? '超值包' : 'Value',
+                    },
+                  ].map((pack) => (
+                    <div
+                      key={pack.score}
+                      className={cn(
+                        'rounded-[16px] border-[3px] border-slate-900/70 px-2.5 py-2.5 shadow-[0_4px_0_rgba(15,23,42,0.08)] md:rounded-[24px] md:px-4 md:py-4',
+                        pack.accent,
+                      )}
+                    >
+                      <div className="flex items-center justify-between gap-2">
+                        <div className="text-[12px] font-black text-slate-900 md:text-lg">
+                          {pack.score}
+                          {locale === 'zh-CN' ? ' 学习分' : ' score'}
+                        </div>
+                        <span className="rounded-full bg-white px-1.5 py-0.5 text-[8px] font-black text-slate-700 md:px-2 md:text-[10px]">
+                          {pack.badge}
+                        </span>
+                      </div>
+                      <div className="mt-2 flex items-end gap-1">
+                        <span className="text-lg font-black text-slate-900 md:text-3xl">
+                          {pack.price}
+                        </span>
+                        <span className="pb-0.5 text-[9px] font-bold text-slate-500 md:pb-1 md:text-xs">
+                          {locale === 'zh-CN' ? '元' : 'CNY'}
+                        </span>
+                      </div>
+                      <button
+                        onClick={() => void handleTestScorePackPurchase(pack.score)}
+                        disabled={purchasingPackScore === pack.score}
+                        className="mt-3 flex h-8 w-full cursor-pointer items-center justify-center rounded-full border-[3px] border-slate-900/75 bg-white text-[10px] font-black text-slate-800 transition-colors hover:bg-slate-50 disabled:cursor-wait disabled:opacity-60 md:h-11 md:text-sm"
+                      >
+                        {purchasingPackScore === pack.score
+                          ? locale === 'zh-CN'
+                            ? '加分中...'
+                            : 'Adding...'
+                          : locale === 'zh-CN'
+                            ? '购买'
+                            : 'Buy'}
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          </DialogContent>
+        </Dialog>
+        <Dialog open={ordersDialogOpen} onOpenChange={setOrdersDialogOpen}>
+          <DialogContent
+            showCloseButton={false}
+            className="w-[min(760px,calc(100vw-20px))] max-w-none rounded-[24px] border-[4px] border-slate-900/80 bg-[#fff8e6] p-0 shadow-[0_10px_0_rgba(15,23,42,0.15)] md:w-[min(760px,calc(100vw-32px))] md:rounded-[32px]"
+          >
+            <DialogTitle className="sr-only">
+              {locale === 'zh-CN' ? '个人订单' : 'My orders'}
+            </DialogTitle>
+
+            <div className="relative max-h-[82vh] overflow-y-auto overflow-x-hidden rounded-[18px] p-3 pretty-scrollbar md:max-h-[86vh] md:rounded-[28px] md:p-6">
+              <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(125,211,252,0.2),transparent_28%),radial-gradient(circle_at_bottom_right,rgba(251,191,36,0.18),transparent_30%)]" />
+
+              <div className="relative flex items-start justify-between gap-3">
+                <div>
+                  <h3 className="mt-1 text-lg font-black text-slate-900 md:text-2xl">
+                    {locale === 'zh-CN' ? '个人订单' : 'My orders'}
+                  </h3>
+                  <p className="mt-1 text-[11px] text-slate-600 md:text-sm">
+                    {locale === 'zh-CN'
+                      ? '这里会保存你的购买记录，便于后续查单、对账和售后处理。'
+                      : 'Your purchase history is saved here for review and support.'}
+                  </p>
+                </div>
+
+                <button
+                  onClick={() => setOrdersDialogOpen(false)}
+                  className="shrink-0 cursor-pointer rounded-full border-[3px] border-slate-900/70 bg-white px-2.5 py-1 text-[10px] font-black text-slate-700 transition-colors hover:bg-sky-50 md:px-3 md:py-1.5 md:text-xs"
+                >
+                  {locale === 'zh-CN' ? '关闭' : 'Close'}
+                </button>
+              </div>
+
+              <div className="relative mt-4 rounded-[22px] border-[4px] border-slate-900/75 bg-white/90 px-3 py-3 shadow-[0_6px_0_rgba(15,23,42,0.1)] md:mt-6 md:rounded-[28px] md:px-5 md:py-5">
+                <div className="grid grid-cols-2 gap-2 md:grid-cols-4 md:gap-3">
+                  <div className="rounded-[18px] border-[3px] border-slate-900/10 bg-sky-50/60 px-3 py-2.5">
+                    <div className="text-[10px] font-black text-slate-500 md:text-xs">
+                      {locale === 'zh-CN' ? '当前套餐' : 'Current plan'}
+                    </div>
+                    <div className="mt-1 text-sm font-black text-slate-900 md:text-base">
+                      {accountPlan.plan === 'pro'
+                        ? locale === 'zh-CN'
+                          ? accountPlan.billingCycle === 'yearly'
+                            ? '专业版年卡'
+                            : '专业版月卡'
+                          : accountPlan.billingCycle === 'yearly'
+                            ? 'Pro Yearly'
+                            : 'Pro Monthly'
+                        : locale === 'zh-CN'
+                          ? '免费版'
+                          : 'Free'}
+                    </div>
+                  </div>
+                  <div className="rounded-[18px] border-[3px] border-slate-900/10 bg-orange-50/70 px-3 py-2.5">
+                    <div className="text-[10px] font-black text-slate-500 md:text-xs">
+                      {locale === 'zh-CN' ? '到期时间' : 'Expires on'}
+                    </div>
+                    <div className="mt-1 text-sm font-black text-slate-900 md:text-base">
+                      {accountPlan.plan === 'pro'
+                        ? formatDateTime(accountPlan.expiresAt, locale)
+                        : locale === 'zh-CN'
+                          ? '长期有效'
+                          : 'No expiration'}
+                    </div>
+                  </div>
+                  <div className="rounded-[18px] border-[3px] border-slate-900/10 bg-emerald-50/70 px-3 py-2.5">
+                    <div className="text-[10px] font-black text-slate-500 md:text-xs">
+                      {locale === 'zh-CN' ? 'AI学习分' : 'AI score'}
+                    </div>
+                    <div className="mt-1 text-sm font-black text-slate-900 md:text-base">
+                      {aiLearningScore}
+                    </div>
+                  </div>
+                  <div className="rounded-[18px] border-[3px] border-slate-900/10 bg-white px-3 py-2.5">
+                    <div className="text-[10px] font-black text-slate-500 md:text-xs">
+                      {locale === 'zh-CN' ? '订单数量' : 'Orders'}
+                    </div>
+                    <div className="mt-1 text-sm font-black text-slate-900 md:text-base">
+                      {orders.length}
+                    </div>
+                  </div>
+                </div>
+
+                <div className="mt-4 flex items-center justify-between gap-3 md:mt-5">
+                  <div className="text-sm font-black text-slate-900 md:text-base">
+                    {locale === 'zh-CN' ? '购买记录' : 'Purchase history'}
+                  </div>
+                  <button
+                    onClick={() => void loadOrders()}
+                    className="cursor-pointer rounded-full border-[3px] border-slate-900/70 bg-white px-3 py-1 text-[11px] font-black text-slate-700 transition-colors hover:bg-sky-50 md:px-3.5 md:py-1.5 md:text-xs"
+                  >
+                    {locale === 'zh-CN' ? '刷新' : 'Refresh'}
+                  </button>
+                </div>
+
+                <div className="mt-3 space-y-2 md:space-y-3">
+                  {ordersLoading ? (
+                    <div className="rounded-[18px] border-[3px] border-dashed border-slate-900/25 bg-white/80 px-4 py-8 text-center text-sm font-bold text-slate-500">
+                      {locale === 'zh-CN' ? '订单加载中...' : 'Loading orders...'}
+                    </div>
+                  ) : orders.length === 0 ? (
+                    <div className="rounded-[18px] border-[3px] border-dashed border-slate-900/25 bg-white/80 px-4 py-8 text-center text-sm font-bold text-slate-500">
+                      {locale === 'zh-CN' ? '还没有订单记录。' : 'No orders yet.'}
+                    </div>
+                  ) : (
+                    orders.map((order) => (
+                      <div
+                        key={order.id}
+                        className="rounded-[18px] border-[3px] border-slate-900/10 bg-white px-3 py-3 shadow-[0_3px_0_rgba(15,23,42,0.06)] md:px-4"
+                      >
+                        <div className="flex flex-wrap items-start justify-between gap-3">
+                          <div>
+                            <div className="text-sm font-black text-slate-900 md:text-base">
+                              {order.product_kind === 'score_pack'
+                                ? locale === 'zh-CN'
+                                  ? `${order.score_delta} 学习分额度包`
+                                  : `${order.score_delta} score pack`
+                                : locale === 'zh-CN'
+                                  ? order.billing_cycle === 'yearly'
+                                    ? '专业版年卡'
+                                    : '专业版月卡'
+                                  : order.billing_cycle === 'yearly'
+                                    ? 'Pro yearly pass'
+                                    : 'Pro monthly pass'}
+                            </div>
+                            <div className="mt-1 text-[11px] text-slate-500 md:text-xs">
+                              {locale === 'zh-CN' ? '订单时间：' : 'Ordered on: '}
+                              {formatDateTime(order.paid_at ?? order.created_at, locale)}
+                            </div>
+                            <div className="mt-1 text-[11px] text-slate-500 md:text-xs">
+                              Session ID: {order.stripe_session_id}
+                            </div>
+                          </div>
+                          <div className="text-right">
+                            <div className="text-lg font-black text-slate-900 md:text-2xl">
+                              {(order.amount_paid / 100).toFixed(order.amount_paid % 100 === 0 ? 0 : 2)}
+                              <span className="ml-1 text-xs font-bold text-slate-500 uppercase md:text-sm">
+                                {order.currency}
+                              </span>
+                            </div>
+                            <div className="mt-1 inline-flex rounded-full bg-emerald-100 px-2 py-0.5 text-[10px] font-black text-emerald-700 md:text-xs">
+                              {order.entitlement_status === 'applied'
+                                ? locale === 'zh-CN'
+                                  ? '已到账'
+                                  : 'Applied'
+                                : order.entitlement_status === 'failed'
+                                  ? locale === 'zh-CN'
+                                    ? '发放失败'
+                                    : 'Failed'
+                                  : locale === 'zh-CN'
+                                    ? '处理中'
+                                    : 'Processing'}
+                            </div>
+                          </div>
+                        </div>
+
+                        {order.product_kind === 'pro_pass' && order.subscription_expires_at ? (
+                          <div className="mt-2 text-[11px] font-bold text-slate-600 md:text-xs">
+                            {locale === 'zh-CN' ? '权益到期：' : 'Access until: '}
+                            {formatDateTime(order.subscription_expires_at, locale)}
+                          </div>
+                        ) : null}
+                      </div>
+                    ))
+                  )}
+                </div>
+              </div>
+            </div>
+          </DialogContent>
+        </Dialog>
 
         {/* ═══ Hero section: title + input (centered, wider) ═══ */}
         <motion.div
           initial={{ opacity: 0, y: 8 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.25, ease: 'easeOut' }}
-          className="relative z-20 w-full flex flex-col items-center pt-2 md:pt-4"
+          className="relative z-20 w-full flex flex-col items-center pt-16 md:pt-4"
         >
           <div className="home-scale-wrap w-full flex justify-center">
             <div className="home-scale flex flex-col items-center max-w-full">
@@ -557,7 +1461,7 @@ function HomePage() {
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1, scale: 1.8 }}
                 transition={{ delay: 0.05, duration: 0.1 }}
-                className="h-10 md:h-12 mb-5 mt-5"
+                className="h-10 md:h-12 mb-4 mt-2 md:mb-5 md:mt-5"
               />
 
               {/* ── Slogan ── */}
