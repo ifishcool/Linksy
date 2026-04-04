@@ -17,6 +17,7 @@ import {
   MoreHorizontal,
 } from 'lucide-react';
 import { useI18n } from '@/lib/hooks/use-i18n';
+import { supportedLocales } from '@/lib/i18n';
 import { createLogger } from '@/lib/logger';
 import { Textarea as UITextarea } from '@/components/ui/textarea';
 import { cn } from '@/lib/utils';
@@ -525,6 +526,12 @@ function HomePage() {
     if (!ordersDialogOpen || !authEmail) return;
     void loadOrders();
   }, [ordersDialogOpen, authEmail]);
+  }, [languageOpen]);
+
+  useEffect(() => {
+    if (!ordersDialogOpen || !authEmail) return;
+    void loadOrders();
+  }, [ordersDialogOpen, authEmail]);
 
   const loadClassrooms = async () => {
     try {
@@ -798,34 +805,25 @@ function HomePage() {
               }}
               className="flex h-8 cursor-pointer items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-bold text-slate-600 hover:bg-sky-50 hover:text-sky-700 hover:shadow-sm transition-all md:h-10 md:px-3 md:py-1.5 md:text-xs"
             >
-              {locale === 'zh-CN' ? 'CN' : 'EN'}
+              {supportedLocales.find((item) => item.code === locale)?.shortLabel ?? locale}
             </button>
             {languageOpen && (
               <div className="absolute top-full mt-2 right-0 bg-white border-[3px] border-slate-900/80 rounded-lg shadow-lg overflow-hidden z-50 min-w-[120px]">
-                <button
-                  onClick={() => {
-                    setLocale('zh-CN');
-                    setLanguageOpen(false);
-                  }}
-                  className={cn(
-                    'w-full px-4 py-2 text-left text-sm hover:bg-sky-50 transition-colors',
-                    locale === 'zh-CN' && 'bg-sky-100 text-sky-700 font-semibold',
-                  )}
-                >
-                  简体中文
-                </button>
-                <button
-                  onClick={() => {
-                    setLocale('en-US');
-                    setLanguageOpen(false);
-                  }}
-                  className={cn(
-                    'w-full px-4 py-2 text-left text-sm hover:bg-sky-50 transition-colors',
-                    locale === 'en-US' && 'bg-sky-100 text-sky-700 font-semibold',
-                  )}
-                >
-                  English
-                </button>
+                {supportedLocales.map((item) => (
+                  <button
+                    key={item.code}
+                    onClick={() => {
+                      setLocale(item.code);
+                      setLanguageOpen(false);
+                    }}
+                    className={cn(
+                      'w-full px-4 py-2 text-left text-sm hover:bg-sky-50 transition-colors',
+                      locale === item.code && 'bg-sky-100 text-sky-700 font-semibold',
+                    )}
+                  >
+                    {item.label}
+                  </button>
+                ))}
               </div>
             )}
           </div>
