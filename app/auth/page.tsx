@@ -6,6 +6,15 @@ import { toast } from 'sonner';
 import { getSupabaseClient, isSupabaseConfigured } from '@/lib/supabase/client';
 import { useI18n } from '@/lib/hooks/use-i18n';
 
+function getAuthLogo(locale: string) {
+  const logos: Record<string, string> = {
+    'zh-CN': '/logo_t.png',
+    'en-US': '/logo_t_e.png',
+    'ja-JP': '/logo_t_e.png',
+  };
+  return logos[locale] ?? '/logo_t_e.png';
+}
+
 type AuthMode = 'login' | 'register';
 
 export default function AuthPage() {
@@ -77,7 +86,7 @@ export default function AuthPage() {
     <main className="relative min-h-[100dvh] w-full overflow-hidden p-4 sm:p-6">
       <div className="fixed inset-0 -z-10 bg-[url('/bg.png')] bg-cover bg-center bg-no-repeat pointer-events-none" />
       <img
-        src={locale === 'zh-CN' ? '/logo_t.png' : '/logo_t_e.png'}
+        src={getAuthLogo(locale)}
         alt="Linksy"
         className="h-7 sm:h-8 mb-1"
       />

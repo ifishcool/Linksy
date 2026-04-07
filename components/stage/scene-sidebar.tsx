@@ -19,6 +19,15 @@ import { useI18n } from '@/lib/hooks/use-i18n';
 import type { SceneType, SlideContent } from '@/lib/types/stage';
 import { PENDING_SCENE_ID } from '@/lib/store/stage';
 
+function getSidebarLogo(locale: string) {
+  const logos: Record<string, string> = {
+    'zh-CN': '/logo_t.png',
+    'en-US': '/logo_t_e.png',
+    'ja-JP': '/logo_t_e.png',
+  };
+  return logos[locale] ?? '/logo_t_e.png';
+}
+
 interface SceneSidebarProps {
   readonly collapsed: boolean;
   readonly onCollapseChange: (collapsed: boolean) => void;
@@ -127,7 +136,7 @@ export function SceneSidebar({
             title={t('generation.backToHome')}
           >
             <img
-              src={locale === 'zh-CN' ? '/logo_t.png' : '/logo_t_e.png'}
+              src={getSidebarLogo(locale)}
               alt="Linksy"
               className="h-11"
             />
