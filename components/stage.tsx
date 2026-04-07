@@ -763,13 +763,11 @@ export function Stage({
           if (!isPresenting) return;
           event.preventDefault();
           handlePreviousScene();
-          resetPresentationIdleTimer();
           break;
         case 'ArrowRight':
           if (!isPresenting) return;
           event.preventDefault();
           handleNextScene();
-          resetPresentationIdleTimer();
           break;
         case ' ':
         case 'Spacebar':
@@ -780,12 +778,9 @@ export function Stage({
           handlePlayPause();
           break;
         case 'Escape':
-          // With keyboard.lock(), Escape no longer auto-exits fullscreen.
-          // If panels are open, roundtable handles Escape (close panels).
-          // If no panels are open, manually exit fullscreen.
-          if (isPresenting && !isPresentationInteractionActive) {
+          if (isPresenting) {
             event.preventDefault();
-            togglePresentation();
+            void handleTogglePresentation();
           }
           break;
         case 'ArrowUp':
@@ -825,15 +820,13 @@ export function Stage({
     handlePlayPause,
     handlePreviousScene,
     isPresenting,
-    isPresentationInteractionActive,
     isPresentationShortcutTarget,
-    resetPresentationIdleTimer,
     setChatAreaCollapsed,
     setSidebarCollapsed,
     setTTSMuted,
     setTTSVolume,
     sidebarCollapsed,
-    togglePresentation,
+    handleTogglePresentation,
     ttsMuted,
     ttsVolume,
   ]);
@@ -844,13 +837,13 @@ export function Stage({
     const onF11 = (event: KeyboardEvent) => {
       if (event.key === 'F11') {
         event.preventDefault();
-        togglePresentation();
+        void handleTogglePresentation();
       }
     };
 
     window.addEventListener('keydown', onF11);
     return () => window.removeEventListener('keydown', onF11);
-  }, [togglePresentation]);
+  }, [handleTogglePresentation]);
   // Map engine mode to the CanvasArea's expected engine state
   const canvasEngineState = (() => {
     switch (engineMode) {

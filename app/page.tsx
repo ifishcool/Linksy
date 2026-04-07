@@ -108,7 +108,7 @@ function readAccountPlanFromMetadata(metadata: Record<string, unknown> | undefin
   };
 }
 
-function formatDateTime(dateString: string | null, locale: 'zh-CN' | 'en-US') {
+function formatDateTime(dateString: string | null, locale: string) {
   if (!dateString) return locale === 'zh-CN' ? '暂无' : 'N/A';
 
   const date = new Date(dateString);
@@ -520,12 +520,6 @@ function HomePage() {
 
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, [languageOpen]);
-
-  useEffect(() => {
-    if (!ordersDialogOpen || !authEmail) return;
-    void loadOrders();
-  }, [ordersDialogOpen, authEmail]);
   }, [languageOpen]);
 
   useEffect(() => {
@@ -1596,7 +1590,7 @@ function HomeSidebar({
   onDeleteClassroom,
 }: {
   sections: Array<{ key: string; label: string; items: StageListItem[] }>;
-  locale: 'zh-CN' | 'en-US';
+  locale: string;
   onOpenClassroom: (id: string) => void;
   onDeleteClassroom: (id: string) => void;
 }) {
