@@ -26,10 +26,18 @@ import { MediaPopover } from '@/components/generation/media-popover';
 const MAX_PDF_SIZE_MB = 50;
 const MAX_PDF_SIZE_BYTES = MAX_PDF_SIZE_MB * 1024 * 1024;
 
+const LANGUAGE_OPTIONS = [
+  { code: 'zh-CN', label: '中文' },
+  { code: 'en-US', label: 'EN' },
+  { code: 'ja-JP', label: '日本語' },
+] as const;
+
+type ToolbarLanguage = (typeof LANGUAGE_OPTIONS)[number]['code'];
+
 // ─── Types ───────────────────────────────────────────────────
 export interface GenerationToolbarProps {
-  language: 'zh-CN' | 'en-US';
-  onLanguageChange: (lang: 'zh-CN' | 'en-US') => void;
+  language: ToolbarLanguage;
+  onLanguageChange: (lang: ToolbarLanguage) => void;
   webSearch: boolean;
   onWebSearchChange: (v: boolean) => void;
   onSettingsOpen: (section?: SettingsSection) => void;
@@ -115,6 +123,13 @@ export function GenerationToolbar({
   const pillLanguage = `${pillCls} border-sky-400 bg-sky-500 text-white hover:bg-sky-600`;
   const showModelControl = false;
   const showMediaControl = true;
+
+  const currentLanguageIndex = Math.max(
+    0,
+    LANGUAGE_OPTIONS.findIndex((item) => item.code === language),
+  );
+  const currentLanguageLabel = LANGUAGE_OPTIONS[currentLanguageIndex]?.label ?? '中文';
+  const nextLanguage = LANGUAGE_OPTIONS[(currentLanguageIndex + 1) % LANGUAGE_OPTIONS.length]?.code;
 
   return (
     <div className="flex items-center gap-1.5 flex-nowrap overflow-x-auto scrollbar-hide pr-1">
@@ -364,12 +379,9 @@ export function GenerationToolbar({
       {/* ── Language pill ── */}
       <Tooltip>
         <TooltipTrigger asChild>
-          <button
-            onClick={() => onLanguageChange(language === 'zh-CN' ? 'en-US' : 'zh-CN')}
-            className={pillLanguage}
-          >
+          <button onClick={() => onLanguageChange(nextLanguage)} className={pillLanguage}>
             <Globe className="size-3.5" />
-            <span>{language === 'zh-CN' ? '中文' : 'EN'}</span>
+            <span>{currentLanguageLabel}</span>
           </button>
         </TooltipTrigger>
         <TooltipContent>{t('toolbar.languageHint')}</TooltipContent>

@@ -49,11 +49,12 @@ const log = createLogger('Home');
 
 const WEB_SEARCH_STORAGE_KEY = 'webSearchEnabled';
 const LANGUAGE_STORAGE_KEY = 'generationLanguage';
+const SETUP_AUTO_REFRESH_KEY = 'setupAutoRefreshed';
 
 interface FormState {
   pdfFile: File | null;
   requirement: string;
-  language: 'zh-CN' | 'en-US';
+  language: 'zh-CN' | 'en-US' | 'ja-JP';
   webSearch: boolean;
 }
 
@@ -169,10 +170,15 @@ function HomePage() {
       const savedLanguage = localStorage.getItem(LANGUAGE_STORAGE_KEY);
       const updates: Partial<FormState> = {};
       if (savedWebSearch === 'true') updates.webSearch = true;
-      if (savedLanguage === 'zh-CN' || savedLanguage === 'en-US') {
+      if (savedLanguage === 'zh-CN' || savedLanguage === 'en-US' || savedLanguage === 'ja-JP') {
         updates.language = savedLanguage;
       } else {
-        const detected = navigator.language?.startsWith('zh') ? 'zh-CN' : 'en-US';
+        const navLanguage = navigator.language?.toLowerCase() ?? '';
+        const detected = navLanguage.startsWith('zh')
+          ? 'zh-CN'
+          : navLanguage.startsWith('ja')
+            ? 'ja-JP'
+            : 'en-US';
         updates.language = detected;
       }
       if (Object.keys(updates).length > 0) {
@@ -542,6 +548,42 @@ function HomePage() {
     if (!ordersDialogOpen || !authEmail) return;
     void loadOrders();
   }, [ordersDialogOpen, authEmail]);
+  // 无数据时，刷新界面
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    if (!storeHydrated) return;
+
+    if (!needsSetup) {
+      try {
+        sessionStorage.removeItem(SETUP_AUTO_REFRESH_KEY);
+      } catch {
+        /* ignore */
+      }
+      return;
+    }
+
+    let cancelled = false;
+    const timer = window.setTimeout(() => {
+      if (cancelled) return;
+
+      const latestModelId = useSettingsStore.getState().modelId;
+      if (latestModelId) return;
+
+      try {
+        if (sessionStorage.getItem(SETUP_AUTO_REFRESH_KEY) === '1') return;
+        sessionStorage.setItem(SETUP_AUTO_REFRESH_KEY, '1');
+      } catch {
+        /* ignore */
+      }
+
+      window.location.reload();
+    }, 1000);
+
+    return () => {
+      cancelled = true;
+      window.clearTimeout(timer);
+    };
+  }, [needsSetup, storeHydrated]);
 
   const loadClassrooms = async () => {
     try {
