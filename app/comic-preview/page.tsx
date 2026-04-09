@@ -122,7 +122,7 @@ async function callImageApi(
   return url as string;
 }
 
-function composeSinglePageComicPrompt(panelSpecs: ComicPanelSpec[], language: 'zh-CN' | 'en-US') {
+function composeSinglePageComicPrompt(panelSpecs: ComicPanelSpec[], language: string) {
   const frameLines = panelSpecs
     .map(
       (p, i) =>
@@ -175,7 +175,7 @@ function buildComicTTSNarration(page: { title: string; panels: ComicPanelSpec[] 
 
 function buildComicTTSSegments(
   page: { title: string; panels: ComicPanelSpec[] },
-  language: 'zh-CN' | 'en-US',
+  language: string,
   speakerPool: string[],
 ): ComicTTSSegment[] {
   const fallbackSpeakers =

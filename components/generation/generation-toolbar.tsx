@@ -30,6 +30,7 @@ const LANGUAGE_OPTIONS = [
   { code: 'zh-CN', label: '中文' },
   { code: 'en-US', label: 'EN' },
   { code: 'ja-JP', label: '日本語' },
+  { code: 'ru-RU', label: 'RU' },
 ] as const;
 
 type ToolbarLanguage = (typeof LANGUAGE_OPTIONS)[number]['code'];

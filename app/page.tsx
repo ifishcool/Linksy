@@ -54,7 +54,7 @@ const SETUP_AUTO_REFRESH_KEY = 'setupAutoRefreshed';
 interface FormState {
   pdfFile: File | null;
   requirement: string;
-  language: 'zh-CN' | 'en-US' | 'ja-JP';
+  language: 'zh-CN' | 'en-US' | 'ja-JP' | 'ru-RU';
   webSearch: boolean;
 }
 
@@ -170,7 +170,7 @@ function HomePage() {
       const savedLanguage = localStorage.getItem(LANGUAGE_STORAGE_KEY);
       const updates: Partial<FormState> = {};
       if (savedWebSearch === 'true') updates.webSearch = true;
-      if (savedLanguage === 'zh-CN' || savedLanguage === 'en-US' || savedLanguage === 'ja-JP') {
+      if (savedLanguage === 'zh-CN' || savedLanguage === 'en-US' || savedLanguage === 'ja-JP' || savedLanguage === 'ru-RU') {
         updates.language = savedLanguage;
       } else {
         const navLanguage = navigator.language?.toLowerCase() ?? '';
