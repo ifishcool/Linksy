@@ -170,7 +170,12 @@ function HomePage() {
       const savedLanguage = localStorage.getItem(LANGUAGE_STORAGE_KEY);
       const updates: Partial<FormState> = {};
       if (savedWebSearch === 'true') updates.webSearch = true;
-      if (savedLanguage === 'zh-CN' || savedLanguage === 'en-US' || savedLanguage === 'ja-JP' || savedLanguage === 'ru-RU') {
+      if (
+        savedLanguage === 'zh-CN' ||
+        savedLanguage === 'en-US' ||
+        savedLanguage === 'ja-JP' ||
+        savedLanguage === 'ru-RU'
+      ) {
         updates.language = savedLanguage;
       } else {
         const navLanguage = navigator.language?.toLowerCase() ?? '';
@@ -229,27 +234,66 @@ function HomePage() {
 
     let active = true;
 
-    supabaseClient.auth.getUser().then(({ data }) => {
+    const applyAuthUser = (user: { email?: string | null; user_metadata?: unknown } | null) => {
       if (!active) return;
-      setAuthEmail(data.user?.email ?? null);
-      setAiLearningScore(Number(data.user?.user_metadata?.aiLearningScore ?? 0) || 0);
-      setAccountPlan(readAccountPlanFromMetadata(data.user?.user_metadata));
-      setAuthLoading(false);
-    });
+      const metadata = (user?.user_metadata as Record<string, unknown> | undefined) ?? undefined;
+      setAuthEmail(user?.email ?? null);
+      setAiLearningScore(Number(metadata?.aiLearningScore ?? 0) || 0);
+      setAccountPlan(readAccountPlanFromMetadata(metadata));
+    };
+
+    const refreshUserFromCloud = async (
+      fallbackUser: { email?: string | null; user_metadata?: unknown } | null,
+    ) => {
+      const timeoutMs = 8000;
+      try {
+        const cloudResult = (await Promise.race([
+          supabaseClient.auth.getUser(),
+          new Promise<never>((_, reject) => {
+            setTimeout(() => reject(new Error('getUser timeout')), timeoutMs);
+          }),
+        ])) as Awaited<ReturnType<typeof supabaseClient.auth.getUser>>;
+
+        if (!active) return;
+
+        if (cloudResult.error) {
+          log.warn('Failed to refresh auth user from cloud:', cloudResult.error);
+          applyAuthUser(fallbackUser);
+          return;
+        }
+
+        applyAuthUser(cloudResult.data.user ?? fallbackUser);
+      } catch (error) {
+        if (!active) return;
+        log.warn('Failed to refresh auth user from cloud:', error);
+        applyAuthUser(fallbackUser);
+      } finally {
+        if (active) setAuthLoading(false);
+      }
+    };
+
+    supabaseClient.auth
+      .getSession()
+      .then(({ data }) => {
+        const localUser = data.session?.user ?? null;
+        applyAuthUser(localUser);
+        setAuthLoading(false);
+        void refreshUserFromCloud(localUser);
+      })
+      .catch((error) => {
+        log.warn('Failed to load local auth session:', error);
+        if (!active) return;
+        applyAuthUser(null);
+        setAuthLoading(false);
+      });
 
     const {
       data: { subscription },
-    } = supabaseClient.auth.onAuthStateChange(async () => {
-      const {
-        data: { user: latestUser },
-      } = await supabaseClient.auth.getUser();
-
-      if (!active) return;
-
-      setAuthEmail(latestUser?.email ?? null);
-      setAiLearningScore(Number(latestUser?.user_metadata?.aiLearningScore ?? 0) || 0);
-      setAccountPlan(readAccountPlanFromMetadata(latestUser?.user_metadata));
+    } = supabaseClient.auth.onAuthStateChange(async (_event, session) => {
+      const localUser = session?.user ?? null;
+      applyAuthUser(localUser);
       setAuthLoading(false);
+      void refreshUserFromCloud(localUser);
     });
 
     return () => {
