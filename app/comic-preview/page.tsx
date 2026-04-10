@@ -17,6 +17,29 @@ import type {
   ComicTTSSegment,
 } from './types';
 
+type SupportedGenerationLanguage = 'zh-CN' | 'en-US' | 'ja-JP' | 'ru-RU';
+
+function normalizeGenerationLanguage(language?: string): SupportedGenerationLanguage {
+  if (language === 'en-US' || language === 'ja-JP' || language === 'ru-RU') {
+    return language;
+  }
+  return 'zh-CN';
+}
+
+function fallbackPageTitle(pageIndex: number, language?: string): string {
+  const lang = normalizeGenerationLanguage(language);
+  switch (lang) {
+    case 'zh-CN':
+      return `第 ${pageIndex} 页`;
+    case 'ja-JP':
+      return `${pageIndex}ページ`;
+    case 'ru-RU':
+      return `Страница ${pageIndex}`;
+    default:
+      return `Page ${pageIndex}`;
+  }
+}
+
 function buildImageHeaders() {
   const settings = useSettingsStore.getState();
   const providerConfig = settings.imageProvidersConfig?.[settings.imageProviderId];
@@ -70,7 +93,7 @@ function buildPagesFromHistoryScenes(scenes: Scene[]): ComicGeneratedPage[] {
           if (Array.isArray(parsed.panels) && parsed.panels.length > 0) {
             return {
               pageIndex: Number(parsed.pageIndex || idx + 1),
-              title: parsed.title || scene.title || `Page ${idx + 1}`,
+              title: parsed.title || scene.title || fallbackPageTitle(idx + 1),
               panels: parsed.panels,
               imageUrl: parsed.imageUrl,
               ttsText: parsed.ttsText,
@@ -88,7 +111,7 @@ function buildPagesFromHistoryScenes(scenes: Scene[]): ComicGeneratedPage[] {
           : undefined;
       return {
         pageIndex: idx + 1,
-        title: scene.title || `Page ${idx + 1}`,
+        title: scene.title || fallbackPageTitle(idx + 1),
         panels: [],
         imageUrl,
       } as ComicGeneratedPage;
@@ -123,6 +146,16 @@ async function callImageApi(
 }
 
 function composeSinglePageComicPrompt(panelSpecs: ComicPanelSpec[], language: string) {
+  const lang = normalizeGenerationLanguage(language);
+  const languageLabel =
+    lang === 'zh-CN'
+      ? 'Chinese (Simplified)'
+      : lang === 'ja-JP'
+        ? 'Japanese'
+        : lang === 'ru-RU'
+          ? 'Russian'
+          : 'English (US)';
+
   const frameLines = panelSpecs
     .map(
       (p, i) =>
@@ -133,7 +166,9 @@ function composeSinglePageComicPrompt(panelSpecs: ComicPanelSpec[], language: st
   return `Create ONE comic page image with ${panelSpecs.length} clearly separated manga panels.
 Style direction: pure 2D cute Chinese cartoon-comic style with Japanese manga-style storytelling rhythm, colorful palette, flat/cel coloring, clean line art, expressive characters, high readability.
 Character casting: students must be adorable little animals (cartoon style), NOT real human students.
-Language for on-image text: ${language}.
+Current generation language code: ${lang}.
+Current generation language label: ${languageLabel}.
+Language for on-image text MUST be ${languageLabel}.
 
 Requirements:
 - Single image only, not multiple images.
@@ -159,18 +194,27 @@ function buildModelHeaders() {
   };
 }
 
-function buildComicTTSNarration(page: { title: string; panels: ComicPanelSpec[] }) {
+function buildComicTTSNarration(
+  page: { title: string; panels: ComicPanelSpec[] },
+  language: string,
+) {
+  const lang = normalizeGenerationLanguage(language);
+  const panelPrefix =
+    lang === 'zh-CN' ? '第' : lang === 'ja-JP' ? '第' : lang === 'ru-RU' ? 'Панель ' : 'Panel ';
+  const panelSuffix = lang === 'zh-CN' || lang === 'ja-JP' ? '格' : '';
+  const separator = lang === 'zh-CN' || lang === 'ja-JP' ? '。' : '. ';
+
   const lines = page.panels
     .map((panel, idx) => {
       const dialogue = panel.dialogue?.trim();
       const caption = panel.caption?.trim();
       if (!dialogue && !caption) return '';
-      return `第${idx + 1}格：${dialogue || caption}`;
+      return `${panelPrefix}${idx + 1}${panelSuffix}: ${dialogue || caption}`;
     })
     .filter(Boolean);
 
   if (lines.length === 0) return '';
-  return `${page.title}。${lines.join('。')}`;
+  return `${page.title}${separator}${lines.join(separator)}`;
 }
 
 function buildComicTTSSegments(
@@ -178,12 +222,17 @@ function buildComicTTSSegments(
   language: string,
   speakerPool: string[],
 ): ComicTTSSegment[] {
+  const lang = normalizeGenerationLanguage(language);
   const fallbackSpeakers =
     speakerPool.length > 0
       ? speakerPool
-      : language === 'zh-CN'
+      : lang === 'zh-CN'
         ? ['小兔同学', '小猫同学', '小熊同学']
-        : ['Bunny Student', 'Kitty Student', 'Bear Student'];
+        : lang === 'ja-JP'
+          ? ['うさぎさん', 'ねこさん', 'くまさん']
+          : lang === 'ru-RU'
+            ? ['Зайчик', 'Котик', 'Мишка']
+            : ['Bunny Student', 'Kitty Student', 'Bear Student'];
 
   const segments: ComicTTSSegment[] = [];
   let fallbackIndex = 0;
@@ -211,9 +260,17 @@ function buildComicTTSSegments(
     }
 
     if (caption) {
+      const narrator =
+        lang === 'zh-CN'
+          ? '旁白'
+          : lang === 'ja-JP'
+            ? 'ナレーター'
+            : lang === 'ru-RU'
+              ? 'Рассказчик'
+              : 'Narrator';
       segments.push({
         panelIndex: i + 1,
-        speaker: language === 'zh-CN' ? '旁白' : 'Narrator',
+        speaker: narrator,
         text: caption,
       });
     }
@@ -225,7 +282,7 @@ function buildComicTTSSegments(
 function assignVoicesToSegments(segments: ComicTTSSegment[]): ComicTTSSegment[] {
   const settings = useSettingsStore.getState();
   const providerVoices = TTS_PROVIDERS[settings.ttsProviderId]?.voices || [];
-  const narratorNames = new Set(['旁白', 'narrator']);
+  const narratorNames = new Set(['旁白', 'narrator', 'ナレーター', 'рассказчик']);
   const childKeywords = [
     'child',
     'kid',
@@ -428,22 +485,38 @@ async function upsertComicHistoryIndex(
   const now = Date.now();
 
   try {
+    const language = normalizeGenerationLanguage(session.requirements.language);
+    const stageNamePrefix =
+      language === 'zh-CN'
+        ? '漫画'
+        : language === 'ja-JP'
+          ? 'マンガ'
+          : language === 'ru-RU'
+            ? 'Комикс'
+            : 'Comic';
+    const stageDescription =
+      language === 'zh-CN'
+        ? step === 'complete'
+          ? '漫画历史记录'
+          : '漫画生成中'
+        : language === 'ja-JP'
+          ? step === 'complete'
+            ? 'マンガ生成履歴'
+            : 'マンガ生成中'
+          : language === 'ru-RU'
+            ? step === 'complete'
+              ? 'История генерации комикса'
+              : 'Генерация комикса'
+            : step === 'complete'
+              ? 'Comic generation history'
+              : 'Comic generating';
+
     await saveStageData(historyId, {
       stage: {
         id: historyId,
-        name:
-          session.requirements.language === 'zh-CN'
-            ? `漫画：${session.requirements.requirement.slice(0, 30)}`
-            : `Comic: ${session.requirements.requirement.slice(0, 30)}`,
-        description:
-          session.requirements.language === 'zh-CN'
-            ? step === 'complete'
-              ? '漫画历史记录'
-              : '漫画生成中'
-            : step === 'complete'
-              ? 'Comic generation history'
-              : 'Comic generating',
-        language: session.requirements.language,
+        name: `${stageNamePrefix}: ${session.requirements.requirement.slice(0, 30)}`,
+        description: stageDescription,
+        language,
         style: 'comic',
         createdAt: now,
         updatedAt: now,
@@ -467,7 +540,7 @@ async function loadComicHistoryFromStage(historyId: string): Promise<ComicSessio
     sessionId: historyId.startsWith('comic_') ? historyId.slice(6) : historyId,
     requirements: {
       requirement: data.stage.name || 'Comic',
-      language: data.stage.language === 'en-US' ? 'en-US' : 'zh-CN',
+      language: normalizeGenerationLanguage(data.stage.language),
     },
     pages,
     currentStep: 'complete',
@@ -494,6 +567,9 @@ function ComicPreviewContent() {
   const [isGenerating, setIsGenerating] = useState(false);
   const [hasStopped, setHasStopped] = useState(false);
   const [shouldAutoStart, setShouldAutoStart] = useState(true);
+  const [progressPhase, setProgressPhase] = useState<'planning' | 'rendering' | 'narration' | null>(
+    null,
+  );
 
   const stopNarration = useCallback(() => {
     narrationTokenRef.current += 1;
@@ -560,7 +636,7 @@ function ComicPreviewContent() {
             ? page.ttsSegments
             : [{ panelIndex: 1, speaker: 'Narrator', text: page.ttsText || '' }];
         const speechRate = Math.min(settings.ttsSpeed || 1, 0.72);
-        const lang = session?.requirements.language === 'zh-CN' ? 'zh-CN' : 'en-US';
+        const lang = normalizeGenerationLanguage(session?.requirements.language);
         const voices = window.speechSynthesis.getVoices();
 
         const pickBrowserVoice = (preferred?: string) => {
@@ -568,7 +644,13 @@ function ComicPreviewContent() {
           const direct = voices.find((v) => v.name === preferred || v.voiceURI === preferred);
           if (direct) return direct;
           const preferredLangVoices = voices.filter((v) =>
-            lang === 'zh-CN' ? v.lang.includes('zh') : v.lang.includes('en'),
+            lang === 'zh-CN'
+              ? v.lang.includes('zh')
+              : lang === 'ja-JP'
+                ? v.lang.toLowerCase().includes('ja')
+                : lang === 'ru-RU'
+                  ? v.lang.toLowerCase().includes('ru')
+                  : v.lang.includes('en'),
           );
           return (
             preferredLangVoices.find((v) =>
@@ -628,11 +710,7 @@ function ComicPreviewContent() {
             setCurrentPageIndex(0);
             setHasStopped(true);
           } else {
-            setError(
-              stageHistory.requirements.language === 'zh-CN'
-                ? '该漫画历史还在生成中，请稍后再试'
-                : 'This comic history is still generating. Please try again shortly.',
-            );
+            setError(t('comic.errors.historyGenerating'));
           }
           setShouldAutoStart(false);
           return;
@@ -641,7 +719,7 @@ function ComicPreviewContent() {
 
       const raw = sessionStorage.getItem('comicSession');
       if (!raw) {
-        if (!cancelled) setError('Missing session');
+        if (!cancelled) setError(t('comic.errors.missingSession'));
         return;
       }
       try {
@@ -654,7 +732,7 @@ function ComicPreviewContent() {
           setHasStopped(parsed.currentStep === 'complete');
         }
       } catch {
-        if (!cancelled) setError('Invalid session');
+        if (!cancelled) setError(t('comic.errors.invalidSession'));
       }
     };
 
@@ -663,7 +741,7 @@ function ComicPreviewContent() {
     return () => {
       cancelled = true;
     };
-  }, [searchParams]);
+  }, [searchParams, t]);
 
   useEffect(() => {
     return () => {
@@ -704,17 +782,14 @@ function ComicPreviewContent() {
     setCurrentPageIndex(0);
     setIsGenerating(true);
     setHasStopped(false);
+    setProgressPhase(null);
     narratedPagesRef.current.clear();
     stopNarration();
 
     await upsertComicHistoryIndex(session, 'generating');
 
     try {
-      setStatus(
-        session.requirements.language === 'zh-CN'
-          ? '正在启动漫画生成…'
-          : 'Starting comic generation…',
-      );
+      setStatus(t('comic.status.starting'));
 
       const settings = useSettingsStore.getState();
       const registry = useAgentRegistry.getState();
@@ -730,11 +805,8 @@ function ComicPreviewContent() {
       for (let pageIndex = 1; pageIndex <= maxPages; pageIndex++) {
         if (signal.aborted) return;
 
-        setStatus(
-          session.requirements.language === 'zh-CN'
-            ? `正在规划第 ${pageIndex} 页…`
-            : `Planning page ${pageIndex}…`,
-        );
+        setProgressPhase('planning');
+        setStatus(t('comic.status.planningPage', { page: pageIndex }));
 
         const nextPageResp = await fetch('/api/generate/comic-next-page', {
           method: 'POST',
@@ -765,10 +837,8 @@ function ComicPreviewContent() {
 
         if (!nextPageData.shouldContinue) {
           setHasStopped(true);
-          setStatus(
-            nextPageData.stopReason ||
-              (session.requirements.language === 'zh-CN' ? '生成结束' : 'Generation stopped'),
-          );
+          setProgressPhase(null);
+          setStatus(nextPageData.stopReason || t('comic.status.stopped'));
           break;
         }
 
@@ -777,11 +847,8 @@ function ComicPreviewContent() {
           throw new Error('No panels returned for page');
         }
 
-        setStatus(
-          session.requirements.language === 'zh-CN'
-            ? `正在绘制第 ${pageIndex} 页…`
-            : `Rendering page ${pageIndex}…`,
-        );
+        setProgressPhase('rendering');
+        setStatus(t('comic.status.renderingPage', { page: pageIndex }));
 
         const combinedPrompt = composeSinglePageComicPrompt(
           page.panels,
@@ -789,14 +856,17 @@ function ComicPreviewContent() {
         );
         const imageUrl = await callImageApi(combinedPrompt, '3:4', 'comic', signal);
 
-        const ttsText = buildComicTTSNarration({
-          title: page.title || `Page ${pageIndex}`,
-          panels: page.panels,
-        });
+        const ttsText = buildComicTTSNarration(
+          {
+            title: page.title || fallbackPageTitle(pageIndex, session.requirements.language),
+            panels: page.panels,
+          },
+          session.requirements.language,
+        );
         const speakers = (session.agents || agents || []).map((a) => a.name).filter(Boolean);
         const baseSegments = buildComicTTSSegments(
           {
-            title: page.title || `Page ${pageIndex}`,
+            title: page.title || fallbackPageTitle(pageIndex, session.requirements.language),
             panels: page.panels,
           },
           session.requirements.language,
@@ -806,11 +876,8 @@ function ComicPreviewContent() {
         let ttsAudioUrl: string | undefined;
         if (ttsSegments.length > 0) {
           try {
-            setStatus(
-              session.requirements.language === 'zh-CN'
-                ? `正在生成第 ${pageIndex} 页配音…`
-                : `Generating narration for page ${pageIndex}…`,
-            );
+            setProgressPhase('narration');
+            setStatus(t('comic.status.narratingPage', { page: pageIndex }));
             const slowSpeed = Math.min(useSettingsStore.getState().ttsSpeed || 1, 0.72);
             const withAudio: ComicTTSSegment[] = [];
             for (let i = 0; i < ttsSegments.length; i++) {
@@ -837,7 +904,7 @@ function ComicPreviewContent() {
 
         const newPage: ComicGeneratedPage = {
           pageIndex,
-          title: page.title || `Page ${pageIndex}`,
+          title: page.title || fallbackPageTitle(pageIndex, session.requirements.language),
           panels: page.panels,
           imageUrl,
           ttsText,
@@ -861,11 +928,8 @@ function ComicPreviewContent() {
 
       if (generatedPages.length >= maxPages) {
         setHasStopped(true);
-        setStatus(
-          session.requirements.language === 'zh-CN'
-            ? `已达到最大页数 ${maxPages}，生成停止`
-            : `Reached max pages (${maxPages}), generation stopped`,
-        );
+        setProgressPhase(null);
+        setStatus(t('comic.status.reachedMaxPages', { maxPages }));
       }
 
       const finishedSession: ComicSessionState = {
@@ -887,6 +951,7 @@ function ComicPreviewContent() {
       const msg = e instanceof Error ? e.message : String(e);
       setError(msg);
       setStatus('');
+      setProgressPhase(null);
     } finally {
       setIsGenerating(false);
     }
@@ -896,14 +961,7 @@ function ComicPreviewContent() {
   const canPrev = currentPageIndex > 0;
   const canNext = currentPageIndex < pages.length - 1;
   const showPreparing = pages.length === 0 && !error;
-  const subtitleText = error
-    ? error
-    : status ||
-      (isHistoryMode
-        ? ''
-        : session?.requirements.language === 'zh-CN'
-          ? 'AI 正在编排剧情与画面…'
-          : 'AI is composing story and visuals...');
+  const subtitleText = error ? error : status || (isHistoryMode ? '' : t('comic.status.composing'));
   const canReplayNarration =
     !!currentPage &&
     ((Array.isArray(currentPage.ttsSegments) && currentPage.ttsSegments.length > 0) ||
@@ -929,7 +987,7 @@ function ComicPreviewContent() {
           className="flex items-center gap-2 rounded-full bg-white/90 border-[3px] border-slate-900/70 px-4 py-2 text-sm font-black text-sky-700 hover:bg-sky-50"
         >
           <ArrowLeft className="size-4" />
-          <span>{session?.requirements.language === 'zh-CN' ? '返回首页' : 'Back'}</span>
+          <span>{t('comic.actions.backHome')}</span>
         </button>
       </div>
 
@@ -937,9 +995,9 @@ function ComicPreviewContent() {
         <div className="relative w-full rounded-[34px] border-[4px] border-slate-900/80 bg-white/90 backdrop-blur-sm shadow-[0_2px_0_rgba(15,23,42,0.2)] p-5 md:p-7">
           <div className="flex justify-center gap-2 mb-5">
             {[
-              status.includes('规划') || status.includes('Planning'),
-              status.includes('绘制') || status.includes('Rendering'),
-              status.includes('配音') || status.includes('narration'),
+              progressPhase === 'planning',
+              progressPhase === 'rendering',
+              progressPhase === 'narration',
             ].map((active, idx) => (
               <div
                 key={idx}
@@ -951,16 +1009,10 @@ function ComicPreviewContent() {
           <div className="mb-5 space-y-2">
             <h2 className="text-2xl font-bold tracking-tight text-slate-800">
               {error
-                ? session?.requirements.language === 'zh-CN'
-                  ? '漫画生成失败'
-                  : 'Comic generation failed'
+                ? t('comic.title.failed')
                 : showPreparing
-                  ? session?.requirements.language === 'zh-CN'
-                    ? '正在准备漫画世界'
-                    : 'Preparing comic world'
-                  : session?.requirements.language === 'zh-CN'
-                    ? '漫画阅读'
-                    : 'Comic Reader'}
+                  ? t('comic.title.preparing')
+                  : t('comic.title.reader')}
             </h2>
             {subtitleText ? (
               <p className="text-slate-500 text-sm md:text-base">{subtitleText}</p>
@@ -991,11 +1043,7 @@ function ComicPreviewContent() {
                 <span className="inline-block size-2 rounded-full bg-sky-300 animate-pulse [animation-delay:120ms]" />
                 <span className="inline-block size-2 rounded-full bg-sky-200 animate-pulse [animation-delay:240ms]" />
               </div>
-              <p className="text-sm text-slate-600">
-                {session?.requirements.language === 'zh-CN'
-                  ? '准备中… 小动物同学们正在入场'
-                  : 'Preparing... cute animal students are entering'}
-              </p>
+              <p className="text-sm text-slate-600">{t('comic.preparingHint')}</p>
             </div>
           )}
 
@@ -1029,7 +1077,7 @@ function ComicPreviewContent() {
                 >
                   <span className="flex items-center gap-1">
                     <RotateCcw className="size-4" />
-                    {session?.requirements.language === 'zh-CN' ? '重播配音' : 'Replay Audio'}
+                    {t('comic.actions.replayAudio')}
                   </span>
                 </button>
                 <button
@@ -1039,16 +1087,14 @@ function ComicPreviewContent() {
                 >
                   <span className="flex items-center gap-1">
                     <ChevronLeft className="size-4" />
-                    {session?.requirements.language === 'zh-CN' ? '上一页' : 'Prev'}
+                    {t('comic.actions.prevPage')}
                   </span>
                 </button>
 
                 <div className="rounded-xl bg-white border-[3px] border-slate-900/70 px-3 py-2 text-xs font-black text-slate-700">
                   {pages.length > 0
                     ? ` ${currentPageIndex + 1} / ${pages.length}`
-                    : session?.requirements.language === 'zh-CN'
-                      ? '等待生成'
-                      : 'Waiting'}
+                    : t('comic.status.waiting')}
                 </div>
                 <button
                   onClick={() =>
@@ -1058,7 +1104,7 @@ function ComicPreviewContent() {
                   className="rounded-xl bg-white border-[3px] border-slate-900/70 px-3 py-2 text-sm font-black text-slate-700 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   <span className="flex items-center gap-1">
-                    {session?.requirements.language === 'zh-CN' ? '下一页' : 'Next'}
+                    {t('comic.actions.nextPage')}
                     <ChevronRight className="size-4" />
                   </span>
                 </button>
@@ -1066,13 +1112,9 @@ function ComicPreviewContent() {
 
               <div className="mt-2 text-center text-xs text-slate-600 font-medium">
                 {isGenerating
-                  ? session?.requirements.language === 'zh-CN'
-                    ? 'AI 正在继续生成后续页…'
-                    : 'AI is generating next pages…'
+                  ? t('comic.status.generatingNextPages')
                   : hasStopped
-                    ? session?.requirements.language === 'zh-CN'
-                      ? 'AI 已停止生成'
-                      : 'AI generation stopped'
+                    ? t('comic.status.stoppedByAi')
                     : null}
               </div>
             </div>
@@ -1082,7 +1124,7 @@ function ComicPreviewContent() {
         <div className="h-12 flex items-center justify-center w-full">
           <div className="flex items-center gap-3 text-sm text-slate-500 font-medium uppercase tracking-widest">
             <Sparkles className="size-3 animate-pulse text-orange-500" />
-            {session?.requirements.language === 'zh-CN' ? 'AI 正在创作中' : 'AI IS CREATING'}
+            {t('comic.footer.creating')}
           </div>
         </div>
       </div>

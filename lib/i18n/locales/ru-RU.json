@@ -955,14 +955,41 @@
     "clearCacheButton": "Удалить все данные навсегда",
     "clearCacheSuccess": "Кэш очищен, страница скоро обновится",
     "clearCacheFailed": "Не удалось очистить кэш, попробуйте снова",
-    "webSearchSettings": "Веб-поиск",
-    "webSearchApiKey": "Tavily API-ключ",
-    "webSearchApiKeyPlaceholder": "Введите ваш Tavily API-ключ",
-    "webSearchApiKeyPlaceholderServer": "Серверный ключ настроен, можно ввести свой",
-    "webSearchApiKeyHint": "Получите API-ключ на tavily.com для веб-поиска",
-    "webSearchBaseUrl": "Base URL",
-    "webSearchServerConfigured": "Серверный Tavily API-ключ настроен",
-    "optional": "Необязательно"
+    "webSearchSettings": "Веб-поиск"
+  },
+  "comic": {
+    "title": {
+      "failed": "Не удалось сгенерировать комикс",
+      "preparing": "Подготовка мира комикса",
+      "reader": "Просмотр комикса"
+    },
+    "errors": {
+      "historyGenerating": "История этого комикса всё ещё генерируется. Попробуйте чуть позже.",
+      "missingSession": "Сессия генерации комикса не найдена",
+      "invalidSession": "Недействительная сессия генерации комикса"
+    },
+    "status": {
+      "starting": "Запуск генерации комикса...",
+      "planningPage": "Планирование страницы {{page}}...",
+      "renderingPage": "Отрисовка страницы {{page}}...",
+      "narratingPage": "Генерация озвучки для страницы {{page}}...",
+      "stopped": "Генерация остановлена",
+      "reachedMaxPages": "Достигнут максимум страниц ({{maxPages}}), генерация остановлена",
+      "composing": "AI составляет сюжет и визуал...",
+      "waiting": "Ожидание",
+      "generatingNextPages": "AI генерирует следующие страницы...",
+      "stoppedByAi": "AI остановил генерацию"
+    },
+    "actions": {
+      "backHome": "На главную",
+      "replayAudio": "Повторить аудио",
+      "prevPage": "Назад",
+      "nextPage": "Вперёд"
+    },
+    "preparingHint": "Подготовка... милые зверята-ученики выходят на сцену",
+    "footer": {
+      "creating": "AI СОЗДАЁТ"
+    }
   },
   "profile": {
     "title": "Профиль",

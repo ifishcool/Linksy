@@ -40,6 +40,49 @@ import { type GenerationSessionState, ALL_STEPS, getActiveSteps } from './types'
 import { StepVisualizer } from './components/visualizers';
 
 const log = createLogger('GenerationPreview');
+const PREVIEW_TTS_CONCURRENCY = 4;
+const PREVIEW_QWEN_TTS_CONCURRENCY = 2;
+const PREVIEW_TTS_RETRY_MAX = 2;
+const PREVIEW_TTS_RETRY_BASE_MS = 1200;
+
+function isRetryableTTSFailure(
+  status: number | 'ERR',
+  payload?: unknown,
+  message?: string,
+): boolean {
+  if (status === 429 || status === 503) return true;
+  const text =
+    `${message || ''} ${typeof payload === 'string' ? payload : JSON.stringify(payload || {})}`.toLowerCase();
+  return (
+    text.includes('ratequota') ||
+    text.includes('rate limit') ||
+    text.includes('throttling') ||
+    text.includes('too many requests') ||
+    text.includes('concurrency quota')
+  );
+}
+
+async function sleepWithAbort(ms: number, signal?: AbortSignal): Promise<void> {
+  if (!signal) {
+    await new Promise<void>((resolve) => setTimeout(resolve, ms));
+    return;
+  }
+
+  if (signal.aborted) throw new DOMException('Aborted', 'AbortError');
+
+  await new Promise<void>((resolve, reject) => {
+    const timer = setTimeout(() => {
+      signal.removeEventListener('abort', onAbort);
+      resolve();
+    }, ms);
+    const onAbort = () => {
+      clearTimeout(timer);
+      signal.removeEventListener('abort', onAbort);
+      reject(new DOMException('Aborted', 'AbortError'));
+    };
+    signal.addEventListener('abort', onAbort, { once: true });
+  });
+}
 
 function GenerationPreviewContent() {
   const router = useRouter();
@@ -1041,72 +1084,134 @@ function GenerationPreviewContent() {
         pushGenerationLog('TTS API', `Generating TTS for ${speechActions.length} speech actions`);
 
         let ttsFailCount = 0;
-        for (const action of speechActions) {
-          const audioId = `tts_${action.id}`;
-          action.audioId = audioId;
-          try {
-            pushGenerationLog(
-              'TTS API',
-              `Generating TTS: provider=${settings.ttsProviderId}, model=${settings.ttsModelId || 'default'}, voice=${settings.ttsVoice}, audioId=${audioId}, textLen=${action.text?.length || 0}`,
-            );
+        const concurrencyCap =
+          settings.ttsProviderId === 'qwen-tts'
+            ? PREVIEW_QWEN_TTS_CONCURRENCY
+            : PREVIEW_TTS_CONCURRENCY;
+        const ttsConcurrency = Math.min(concurrencyCap, speechActions.length);
+        let nextSpeechIndex = 0;
 
-            const ttsStart = performance.now();
-            const resp = await fetch('/api/generate/tts', {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({
-                text: action.text,
-                audioId,
-                ttsProviderId: settings.ttsProviderId,
-                ttsModelId: settings.ttsModelId,
-                ttsVoice: settings.ttsVoice,
-                ttsSpeed: settings.ttsSpeed,
-                ttsApiKey: ttsProviderConfig?.apiKey || undefined,
-                ttsBaseUrl: ttsProviderConfig?.baseUrl || undefined,
-              }),
-              signal,
-            });
-            pushNextApiLine('POST', '/api/generate/tts', resp.status, performance.now() - ttsStart);
-            if (!resp.ok) {
-              const ttsErrData = await resp
-                .json()
-                .catch(() => ({ error: `TTS failed: HTTP ${resp.status}` }));
+        const runTTSWorker = async () => {
+          while (true) {
+            const index = nextSpeechIndex++;
+            if (index >= speechActions.length) return;
+
+            const action = speechActions[index];
+            const audioId = `tts_${action.id}`;
+            action.audioId = audioId;
+            try {
+              let ttsData: {
+                success?: boolean;
+                base64?: string;
+                format?: string;
+                error?: string;
+              } | null = null;
+              let finalFailed = false;
+
+              for (let attempt = 0; attempt <= PREVIEW_TTS_RETRY_MAX; attempt++) {
+                const ttsStart = performance.now();
+                const resp = await fetch('/api/generate/tts', {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify({
+                    text: action.text,
+                    audioId,
+                    ttsProviderId: settings.ttsProviderId,
+                    ttsModelId: settings.ttsModelId,
+                    ttsVoice: settings.ttsVoice,
+                    ttsSpeed: settings.ttsSpeed,
+                    ttsApiKey: ttsProviderConfig?.apiKey || undefined,
+                    ttsBaseUrl: ttsProviderConfig?.baseUrl || undefined,
+                  }),
+                  signal,
+                });
+                pushNextApiLine(
+                  'POST',
+                  '/api/generate/tts',
+                  resp.status,
+                  performance.now() - ttsStart,
+                );
+
+                const payload = await resp
+                  .json()
+                  .catch(() => ({ error: `TTS failed: HTTP ${resp.status}` }));
+
+                if (resp.ok && payload?.success && payload?.base64 && payload?.format) {
+                  ttsData = payload;
+                  break;
+                }
+
+                const retryable = isRetryableTTSFailure(
+                  resp.status,
+                  payload,
+                  payload?.error || payload?.details,
+                );
+                const canRetry = retryable && attempt < PREVIEW_TTS_RETRY_MAX;
+
+                if (canRetry) {
+                  const backoff =
+                    PREVIEW_TTS_RETRY_BASE_MS * Math.pow(2, attempt) +
+                    Math.floor(Math.random() * 400);
+                  pushGenerationLog(
+                    'TTS API',
+                    `Rate-limited, retrying TTS: audioId=${audioId}, wait=${backoff}ms, attempt=${attempt + 2}/${PREVIEW_TTS_RETRY_MAX + 1}`,
+                    'WARN',
+                  );
+                  await sleepWithAbort(backoff, signal);
+                  continue;
+                }
+
+                pushGenerationLog(
+                  'TTS API',
+                  `TTS error payload: ${stringifyErrorPayload(payload)}`,
+                  'ERROR',
+                );
+                finalFailed = true;
+                break;
+              }
+
+              if (!ttsData?.success || !ttsData.base64 || !ttsData.format) {
+                if (!finalFailed) {
+                  pushGenerationLog(
+                    'TTS API',
+                    `TTS failed after retries: audioId=${audioId}`,
+                    'ERROR',
+                  );
+                }
+                ttsFailCount++;
+                continue;
+              }
+
+              const binary = atob(ttsData.base64);
+              const bytes = new Uint8Array(binary.length);
+              for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
+              const blob = new Blob([bytes], { type: `audio/${ttsData.format}` });
+              await db.audioFiles.put({
+                id: audioId,
+                blob,
+                format: ttsData.format,
+                createdAt: Date.now(),
+              });
+            } catch (err) {
+              log.warn(`[TTS] Failed for ${audioId}:`, err);
               pushGenerationLog(
                 'TTS API',
-                `TTS error payload: ${stringifyErrorPayload(ttsErrData)}`,
+                `TTS failed: audioId=${audioId}, reason=${err instanceof Error ? err.message : String(err)}`,
                 'ERROR',
               );
               ttsFailCount++;
-              continue;
             }
-            const ttsData = await resp.json();
-            if (!ttsData.success) {
-              ttsFailCount++;
-              continue;
-            }
-            const binary = atob(ttsData.base64);
-            const bytes = new Uint8Array(binary.length);
-            for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
-            const blob = new Blob([bytes], { type: `audio/${ttsData.format}` });
-            await db.audioFiles.put({
-              id: audioId,
-              blob,
-              format: ttsData.format,
-              createdAt: Date.now(),
-            });
-          } catch (err) {
-            log.warn(`[TTS] Failed for ${audioId}:`, err);
-            pushGenerationLog(
-              'TTS API',
-              `TTS failed: audioId=${audioId}, reason=${err instanceof Error ? err.message : String(err)}`,
-              'ERROR',
-            );
-            ttsFailCount++;
           }
-        }
+        };
+
+        await Promise.all(Array.from({ length: ttsConcurrency }, () => runTTSWorker()));
 
         if (ttsFailCount > 0 && speechActions.length > 0) {
-          throw new Error(t('generation.speechFailed'));
+          pushGenerationLog(
+            'TTS API',
+            `TTS partial failure: ${ttsFailCount}/${speechActions.length} failed, continuing generation`,
+            'WARN',
+          );
         }
         pushGenerationLog('TTS API', 'TTS generation completed');
       }

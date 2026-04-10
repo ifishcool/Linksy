@@ -12,11 +12,29 @@ type AgentInfo = { id: string; name: string; role: string; persona?: string };
 
 type RequestBody = {
   requirement: string;
-  language: 'zh-CN' | 'en-US';
+  language: 'zh-CN' | 'en-US' | 'ja-JP' | 'ru-RU';
   pageIndex: number;
   previousPages?: Array<{ pageIndex: number; title: string; summary?: string }>;
   agents?: AgentInfo[];
 };
+
+function getLanguageRule(language: RequestBody['language']): string {
+  const label =
+    language === 'zh-CN'
+      ? 'Chinese (Simplified)'
+      : language === 'ja-JP'
+        ? 'Japanese'
+        : language === 'ru-RU'
+          ? 'Russian'
+          : 'English (US)';
+
+  return [
+    `Current generation language code: ${language}`,
+    `Current generation language label: ${label}`,
+    `All natural-language content MUST be written in ${label}, including page title, panel title, captions, and dialogues.`,
+    'Do not mix multiple languages unless the user explicitly asks for bilingual content.',
+  ].join('\n');
+}
 
 type RawPanel = {
   index?: number;
@@ -75,6 +93,7 @@ User requirement:
 ${requirement}
 
 Language: ${language}
+${getLanguageRule(language)}
 Previous pages summary:
 ${previousSummary}
 

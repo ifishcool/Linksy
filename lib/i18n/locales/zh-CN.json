@@ -964,6 +964,40 @@
     "webSearchServerConfigured": "服务端已配置 Tavily API Key",
     "optional": "可选"
   },
+  "comic": {
+    "title": {
+      "failed": "漫画生成失败",
+      "preparing": "正在准备漫画世界",
+      "reader": "漫画阅读"
+    },
+    "errors": {
+      "historyGenerating": "该漫画历史还在生成中，请稍后再试",
+      "missingSession": "缺少漫画生成会话",
+      "invalidSession": "漫画生成会话无效"
+    },
+    "status": {
+      "starting": "正在启动漫画生成...",
+      "planningPage": "正在规划第 {{page}} 页...",
+      "renderingPage": "正在绘制第 {{page}} 页...",
+      "narratingPage": "正在生成第 {{page}} 页配音...",
+      "stopped": "生成结束",
+      "reachedMaxPages": "已达到最大页数 {{maxPages}}，生成停止",
+      "composing": "AI 正在编排剧情与画面...",
+      "waiting": "等待生成",
+      "generatingNextPages": "AI 正在继续生成后续页...",
+      "stoppedByAi": "AI 已停止生成"
+    },
+    "actions": {
+      "backHome": "返回首页",
+      "replayAudio": "重播配音",
+      "prevPage": "上一页",
+      "nextPage": "下一页"
+    },
+    "preparingHint": "准备中… 小动物同学们正在入场",
+    "footer": {
+      "creating": "AI 正在创作中"
+    }
+  },
   "profile": {
     "title": "个人资料",
     "defaultNickname": "同学",

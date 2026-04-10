@@ -14,6 +14,93 @@ import { generateMediaForOutlines } from '@/lib/media/media-orchestrator';
 import { createLogger } from '@/lib/logger';
 
 const log = createLogger('SceneGenerator');
+const CLIENT_TTS_CONCURRENCY = 4;
+const QWEN_TTS_CONCURRENCY = 2;
+const TTS_RETRY_MAX = 2;
+const TTS_RETRY_BASE_MS = 1200;
+
+function isRetryableTTSError(result: {
+  statusCode: number | 'ERR';
+  error?: string;
+  errorPayload?: unknown;
+}): boolean {
+  if (result.statusCode === 429 || result.statusCode === 503) return true;
+  const text = `${result.error || ''} ${stringifyErrorPayload(result.errorPayload)}`.toLowerCase();
+  return (
+    text.includes('ratequota') ||
+    text.includes('rate limit') ||
+    text.includes('throttling') ||
+    text.includes('too many requests') ||
+    text.includes('concurrency quota')
+  );
+}
+
+async function sleepWithAbort(ms: number, signal?: AbortSignal): Promise<void> {
+  if (!signal) {
+    await new Promise<void>((resolve) => setTimeout(resolve, ms));
+    return;
+  }
+
+  if (signal.aborted) {
+    throw new DOMException('Aborted', 'AbortError');
+  }
+
+  await new Promise<void>((resolve, reject) => {
+    const timer = setTimeout(() => {
+      signal.removeEventListener('abort', onAbort);
+      resolve();
+    }, ms);
+    const onAbort = () => {
+      clearTimeout(timer);
+      signal.removeEventListener('abort', onAbort);
+      reject(new DOMException('Aborted', 'AbortError'));
+    };
+    signal.addEventListener('abort', onAbort, { once: true });
+  });
+}
+
+async function generateAndStoreTTSWithRetry(
+  audioId: string,
+  text: string,
+  signal?: AbortSignal,
+  callbacks?: {
+    onLog?: (scope: string, message: string, level?: LogLevel) => void;
+  },
+): Promise<{
+  success: boolean;
+  statusCode: number | 'ERR';
+  error?: string;
+  errorPayload?: unknown;
+}> {
+  let lastResult: {
+    success: boolean;
+    statusCode: number | 'ERR';
+    error?: string;
+    errorPayload?: unknown;
+  } = {
+    success: false,
+    statusCode: 'ERR',
+    error: 'TTS request not started',
+  };
+
+  for (let attempt = 0; attempt <= TTS_RETRY_MAX; attempt++) {
+    lastResult = await generateAndStoreTTS(audioId, text, signal);
+    if (lastResult.success) return lastResult;
+
+    const shouldRetry = isRetryableTTSError(lastResult) && attempt < TTS_RETRY_MAX;
+    if (!shouldRetry) return lastResult;
+
+    const backoff = TTS_RETRY_BASE_MS * Math.pow(2, attempt) + Math.floor(Math.random() * 400);
+    callbacks?.onLog?.(
+      'TTS API',
+      `Rate-limited for ${audioId}, retrying in ${backoff}ms (attempt ${attempt + 2}/${TTS_RETRY_MAX + 1})`,
+      'WARN',
+    );
+    await sleepWithAbort(backoff, signal);
+  }
+
+  return lastResult;
+}
 
 interface SceneContentResult {
   success: boolean;
@@ -252,41 +339,55 @@ async function generateTTSForScene(
   let failedCount = 0;
   let lastError: string | undefined;
 
-  for (const action of speechActions) {
-    const audioId = `tts_${action.id}`;
-    action.audioId = audioId;
-    const ttsStart = performance.now();
-    const ttsResult = await generateAndStoreTTS(audioId, action.text, signal);
-    callbacks?.onApiTiming?.(
-      'POST',
-      '/api/generate/tts',
-      ttsResult.statusCode,
-      performance.now() - ttsStart,
-    );
+  const concurrencyCap = providerId === 'qwen-tts' ? QWEN_TTS_CONCURRENCY : CLIENT_TTS_CONCURRENCY;
+  const concurrency = Math.min(concurrencyCap, speechActions.length);
+  let nextActionIndex = 0;
 
-    if (!ttsResult.success) {
-      failedCount++;
-      lastError = ttsResult.error || `TTS failed for action ${action.id}`;
-      if (ttsResult.errorPayload) {
+  const runWorker = async () => {
+    while (true) {
+      const index = nextActionIndex++;
+      if (index >= speechActions.length) return;
+
+      const action = speechActions[index];
+      const audioId = `tts_${action.id}`;
+      action.audioId = audioId;
+      const ttsStart = performance.now();
+      const ttsResult = await generateAndStoreTTSWithRetry(audioId, action.text, signal, {
+        onLog: callbacks?.onLog,
+      });
+      callbacks?.onApiTiming?.(
+        'POST',
+        '/api/generate/tts',
+        ttsResult.statusCode,
+        performance.now() - ttsStart,
+      );
+
+      if (!ttsResult.success) {
+        failedCount++;
+        lastError = ttsResult.error || `TTS failed for action ${action.id}`;
+        if (ttsResult.errorPayload) {
+          callbacks?.onLog?.(
+            'TTS API',
+            `TTS error payload: ${stringifyErrorPayload(ttsResult.errorPayload)}`,
+            'ERROR',
+          );
+        }
+        log.warn('TTS generation failed:', {
+          providerId,
+          actionId: action.id,
+          textLength: action.text.length,
+          error: lastError,
+        });
         callbacks?.onLog?.(
           'TTS API',
-          `TTS error payload: ${stringifyErrorPayload(ttsResult.errorPayload)}`,
+          `TTS generation failed for action=${action.id}: ${lastError}`,
           'ERROR',
         );
       }
-      log.warn('TTS generation failed:', {
-        providerId,
-        actionId: action.id,
-        textLength: action.text.length,
-        error: lastError,
-      });
-      callbacks?.onLog?.(
-        'TTS API',
-        `TTS generation failed for action=${action.id}: ${lastError}`,
-        'ERROR',
-      );
     }
-  }
+  };
+
+  await Promise.all(Array.from({ length: concurrency }, () => runWorker()));
 
   return {
     success: failedCount === 0,
@@ -475,7 +576,7 @@ export function useSceneGenerator(options: UseSceneGeneratorOptions = {}) {
             const scene = actionsResult.scene;
             const settings = useSettingsStore.getState();
 
-            // TTS generation — failure means the whole scene fails
+            // TTS generation — partial failure should not fail the whole scene
             if (settings.ttsEnabled && settings.ttsProviderId !== 'browser-native-tts') {
               const ttsResult = await generateTTSForScene(scene, signal, {
                 onLog: options.onLog,
@@ -484,18 +585,9 @@ export function useSceneGenerator(options: UseSceneGeneratorOptions = {}) {
               if (!ttsResult.success) {
                 options.onLog?.(
                   'TTS API',
-                  `TTS generation failed: ${ttsResult.error || 'Unknown error'}`,
-                  'ERROR',
+                  `TTS partially failed (${ttsResult.failedCount} items), continuing scene generation: ${ttsResult.error || 'Unknown error'}`,
+                  'WARN',
                 );
-                if (abortRef.current || store.getState().generationEpoch !== startEpoch) {
-                  pausedByFailureOrAbort = true;
-                  break;
-                }
-                store.getState().addFailedOutline(outline);
-                options.onSceneFailed?.(outline, ttsResult.error || 'TTS generation failed');
-                store.getState().setGenerationStatus('paused');
-                pausedByFailureOrAbort = true;
-                break;
               }
             }
 
@@ -639,8 +731,9 @@ export function useSceneGenerator(options: UseSceneGeneratorOptions = {}) {
         if (settings.ttsEnabled && settings.ttsProviderId !== 'browser-native-tts') {
           const ttsResult = await generateTTSForScene(actionsResult.scene, signal);
           if (!ttsResult.success) {
-            store.getState().addFailedOutline(outline);
-            return;
+            log.warn(
+              `[retrySingleOutline] TTS partially failed (${ttsResult.failedCount}) but scene will still be added`,
+            );
           }
         }
 

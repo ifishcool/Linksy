@@ -955,14 +955,41 @@
     "clearCacheButton": "すべてのデータを完全に削除",
     "clearCacheSuccess": "キャッシュをクリアしました。まもなくページが更新されます",
     "clearCacheFailed": "キャッシュのクリアに失敗しました。もう一度お試しください",
-    "webSearchSettings": "ウェブ検索",
-    "webSearchApiKey": "Tavily APIキー",
-    "webSearchApiKeyPlaceholder": "Tavily APIキーを入力",
-    "webSearchApiKeyPlaceholderServer": "サーバーキー設定済み、任意で上書き",
-    "webSearchApiKeyHint": "ウェブ検索用のAPIキーをtavily.comで取得してください",
-    "webSearchBaseUrl": "ベースURL",
-    "webSearchServerConfigured": "サーバー側でTavily APIキーが設定済みです",
-    "optional": "任意"
+    "webSearchSettings": "ウェブ検索"
+  },
+  "comic": {
+    "title": {
+      "failed": "マンガ生成に失敗しました",
+      "preparing": "マンガ世界を準備中",
+      "reader": "マンガリーダー"
+    },
+    "errors": {
+      "historyGenerating": "このマンガ履歴はまだ生成中です。しばらくしてから再度お試しください。",
+      "missingSession": "マンガ生成セッションが見つかりません",
+      "invalidSession": "マンガ生成セッションが無効です"
+    },
+    "status": {
+      "starting": "マンガ生成を開始しています...",
+      "planningPage": "{{page}}ページ目を構成中...",
+      "renderingPage": "{{page}}ページ目を描画中...",
+      "narratingPage": "{{page}}ページ目のナレーションを生成中...",
+      "stopped": "生成を停止しました",
+      "reachedMaxPages": "最大ページ数（{{maxPages}}）に達したため生成を停止しました",
+      "composing": "AI がストーリーとビジュアルを構成中...",
+      "waiting": "生成待機中",
+      "generatingNextPages": "AI が次のページを生成中...",
+      "stoppedByAi": "AI の生成が停止しました"
+    },
+    "actions": {
+      "backHome": "ホームへ戻る",
+      "replayAudio": "音声を再生",
+      "prevPage": "前へ",
+      "nextPage": "次へ"
+    },
+    "preparingHint": "準備中… かわいい動物の生徒たちが登場しています",
+    "footer": {
+      "creating": "AI が制作中"
+    }
   },
   "profile": {
     "title": "プロフィール",
