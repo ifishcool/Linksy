@@ -147,7 +147,7 @@ function loadEnvSection(
           : entry?.apiKey || (entry?.baseUrl && keylessProviders.has(id))
       ) {
         result[id] = {
-          apiKey: entry.apiKey,
+          apiKey: entry.apiKey || '',
           baseUrl: entry.baseUrl,
           models: entry.models,
           proxy: entry.proxy,
@@ -184,7 +184,7 @@ function loadEnvSection(
     )
       continue;
     result[providerId] = {
-      apiKey: envApiKey,
+      apiKey: envApiKey || '',
       baseUrl: envBaseUrl,
       models: envModels,
     };
