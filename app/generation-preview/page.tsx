@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useState, Suspense, useRef, type ReactNode } from 'react';
+import { useCallback, useEffect, useState, Suspense, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'motion/react';
 import {
@@ -10,8 +10,6 @@ import {
   AlertTriangle,
   ArrowLeft,
   Bot,
-  Copy,
-  Check,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
@@ -99,7 +97,6 @@ function GenerationPreviewContent() {
   const [streamingOutlines, setStreamingOutlines] = useState<SceneOutline[] | null>(null);
   const [truncationWarnings, setTruncationWarnings] = useState<string[]>([]);
   const [generationLogs, setGenerationLogs] = useState<string[]>([]);
-  const [copiedLogs, setCopiedLogs] = useState(false);
   const [webSearchSources, setWebSearchSources] = useState<Array<{ title: string; url: string }>>(
     [],
   );
@@ -117,34 +114,144 @@ function GenerationPreviewContent() {
   >([]);
   const agentRevealResolveRef = useRef<(() => void) | null>(null);
 
+  const getFriendlyLogMessage = useCallback(
+    (scope: string, message: string, level: 'INFO' | 'WARN' | 'ERROR' = 'INFO') => {
+      const retryMatch = message.match(/attempt (\d+)\/(\d+)/i);
+      const sourcesMatch = message.match(/sources=(\d+)/i);
+      const outlinesMatch = message.match(/Generated (\d+) outlines/i);
+      const actionsMatch = message.match(/Generated (\d+) actions/i);
+      const agentsMatch =
+        message.match(/generated (\d+) agent profiles/i) ||
+        message.match(/Preset agents loaded \((\d+)\)/i) ||
+        message.match(/fallback agents \((\d+)\)/i);
+      const ttsCountMatch = message.match(/Generating TTS for (\d+) speech actions/i);
+      const ttsPartialMatch = message.match(/TTS partial failure: (\d+)\/(\d+)/i);
+      const ttsSuccessMatch = message.match(/TTS success: (\d+)\/(\d+)/i);
+
+      if (level === 'ERROR') return t('generation.logError');
+      if (scope === 'Generation Preview' && message === 'Generation started')
+        return t('generation.logStart');
+      if (scope === 'PDF Parse API' && message.includes('Parsing PDF started'))
+        return t('generation.logPdfStart');
+      if (scope === 'PDF Parse API' && message.includes('Parsing PDF skipped'))
+        return t('generation.logPdfSkip');
+      if (scope === 'PDF Parse API' && message.includes('PDF parsed successfully'))
+        return t('generation.logPdfDone');
+      if (scope === 'Web Search API' && message.includes('Web search started'))
+        return t('generation.logWebSearchStart');
+      if (scope === 'Web Search API' && sourcesMatch)
+        return t('generation.logWebSearchDone', { count: Number(sourcesMatch[1]) });
+      if (scope === 'Agent Profiles API' && message.includes('Generating agent profiles'))
+        return t('generation.logAgentsStart');
+      if (scope === 'Agent Profiles API' && agentsMatch)
+        return t('generation.logAgentsDone', { count: Number(agentsMatch[1]) });
+      if (scope === 'Agent Profiles API' && message.includes('fallback'))
+        return t('generation.logAgentsFallback');
+      if (scope === 'Generation Preview' && message === 'Using preset agents')
+        return t('generation.logPresetAgents');
+      if (scope === 'Outlines Stream' && message.includes('Generating outlines'))
+        return t('generation.logOutlineStart');
+      if (scope === 'Outlines Stream' && retryMatch) {
+        return t('generation.logOutlineRetry', {
+          current: Number(retryMatch[1]),
+          total: Number(retryMatch[2]),
+        });
+      }
+      if (scope === 'Outlines Stream' && outlinesMatch)
+        return t('generation.logOutlineDone', { count: Number(outlinesMatch[1]) });
+      if (scope === 'Scene Content API' && message.includes('Generating content'))
+        return t('generation.logSceneStart');
+      if (scope === 'Scene Content API' && message.includes('Content generated successfully'))
+        return t('generation.logSceneDone');
+      if (scope === 'Scene Actions API' && message.includes('Generating actions'))
+        return t('generation.logActionsStart');
+      if (scope === 'Scene Actions API' && actionsMatch)
+        return t('generation.logActionsDone', { count: Number(actionsMatch[1]) });
+      if (scope === 'Scene Actions API' && message.includes('Scene assembled successfully'))
+        return t('generation.logClassroomPackaged');
+      if (scope === 'TTS API' && ttsCountMatch)
+        return t('generation.logTtsStart', { count: Number(ttsCountMatch[1]) });
+      if (scope === 'TTS API' && message.includes('Rate-limited'))
+        return t('generation.logTtsRetry');
+      if (scope === 'TTS API' && ttsSuccessMatch) {
+        return t('generation.logTtsProgress', {
+          current: Number(ttsSuccessMatch[1]),
+          total: Number(ttsSuccessMatch[2]),
+        });
+      }
+      if (scope === 'TTS API' && ttsPartialMatch) {
+        return t('generation.logTtsPartial', {
+          failed: Number(ttsPartialMatch[1]),
+          total: Number(ttsPartialMatch[2]),
+        });
+      }
+      if (scope === 'TTS API' && message.includes('TTS generation completed'))
+        return t('generation.logTtsDone');
+      if (scope === 'Generation Preview' && message.includes('Truncation warnings'))
+        return t('generation.logTrimmed');
+      if (scope === 'Generation Preview' && message.includes('Image mapping loaded'))
+        return t('generation.logAssetsReady');
+      if (scope === 'Generation Preview' && message.includes('Generation completed'))
+        return t('generation.logComplete');
+      if (scope === 'Generation Preview' && message.includes('Generation aborted'))
+        return t('generation.logAborted');
+      if (scope === 'Generation Preview' && message.includes('Generation failed'))
+        return t('generation.logError');
+      if (level === 'WARN') return t('generation.logRetrying');
+      return t('generation.logWorking');
+    },
+    [t],
+  );
+
+  const getRequestLabel = useCallback(
+    (path: string) => {
+      switch (path) {
+        case '/api/parse-pdf':
+          return t('generation.requestPdf');
+        case '/api/web-search':
+          return t('generation.requestWebSearch');
+        case '/api/generate/agent-profiles':
+          return t('generation.requestAgents');
+        case '/api/generate/scene-outlines-stream':
+          return t('generation.requestOutlines');
+        case '/api/generate/scene-content':
+          return t('generation.requestSceneContent');
+        case '/api/generate/scene-actions':
+          return t('generation.requestSceneActions');
+        case '/api/generate/tts':
+          return t('generation.requestTts');
+        default:
+          return t('generation.requestWorking');
+      }
+    },
+    [t],
+  );
+
   const pushGenerationLog = useCallback(
     (scope: string, message: string, level: 'INFO' | 'WARN' | 'ERROR' = 'INFO') => {
-      const timestamp = new Date().toISOString();
       setGenerationLogs((prev) => {
-        const next = [`[${timestamp}] [${level}] [${scope}] ${message}`, ...prev];
+        const next = [getFriendlyLogMessage(scope, message, level), ...prev];
         return next.slice(0, 150);
       });
     },
-    [],
+    [getFriendlyLogMessage],
   );
-
-  const formatDuration = useCallback((durationMs: number) => {
-    if (durationMs < 1000) return `${Math.round(durationMs)}ms`;
-    return `${(durationMs / 1000).toFixed(1)}s`;
-  }, []);
 
   const pushNextApiLine = useCallback(
     (method: 'GET' | 'POST', path: string, status: number | 'ERR', durationMs: number) => {
-      const renderDuration = formatDuration(durationMs);
+      const label = getRequestLabel(path);
+      const rounded = durationMs < 1000 ? `${Math.round(durationMs)}ms` : `${(durationMs / 1000).toFixed(1)}s`;
       setGenerationLogs((prev) => {
         const next = [
-          `${method} ${path} ${status} in ${renderDuration} (compile: n/a, render: ${renderDuration})`,
+          status === 'ERR' || status >= 400
+            ? t('generation.requestFailed', { method, label })
+            : t('generation.requestDone', { method, label, time: rounded }),
           ...prev,
         ];
         return next.slice(0, 150);
       });
     },
-    [formatDuration],
+    [getRequestLabel, t],
   );
 
   const stringifyErrorPayload = useCallback((payload: unknown) => {
@@ -157,112 +264,6 @@ function GenerationPreviewContent() {
     }
   }, []);
 
-  const handleCopyLogs = useCallback(async () => {
-    if (!generationLogs.length) return;
-    try {
-      await navigator.clipboard.writeText(generationLogs.join('\n'));
-      setCopiedLogs(true);
-      setTimeout(() => setCopiedLogs(false), 1500);
-    } catch {
-      setCopiedLogs(false);
-    }
-  }, [generationLogs]);
-
-  const renderTokenizedText = useCallback((line: string) => {
-    const tokenRegex =
-      /(\b(?:200|201|204|400|401|403|404|429|500|502|503|ERR)\b|\b(?:INFO|WARN|ERROR|POST|GET|failed|error|warning)\b)/gi;
-
-    return line.split(tokenRegex).map((chunk, idx) => {
-      if (!chunk) return null;
-      const token = chunk.toLowerCase();
-
-      let cls = '';
-      if (/^20\d$/.test(chunk)) cls = 'text-emerald-700 font-semibold';
-      else if (/^[45]\d\d$/.test(chunk) || token === 'err') cls = 'text-red-600 font-semibold';
-      else if (token === 'error' || token === 'failed') cls = 'text-red-600 font-semibold';
-      else if (token === 'warn' || token === 'warning') cls = 'text-amber-600 font-semibold';
-      else if (token === 'info') cls = 'text-sky-700 font-semibold';
-      else if (token === 'post' || token === 'get') cls = 'text-violet-700 font-semibold';
-
-      return (
-        <span key={`${chunk}-${idx}`} className={cls}>
-          {chunk}
-        </span>
-      );
-    });
-  }, []);
-
-  const renderJsonSegment = useCallback((jsonText: string) => {
-    let pretty = jsonText;
-    try {
-      const parsed = JSON.parse(jsonText);
-      pretty = JSON.stringify(parsed, null, 2);
-    } catch {
-      return <span className="text-red-600">{jsonText}</span>;
-    }
-
-    const jsonTokenRegex =
-      /(\"(?:\\.|[^\"])*\"(?=\s*:))|(\"(?:\\.|[^\"])*\")|\b(true|false|null)\b|\b-?\d+(?:\.\d+)?\b|([{}\[\],:])/g;
-    const segments: ReactNode[] = [];
-    let lastIndex = 0;
-    let match: RegExpExecArray | null;
-    let index = 0;
-
-    while ((match = jsonTokenRegex.exec(pretty)) !== null) {
-      if (match.index > lastIndex) {
-        segments.push(<span key={`t-${index++}`}>{pretty.slice(lastIndex, match.index)}</span>);
-      }
-
-      const token = match[0];
-      let cls = 'text-slate-700';
-      if (match[1]) cls = 'text-blue-700 font-semibold';
-      else if (match[2]) cls = 'text-emerald-700';
-      else if (match[3]) cls = 'text-violet-700 font-semibold';
-      else if (/^-?\d/.test(token)) cls = 'text-amber-700 font-semibold';
-      else if (match[4]) cls = 'text-slate-500';
-
-      segments.push(
-        <span key={`m-${index++}`} className={cls}>
-          {token}
-        </span>,
-      );
-      lastIndex = jsonTokenRegex.lastIndex;
-    }
-
-    if (lastIndex < pretty.length) {
-      segments.push(<span key={`t-${index++}`}>{pretty.slice(lastIndex)}</span>);
-    }
-
-    return (
-      <pre className="mt-1 overflow-x-auto whitespace-pre-wrap break-all rounded bg-slate-100 px-2 py-1 text-[10px] leading-4 text-slate-700">
-        {segments}
-      </pre>
-    );
-  }, []);
-
-  const renderHighlightedLogLine = useCallback(
-    (line: string) => {
-      const jsonStart = line.indexOf('{');
-      const jsonEnd = line.lastIndexOf('}');
-
-      if (jsonStart === -1 || jsonEnd <= jsonStart) {
-        return renderTokenizedText(line);
-      }
-
-      const prefix = line.slice(0, jsonStart);
-      const jsonText = line.slice(jsonStart, jsonEnd + 1);
-      const suffix = line.slice(jsonEnd + 1);
-
-      return (
-        <>
-          <span>{renderTokenizedText(prefix)}</span>
-          {renderJsonSegment(jsonText)}
-          {suffix ? <span>{renderTokenizedText(suffix)}</span> : null}
-        </>
-      );
-    },
-    [renderJsonSegment, renderTokenizedText],
-  );
 
   // Compute active steps based on session state
   const activeSteps = getActiveSteps(session);
@@ -302,7 +303,6 @@ function GenerationPreviewContent() {
       'x-api-key': modelConfig.apiKey,
       'x-base-url': modelConfig.baseUrl,
       'x-provider-type': modelConfig.providerType || '',
-      'x-requires-api-key': modelConfig.requiresApiKey ? 'true' : 'false',
       // Image generation provider
       'x-image-provider': settings.imageProviderId || '',
       'x-image-model': settings.imageModelId || '',
@@ -1084,6 +1084,7 @@ function GenerationPreviewContent() {
         pushGenerationLog('TTS API', `Generating TTS for ${speechActions.length} speech actions`);
 
         let ttsFailCount = 0;
+        let ttsSuccessCount = 0;
         const concurrencyCap =
           settings.ttsProviderId === 'qwen-tts'
             ? PREVIEW_QWEN_TTS_CONCURRENCY
@@ -1192,6 +1193,11 @@ function GenerationPreviewContent() {
                 format: ttsData.format,
                 createdAt: Date.now(),
               });
+              ttsSuccessCount++;
+              pushGenerationLog(
+                'TTS API',
+                `TTS success: ${ttsSuccessCount}/${speechActions.length}`,
+              );
             } catch (err) {
               log.warn(`[TTS] Failed for ${audioId}:`, err);
               pushGenerationLog(
@@ -1487,34 +1493,36 @@ function GenerationPreviewContent() {
 
         <div className="w-full max-w-lg">
           <div className="rounded-2xl border-2 border-slate-900/75 bg-white/85 p-3 text-left shadow-[0_2px_0_rgba(15,23,42,0.16)] backdrop-blur-sm">
-            <div className="mb-2 flex items-center justify-between gap-2">
-              <div className="text-xs font-black uppercase tracking-wide text-slate-700">
-                生成日志 / Generation Logs
-              </div>
-              <button
-                type="button"
-                onClick={handleCopyLogs}
-                disabled={generationLogs.length === 0}
-                className={cn(
-                  'inline-flex items-center gap-1 rounded-full border px-2 py-1 text-[10px] font-semibold transition-colors',
-                  generationLogs.length === 0
-                    ? 'cursor-not-allowed border-slate-200 bg-slate-100 text-slate-400'
-                    : copiedLogs
-                      ? 'border-emerald-300 bg-emerald-50 text-emerald-700'
-                      : 'border-slate-300 bg-white text-slate-700 hover:bg-slate-50',
-                )}
-              >
-                {copiedLogs ? <Check className="h-3 w-3" /> : <Copy className="h-3 w-3" />}
-                {copiedLogs ? 'Copied' : 'Copy'}
-              </button>
+            <div className="mb-2 text-xs font-black uppercase tracking-wide text-slate-700">
+              {t('generation.logPanelTitle')}
             </div>
-            <div className="max-h-36 overflow-y-auto rounded-xl border border-slate-200 bg-slate-50/80 px-2.5 py-2 font-mono text-[11px] leading-relaxed text-slate-600">
+            <div className="max-h-40 overflow-y-auto rounded-xl border border-slate-200 bg-slate-50/80 px-2.5 py-2 text-[11px] leading-relaxed text-slate-600">
               {generationLogs.length > 0 ? (
                 generationLogs.map((line, idx) => (
-                  <div key={`${idx}-${line}`}>{renderHighlightedLogLine(line)}</div>
+                  <motion.div
+                    key={`${idx}-${line}`}
+                    initial={idx === 0 ? { opacity: 0, y: 6, scale: 0.98 } : false}
+                    animate={{ opacity: 1, y: 0, scale: 1 }}
+                    className={cn(
+                      'rounded-lg px-2 py-1.5 transition-colors',
+                      idx === 0
+                        ? 'border border-sky-200 bg-sky-50 text-sky-900 shadow-[0_1px_0_rgba(14,165,233,0.12)]'
+                        : 'text-slate-600',
+                    )}
+                  >
+                    <div className="flex items-start gap-2">
+                      <span
+                        className={cn(
+                          'mt-1 size-1.5 shrink-0 rounded-full',
+                          idx === 0 ? 'bg-sky-500 shadow-[0_0_0_3px_rgba(14,165,233,0.12)]' : 'bg-slate-300',
+                        )}
+                      />
+                      <span>{line}</span>
+                    </div>
+                  </motion.div>
                 ))
               ) : (
-                <div className="text-slate-400">Waiting for generation to start...</div>
+                <div className="text-slate-400">{t('generation.logWaiting')}</div>
               )}
             </div>
           </div>
