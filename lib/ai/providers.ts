@@ -6,7 +6,7 @@
  * - Anthropic Claude (native)
  * - Google Gemini (native)
  * - MiniMax (Anthropic-compatible, recommended by official)
- * - OpenAI-compatible providers (DeepSeek, Kimi, GLM, SiliconFlow, Doubao, etc.)
+ * - OpenAI-compatible providers (DeepSeek, Kimi, GLM, SiliconFlow, Doubao, OpenRouter, etc.)
  *
  * Sources:
  * - https://platform.openai.com/docs/models
@@ -21,6 +21,7 @@
  * - https://siliconflow.cn/models
  * - https://siliconflow.cn/pricing
  * - https://www.volcengine.com/docs/82379/1330310
+ * - https://openrouter.ai/docs/models
  */
 
 import { createOpenAI } from '@ai-sdk/openai';
@@ -44,6 +45,43 @@ const log = createLogger('AIProviders');
 
 // Re-export types for backward compatibility
 export type { ProviderId, ProviderConfig, ModelInfo, ModelConfig };
+
+/**
+ * Get system proxy URL from environment variables
+ */
+function getSystemProxy(): string | undefined {
+  // HTTPS_PROXY takes priority over HTTP_PROXY for HTTPS requests
+  if (process.env.HTTPS_PROXY) {
+    return process.env.HTTPS_PROXY;
+  }
+  if (process.env.HTTP_PROXY) {
+    return process.env.HTTP_PROXY;
+  }
+  return undefined;
+}
+
+/**
+ * Create a fetch wrapper with proxy support using undici
+ */
+function createProxyFetch(originalFetch: typeof fetch, proxyUrl?: string): typeof fetch {
+  if (!proxyUrl) return originalFetch;
+
+  try {
+    // Dynamic require to avoid bundling undici on the client side
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    const { ProxyAgent, fetch: undiciFetch } = require('undici');
+    const agent = new ProxyAgent(proxyUrl);
+
+    return (input: RequestInfo | URL, init?: RequestInit) =>
+      undiciFetch(input as string, {
+        ...(init as Record<string, unknown>),
+        dispatcher: agent,
+      }).then((r: unknown) => r as Response);
+  } catch (error) {
+    log.warn('Failed to create proxy fetch:', error);
+    return originalFetch;
+  }
+}
 
 /**
  * Provider registry
@@ -966,6 +1004,24 @@ export const PROVIDERS: Record<ProviderId, ProviderConfig> = {
       },
     ],
   },
+
+  openrouter: {
+    id: 'openrouter',
+    name: 'OpenRouter',
+    type: 'openai',
+    defaultBaseUrl: 'https://openrouter.ai/api/v1',
+    requiresApiKey: true,
+    icon: '/logos/openrouter.svg',
+    models: [
+      {
+        id: 'anthropic/claude-sonnet-4.6',
+        name: 'Claude 4.6 Sonnet',
+        contextWindow: 1000000,
+        outputWindow: 131072,
+        capabilities: { streaming: true, tools: true, vision: true },
+      },
+    ],
+  },
 };
 
 /**
@@ -1107,6 +1163,9 @@ export function getModel(config: ModelConfig): ModelWithInfo {
 
   switch (providerType) {
     case 'openai': {
+      const systemProxy = getSystemProxy();
+      const proxyFetch = createProxyFetch(globalThis.fetch, systemProxy || config.proxy);
+
       const openaiOptions: Parameters<typeof createOpenAI>[0] = {
         apiKey: effectiveApiKey,
         baseURL: effectiveBaseUrl,
@@ -1136,8 +1195,11 @@ export function getModel(config: ModelConfig): ModelWithInfo {
               }
             }
           }
-          return globalThis.fetch(url, init);
+          return proxyFetch(url, init);
         };
+      } else if (systemProxy || config.proxy) {
+        // Use proxy for native OpenAI as well
+        openaiOptions.fetch = proxyFetch;
       }
 
       const openai = createOpenAI(openaiOptions);
@@ -1146,30 +1208,44 @@ export function getModel(config: ModelConfig): ModelWithInfo {
     }
 
     case 'anthropic': {
-      const anthropic = createAnthropic({
+      const systemProxy = getSystemProxy();
+      const proxyFetch = createProxyFetch(globalThis.fetch, systemProxy || config.proxy);
+
+      const anthropicOptions: Parameters<typeof createAnthropic>[0] = {
         apiKey: effectiveApiKey,
         baseURL: effectiveBaseUrl,
-      });
+      };
+
+      if (systemProxy || config.proxy) {
+        anthropicOptions.fetch = proxyFetch;
+      }
+
+      const anthropic = createAnthropic(anthropicOptions);
       model = anthropic.chat(config.modelId);
       break;
     }
 
     case 'google': {
+      const systemProxy = getSystemProxy();
+      const proxyUrl = systemProxy || config.proxy;
+
       const googleOptions: Parameters<typeof createGoogleGenerativeAI>[0] = {
         apiKey: effectiveApiKey,
         baseURL: effectiveBaseUrl,
       };
-      if (config.proxy) {
+
+      if (proxyUrl) {
         // Dynamic require to avoid bundling undici on the client side
         // eslint-disable-next-line @typescript-eslint/no-require-imports
         const { ProxyAgent, fetch: undiciFetch } = require('undici');
-        const agent = new ProxyAgent(config.proxy);
+        const agent = new ProxyAgent(proxyUrl);
         googleOptions.fetch = ((input: RequestInfo | URL, init?: RequestInit) =>
           undiciFetch(input as string, {
             ...(init as Record<string, unknown>),
             dispatcher: agent,
           }).then((r: unknown) => r as Response)) as typeof fetch;
       }
+
       const google = createGoogleGenerativeAI(googleOptions);
       model = google.chat(config.modelId);
       break;
