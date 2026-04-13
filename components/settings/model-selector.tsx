@@ -68,7 +68,7 @@ export function ModelSelector({
   // - Provider requires API key: must have client key OR server configured
   // - Provider doesn't require API key (e.g. Ollama): must have explicit baseUrl OR server configured
   // - Has at least one model
-  // - Has baseUrl or defaultBaseUrl configured
+  // - Has a reachable baseUrl
   const configuredProviders = Object.entries(providersConfig)
     .filter(
       ([, config]) =>
