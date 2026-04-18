@@ -110,7 +110,11 @@ providers:
     apiKey: sk-ant-...
 ```
 
-Supported providers: **OpenAI**, **Anthropic**, **Google Gemini**, **DeepSeek**, **MiniMax**, **Grok (xAI)**, and any OpenAI-compatible API.
+<<<<<<< HEAD
+Supported providers: **OpenAI**, **Anthropic**, **Google Gemini**, **DeepSeek**, **MiniMax**, **Grok (xAI)**, **Doubao**, **GLM (Zhipu)**, **Ollama** (local), and any OpenAI-compatible API.
+=======
+Supported providers: **OpenAI**, **Anthropic**, **Google Gemini**, **DeepSeek**, **MiniMax**, **Grok (xAI)**, **Doubao**, **GLM (Zhipu)**, **Ollama** (local), and any OpenAI-compatible API.
+>>>>>>> 2f542cf (feat(providers): add international base URL chips for GLM/Kimi/MiniMax (#449))
 
 MiniMax quick examples:
 
@@ -127,6 +131,20 @@ IMAGE_MINIMAX_BASE_URL=https://api.minimaxi.com
 
 VIDEO_MINIMAX_API_KEY=...
 VIDEO_MINIMAX_BASE_URL=https://api.minimaxi.com
+```
+
+GLM (Zhipu) quick examples:
+
+```env
+# China (default)
+GLM_API_KEY=...
+GLM_BASE_URL=https://open.bigmodel.cn/api/paas/v4
+
+# International (z.ai)
+GLM_API_KEY=...
+GLM_BASE_URL=https://api.z.ai/api/paas/v4
+
+DEFAULT_MODEL=glm:glm-5.1
 ```
 
 > **Recommended model:** **Gemini 3 Flash** — best balance of quality and speed. For highest quality (at slower speed), try **Gemini 3.1 Pro**.
@@ -498,4 +516,3 @@ If you find OpenMAIC useful in your research, please consider citing:
 ## 📄 License
 
 This project is licensed under the [GNU Affero General Public License v3.0](LICENSE).
-
