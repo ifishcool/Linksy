@@ -141,7 +141,9 @@
     "ttsHint": "Выберите голос для AI-учителя",
     "ttsPreview": "Прослушать",
     "ttsPreviewing": "Воспроизведение...",
-    "generateComic": "Сгенерировать комикс"
+    "generateComic": "Сгенерировать комикс",
+    "interactiveModeHint": "Включить интерактивный режим для более практического контента",
+    "interactiveModeLabel": "Интерактивный режим"
   },
   "export": {
     "pptx": "Экспортировать PPTX",

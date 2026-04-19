@@ -17,7 +17,10 @@ import type {
   ScientificModel,
   PdfImage,
   ImageMapping,
+  WidgetOutline,
 } from '@/lib/types/generation';
+import type { WidgetType, WidgetConfig, TeacherAction } from '@/lib/types/widgets';
+import type { PromptId } from './prompts/types';
 import type { LanguageModel } from 'ai';
 import type { StageStore } from '@/lib/api/stage-api';
 import { createStageAPI } from '@/lib/api/stage-api';
@@ -35,7 +38,14 @@ import {
 } from './prompt-formatters';
 import type { PPTElement, Slide, SlideBackground, SlideTheme } from '@/lib/types/slides';
 import type { QuizQuestion } from '@/lib/types/stage';
-import type { Action } from '@/lib/types/action';
+import type {
+  Action,
+  SpeechAction,
+  WidgetHighlightAction,
+  WidgetSetStateAction,
+  WidgetAnnotationAction,
+  WidgetRevealAction,
+} from '@/lib/types/action';
 import type {
   AgentInfo,
   SceneGenerationContext,
@@ -143,6 +153,98 @@ async function generateSingleScene(
   return createSceneWithActions(outline, content, actions, api);
 }
 
+// ==================== Backward Compatibility Helpers ====================
+
+/**
+ * Convert legacy interactiveConfig to unified widget fields
+ * For backward compatibility with old classrooms
+ */
+function convertInteractiveConfigToWidget(outline: SceneOutline): SceneOutline {
+  const config = outline.interactiveConfig;
+  if (!config) {
+    log.warn(
+      `Interactive outline missing both widget and interactiveConfig, falling back to simulation`,
+    );
+    return {
+      ...outline,
+      widgetType: 'simulation' as WidgetType,
+      widgetOutline: { concept: outline.title },
+    };
+  }
+
+  const widgetType = inferWidgetType(
+    config.subject || '',
+    config.conceptName,
+    config.designIdea || '',
+  );
+
+  log.info(`Converting interactiveConfig to widget: ${widgetType} for "${outline.title}"`);
+
+  return {
+    ...outline,
+    widgetType,
+    widgetOutline: buildWidgetOutline(widgetType, config),
+  };
+}
+
+/**
+ * Infer widget type from concept characteristics
+ */
+function inferWidgetType(subject: string, concept: string, designIdea: string): WidgetType {
+  const text = (subject + ' ' + concept + ' ' + designIdea).toLowerCase();
+
+  // Rule-based inference
+  if (
+    /physics|chemistry|力学|化学|运动|反应|force|motion|equilibrium|wave|电路|circuit/.test(text)
+  ) {
+    return 'simulation';
+  }
+  if (/programming|code|algorithm|编程|算法|python|javascript|function|代码/.test(text)) {
+    return 'code';
+  }
+  if (/process|workflow|步骤|流程|逻辑|step|flow|系统|system/.test(text)) {
+    return 'diagram';
+  }
+  if (
+    /biology|anatomy|cell|molecular|生物|细胞|分子|3d|三维|solar|planet|skeleton|organ/.test(text)
+  ) {
+    return 'visualization3d';
+  }
+  if (/game|quiz|practice|练习|游戏|puzzle|match|challenge|挑战/.test(text)) {
+    return 'game';
+  }
+
+  // Default fallback
+  return 'simulation';
+}
+
+/**
+ * Build widgetOutline from interactiveConfig for backward compatibility
+ */
+function buildWidgetOutline(
+  widgetType: WidgetType,
+  config: { conceptName: string; conceptOverview: string; designIdea: string },
+): WidgetOutline {
+  const base: WidgetOutline = { concept: config.conceptName };
+
+  switch (widgetType) {
+    case 'simulation':
+      // Try to extract variables from designIdea
+      const varMatch = config.designIdea.match(/variables|参数|调整|adjust|slider/i);
+      return { ...base, keyVariables: varMatch ? [] : undefined };
+    case 'diagram':
+      return { ...base, diagramType: 'flowchart' };
+    case 'code':
+      return { ...base, language: 'python' };
+    case 'game':
+      return { ...base, gameType: 'quiz' };
+    case 'visualization3d':
+      return { ...base, visualizationType: 'custom', objects: [] };
+    default:
+      return base;
+  }
+}
+
 /**
  * Step 3.1: Generate content based on outline
  */
@@ -162,20 +264,31 @@ export async function generateSceneContent(
   | GeneratedPBLContent
   | null
 > {
-  // If outline is interactive but missing interactiveConfig, fall back to slide
-  if (outline.type === 'interactive' && !outline.interactiveConfig) {
-    log.warn(
-      `Interactive outline "${outline.title}" missing interactiveConfig, falling back to slide`,
-    );
-    const fallbackOutline = { ...outline, type: 'slide' as const };
-    return generateSlideContent(
-      fallbackOutline,
+  // Unified path for interactive scenes (both normal and ultra mode)
+  if (outline.type === 'interactive') {
+    // Backward compatibility: convert legacy interactiveConfig
+    if (!outline.widgetType && outline.interactiveConfig) {
+      log.info(`Converting legacy interactiveConfig for: ${outline.title}`);
+      outline = convertInteractiveConfigToWidget(outline);
+    }
+
+    // If still no widgetType after conversion, fallback to simulation
+    if (!outline.widgetType) {
+      log.warn(
+        `Interactive outline "${outline.title}" has no widgetType, falling back to simulation`,
+      );
+      outline = {
+        ...outline,
+        widgetType: 'simulation' as WidgetType,
+        widgetOutline: { concept: outline.title },
+      };
+    }
+
+    // Route to widget generation (handles all 5 types)
+    return generateWidgetContent(
+      outline,
       aiCall,
-      assignedImages,
-      imageMapping,
-      visionEnabled,
-      generatedMediaMapping,
-      agents,
+      (outline.language || 'zh-CN') as 'zh-CN' | 'en-US',
     );
   }
 
@@ -192,8 +305,6 @@ export async function generateSceneContent(
       );
     case 'quiz':
       return generateQuizContent(outline, aiCall);
-    case 'interactive':
-      return generateInteractiveContent(outline, aiCall, outline.language);
     case 'pbl':
       return generatePBLSceneContent(outline, languageModel);
     default:
@@ -727,99 +838,6 @@ function normalizeQuizAnswer(question: Record<string, unknown>): string[] | unde
 }
 
 /**
- * Generate interactive page content
- * Two AI calls + post-processing:
- * 1. Scientific modeling -> ScientificModel (with fallback)
- * 2. HTML generation with constraints -> post-processed HTML
- */
-async function generateInteractiveContent(
-  outline: SceneOutline,
-  aiCall: AICallFn,
-  language: 'zh-CN' | 'en-US' | 'ja-JP' | 'ru-RU' | undefined = 'zh-CN',
-): Promise<GeneratedInteractiveContent | null> {
-  const config = outline.interactiveConfig!;
-
-  // Step 1: Scientific modeling (with fallback on failure)
-  let scientificModel: ScientificModel | undefined;
-  try {
-    const modelPrompts = buildPrompt(PROMPT_IDS.INTERACTIVE_SCIENTIFIC_MODEL, {
-      subject: config.subject || '',
-      conceptName: config.conceptName,
-      conceptOverview: config.conceptOverview,
-      keyPoints: (outline.keyPoints || []).map((p, i) => `${i + 1}. ${p}`).join('\n'),
-      designIdea: config.designIdea,
-    });
-
-    if (modelPrompts) {
-      log.info(`Step 1: Scientific modeling for: ${outline.title}`);
-      const modelResponse = await aiCall(modelPrompts.system, modelPrompts.user);
-      const parsed = parseJsonResponse<ScientificModel>(modelResponse);
-      if (parsed && parsed.core_formulas) {
-        scientificModel = parsed;
-        log.info(
-          `Scientific model: ${parsed.core_formulas.length} formulas, ${parsed.constraints?.length || 0} constraints`,
-        );
-      }
-    }
-  } catch (error) {
-    log.warn(`Scientific modeling failed, continuing without: ${error}`);
-  }
-
-  // Format scientific constraints for HTML generation prompt
-  let scientificConstraints = 'No specific scientific constraints available.';
-  if (scientificModel) {
-    const lines: string[] = [];
-    if (scientificModel.core_formulas?.length) {
-      lines.push(`Core Formulas: ${scientificModel.core_formulas.join('; ')}`);
-    }
-    if (scientificModel.mechanism?.length) {
-      lines.push(`Mechanisms: ${scientificModel.mechanism.join('; ')}`);
-    }
-    if (scientificModel.constraints?.length) {
-      lines.push(`Must Obey: ${scientificModel.constraints.join('; ')}`);
-    }
-    if (scientificModel.forbidden_errors?.length) {
-      lines.push(`Forbidden Errors: ${scientificModel.forbidden_errors.join('; ')}`);
-    }
-    scientificConstraints = lines.join('\n');
-  }
-
-  // Step 2: HTML generation
-  const htmlPrompts = buildPrompt(PROMPT_IDS.INTERACTIVE_HTML, {
-    conceptName: config.conceptName,
-    subject: config.subject || '',
-    conceptOverview: config.conceptOverview,
-    keyPoints: (outline.keyPoints || []).map((p, i) => `${i + 1}. ${p}`).join('\n'),
-    scientificConstraints,
-    designIdea: config.designIdea,
-    language,
-  });
-
-  if (!htmlPrompts) {
-    log.error(`Failed to build HTML prompt for: ${outline.title}`);
-    return null;
-  }
-
-  log.info(`Step 2: Generating HTML for: ${outline.title}`);
-  const htmlResponse = await aiCall(htmlPrompts.system, htmlPrompts.user);
-  // Extract HTML from response
-  const rawHtml = extractHtml(htmlResponse);
-  if (!rawHtml) {
-    log.error(`Failed to extract HTML from response for: ${outline.title}`);
-    return null;
-  }
-
-  // Step 3: Post-process HTML (LaTeX delimiter conversion + KaTeX injection)
-  const processedHtml = postProcessInteractiveHtml(rawHtml);
-  log.info(`Post-processed HTML (${processedHtml.length} chars) for: ${outline.title}`);
-
-  return {
-    html: processedHtml,
-    scientificModel,
-  };
-}
-
-/**
  * Generate PBL project content
  * Uses the agentic loop from lib/pbl/generate-pbl.ts
  */
@@ -902,6 +920,184 @@ function extractHtml(response: string): string | null {
   return null;
 }
 
+// ==================== Ultra Mode Widget Generation ====================
+
+/**
+ * Generate widget content based on widget type (Ultra Mode)
+ */
+async function generateWidgetContent(
+  outline: SceneOutline,
+  aiCall: AICallFn,
+  language: 'zh-CN' | 'en-US' | 'ja-JP' | 'ru-RU',
+): Promise<GeneratedInteractiveContent | null> {
+  const widgetType = outline.widgetType;
+  const widgetOutline = outline.widgetOutline;
+
+  if (!widgetType || !widgetOutline) {
+    log.warn(`Interactive outline missing widget config, falling back to standard interactive`);
+    return null;
+  }
+
+  // Select appropriate prompt based on widget type
+  let promptId: PromptId;
+  let variables: Record<string, unknown>;
+
+  switch (widgetType) {
+    case 'simulation':
+      promptId = PROMPT_IDS.SIMULATION_CONTENT;
+      variables = {
+        conceptName: widgetOutline.concept || outline.title,
+        conceptOverview: outline.description,
+        keyPoints: (outline.keyPoints || []).join('\n'),
+        variables: widgetOutline.keyVariables?.join(', ') || '',
+        designIdea: '',
+        language,
+      };
+      break;
+
+    case 'diagram':
+      promptId = PROMPT_IDS.DIAGRAM_CONTENT;
+      variables = {
+        title: outline.title,
+        diagramType: widgetOutline.diagramType || 'flowchart',
+        description: outline.description,
+        keyPoints: (outline.keyPoints || []).join('\n'),
+        language,
+      };
+      break;
+
+    case 'code':
+      promptId = PROMPT_IDS.CODE_CONTENT;
+      variables = {
+        title: outline.title,
+        programmingLanguage: widgetOutline.language || 'python',
+        description: outline.description,
+        keyPoints: (outline.keyPoints || []).join('\n'),
+        starterCode: '',
+        testCases: '', // AI generates appropriate test cases based on challenge
+        hints: '', // AI generates progressive hints based on challenge
+        language,
+      };
+      break;
+
+    case 'game':
+      promptId = PROMPT_IDS.GAME_CONTENT;
+      variables = {
+        title: outline.title,
+        gameType: widgetOutline.gameType || 'quiz',
+        description: outline.description,
+        keyPoints: (outline.keyPoints || []).join('\n'),
+        scoring: { correctPoints: 10, speedBonus: 5 },
+        language,
+      };
+      break;
+
+    case 'visualization3d':
+      promptId = PROMPT_IDS.VISUALIZATION3D_CONTENT;
+      variables = {
+        title: outline.title,
+        visualizationType: widgetOutline.visualizationType || 'custom',
+        description: outline.description,
+        keyPoints: (outline.keyPoints || []).join('\n'),
+        objects: widgetOutline.objects || [],
+        interactions: widgetOutline.interactions || [],
+        language,
+      };
+      break;
+
+    default:
+      log.warn(`Unknown widget type: ${widgetType}`);
+      return null;
+  }
+
+  const prompts = buildPrompt(promptId, variables);
+  if (!prompts) {
+    log.error(`Failed to build ${widgetType} prompt for: ${outline.title}`);
+    return null;
+  }
+
+  log.info(`Generating ${widgetType} widget for: ${outline.title}`);
+  const response = await aiCall(prompts.system, prompts.user);
+  const html = extractHtml(response);
+
+  if (!html) {
+    log.error(`Failed to extract HTML from ${widgetType} response for: ${outline.title}`);
+    return null;
+  }
+
+  // Extract widget config from HTML if present
+  const widgetConfig = extractWidgetConfig(html);
+
+  // Generate teacher actions
+  const teacherActions = await generateWidgetTeacherActions(
+    widgetType,
+    outline,
+    widgetConfig,
+    aiCall,
+    language,
+  );
+  log.info(
+    `[Ultra Mode] Generated ${teacherActions?.length || 0} teacher actions for "${outline.title}" (${widgetType})`,
+  );
+  if (teacherActions && teacherActions.length > 0) {
+    log.info(
+      `[Ultra Mode] Teacher actions for "${outline.title}": ${JSON.stringify(teacherActions, null, 2)}`,
+    );
+  }
+
+  return {
+    html: postProcessInteractiveHtml(html),
+    widgetType,
+    widgetConfig,
+    teacherActions,
+  };
+}
+
+/**
+ * Extract widget config from embedded JSON in HTML
+ */
+function extractWidgetConfig(html: string): WidgetConfig | undefined {
+  const match = html.match(
+    /<script type="application\/json" id="widget-config">([\s\S]*?)<\/script>/,
+  );
+  if (!match) return undefined;
+
+  try {
+    return JSON.parse(match[1]);
+  } catch {
+    return undefined;
+  }
+}
+
+/**
+ * Generate teacher actions for a widget
+ */
+async function generateWidgetTeacherActions(
+  widgetType: WidgetType,
+  outline: SceneOutline,
+  widgetConfig: WidgetConfig | undefined,
+  aiCall: AICallFn,
+  language: 'zh-CN' | 'en-US' | 'ja-JP' | 'ru-RU',
+): Promise<TeacherAction[] | undefined> {
+  const prompts = buildPrompt(PROMPT_IDS.WIDGET_TEACHER_ACTIONS, {
+    widgetType,
+    description: outline.description,
+    keyPoints: (outline.keyPoints || []).join('\n'),
+    widgetConfig: JSON.stringify(widgetConfig || {}),
+    language,
+  });
+
+  if (!prompts) return undefined;
+
+  try {
+    const response = await aiCall(prompts.system, prompts.user);
+    const parsed = parseJsonResponse<{ actions: TeacherAction[] }>(response);
+    return parsed?.actions;
+  } catch {
+    return undefined;
+  }
+}
+
 /**
  * Step 3.2: Generate Actions based on content and script
  */
@@ -918,6 +1114,24 @@ export async function generateSceneActions(
   userProfile?: string,
 ): Promise<Action[]> {
   const agentsText = formatAgentsForPrompt(agents);
+
+  // Debug: Log content type and teacherActions presence for interactive scenes
+  if (outline.type === 'interactive') {
+    const hasHtml = 'html' in content;
+    const teacherActionsCount = hasHtml ? content.teacherActions?.length || 0 : 0;
+    log.info(
+      `[Actions Gen] Interactive "${outline.title}": hasHtml=${hasHtml}, teacherActions=${teacherActionsCount}, widgetType=${hasHtml ? content.widgetType : 'N/A'}`,
+    );
+  }
+
+  // Ultra Mode: If interactive content has teacherActions, convert and use them
+  // Skip normal action generation for widget-based interactive scenes
+  if (outline.type === 'interactive' && 'html' in content && content.teacherActions?.length) {
+    log.info(
+      `[Ultra Mode] Converting ${content.teacherActions.length} teacherActions to Actions for: ${outline.title}`,
+    );
+    return convertTeacherActionsToActions(content.teacherActions);
+  }
 
   if (outline.type === 'slide' && 'elements' in content) {
     // Format element list for AI to select from
@@ -1085,6 +1299,125 @@ function formatQuestionsForPrompt(questions: QuizQuestion[]): string {
       return `Q${i + 1} (${q.type}): ${q.question}\n${optionsText}`;
     })
     .join('\n\n');
+}
+
+/**
+ * Convert Ultra Mode teacherActions to standard Actions for playback.
+ *
+ * TeacherAction types: speech, highlight, annotation, reveal, setState
+ * Action types: speech, widget_highlight, widget_setState, widget_annotation, widget_reveal
+ *
+ * Conversion strategy:
+ * - speech → single speech Action
+ * - highlight/setState/annotation/reveal with content → TWO Actions:
+ *   1. widget action (visual/state change) - quick, non-blocking
+ *   2. speech action (narration) - PlaybackEngine handles TTS
+ * - highlight/setState/annotation/reveal without content → single widget action
+ */
+function convertTeacherActionsToActions(teacherActions: TeacherAction[]): Action[] {
+  const actions: Action[] = [];
+
+  for (const ta of teacherActions) {
+    // Always use nanoid for unique action IDs to prevent audio ID collisions
+    // Ultra Mode generates sequential IDs like "action_1" which are NOT unique across scenes
+    const actionId = `action_${nanoid(8)}`;
+    const base = {
+      id: actionId,
+      title: ta.label || '',
+    };
+
+    switch (ta.type) {
+      case 'speech':
+        actions.push({
+          ...base,
+          type: 'speech',
+          text: ta.content || '',
+        } as SpeechAction);
+        break;
+
+      case 'highlight':
+        // Add widget highlight action (visual, quick)
+        actions.push({
+          ...base,
+          type: 'widget_highlight',
+          target: ta.target || '',
+          content: undefined, // No speech in widget action
+        } as WidgetHighlightAction);
+        // Add speech action for narration (if content exists)
+        if (ta.content) {
+          actions.push({
+            id: `${base.id}_speech`,
+            type: 'speech',
+            text: ta.content,
+            title: base.title,
+          } as SpeechAction);
+        }
+        break;
+
+      case 'setState':
+        // Add widget setState action
+        actions.push({
+          ...base,
+          type: 'widget_setState',
+          state: ta.state || {},
+          content: undefined,
+        } as WidgetSetStateAction);
+        // Add speech action for narration
+        if (ta.content) {
+          actions.push({
+            id: `${base.id}_speech`,
+            type: 'speech',
+            text: ta.content,
+            title: base.title,
+          } as SpeechAction);
+        }
+        break;
+
+      case 'annotation':
+        actions.push({
+          ...base,
+          type: 'widget_annotation',
+          target: ta.target || '',
+          content: undefined,
+        } as WidgetAnnotationAction);
+        if (ta.content) {
+          actions.push({
+            id: `${base.id}_speech`,
+            type: 'speech',
+            text: ta.content,
+            title: base.title,
+          } as SpeechAction);
+        }
+        break;
+
+      case 'reveal':
+        actions.push({
+          ...base,
+          type: 'widget_reveal',
+          target: ta.target || '',
+          content: undefined,
+        } as WidgetRevealAction);
+        if (ta.content) {
+          actions.push({
+            id: `${base.id}_speech`,
+            type: 'speech',
+            text: ta.content,
+            title: base.title,
+          } as SpeechAction);
+        }
+        break;
+
+      default:
+        // Fallback to speech for unknown types
+        actions.push({
+          ...base,
+          type: 'speech',
+          text: ta.content || '',
+        } as SpeechAction);
+    }
+  }
+
+  return actions;
 }
 
 /**
@@ -1268,6 +1601,10 @@ export function createSceneWithActions(
         type: 'interactive',
         url: '',
         html: content.html,
+        // Ultra Mode widget fields
+        widgetType: content.widgetType,
+        widgetConfig: content.widgetConfig,
+        teacherActions: content.teacherActions,
       },
       actions,
     });

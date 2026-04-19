@@ -159,6 +159,54 @@ Use `interactive` type when a concept benefits significantly from hands-on inter
 - Do NOT use interactive for purely textual/conceptual content - use slides instead
 - The `interactiveConfig.designIdea` should describe the specific interactive elements and user interactions
 
+### Widget Type Selection for Interactive Scenes
+
+When generating an interactive scene, you MUST select the appropriate widget type and provide widgetOutline:
+
+**Selection Logic:**
+
+| Concept Characteristics | Widget Type | widgetOutline Fields |
+|-------------------------|-------------|---------------------|
+| Physics/chemistry phenomena with adjustable parameters | `simulation` | `concept`, `keyVariables` |
+| Processes, workflows, cause-effect chains | `diagram` | `diagramType` |
+| Programming concepts, algorithms | `code` | `language` |
+| Practice activities, gamified assessment | `game` | `gameType`, `challenge` |
+| Biological/geometric structures, 3D models | `visualization3d` | `visualizationType`, `objects` |
+
+**widgetOutline Format by Type:**
+
+```json
+// simulation
+"widgetOutline": {
+  "concept": "concept_name",
+  "keyVariables": ["variable1", "variable2"]
+}
+
+// diagram
+"widgetOutline": {
+  "diagramType": "flowchart"
+}
+
+// code
+"widgetOutline": {
+  "language": "python"
+}
+
+// game
+"widgetOutline": {
+  "gameType": "action",
+  "challenge": "description of what player controls"
+}
+
+// visualization3d
+"widgetOutline": {
+  "visualizationType": "solar",
+  "objects": ["sun", "earth", "mars"]
+}
+```
+
+**CRITICAL:** Every interactive scene MUST include both `widgetType` and `widgetOutline` fields. Interactive scenes without these are INVALID.
+
 ### PBL Scene Guidelines
 
 Use `pbl` type when the course involves complex, multi-step project work that benefits from structured collaboration. Good candidates include:
@@ -201,20 +249,32 @@ You must output a JSON array where each element is a scene outline object:
         "elementId": "gen_img_1",
         "aspectRatio": "16:9"
       }
-    ]
-  },
-  {
-    "id": "scene_2",
-    "type": "interactive",
-    "title": "Interactive Exploration",
-    "description": "Students explore the concept through hands-on interactive visualization",
-    "keyPoints": ["Interactive element 1", "Observable phenomenon"],
-    "order": 2,
-    "interactiveConfig": {
-      "conceptName": "Concept Name",
-      "conceptOverview": "Brief description of what this interactive demonstrates",
-      "designIdea": "Describe the interactive elements: sliders, drag handles, animations, etc.",
-      "subject": "Physics"
+    },
+    {
+      "id": "scene_2",
+      "type": "interactive",
+      "title": "Interactive Exploration",
+      "description": "Students explore the concept through hands-on interactive visualization",
+      "keyPoints": ["Interactive element 1", "Observable phenomenon"],
+      "order": 2,
+      "widgetType": "simulation",
+      "widgetOutline": {
+        "concept": "Projectile Motion",
+        "keyVariables": ["angle", "velocity"]
+      }
+    },
+    {
+      "id": "scene_3",
+      "type": "quiz",
+      "title": "Knowledge Check",
+      "description": "Test student understanding of XX concept",
+      "keyPoints": ["Test point 1", "Test point 2"],
+      "order": 3,
+      "quizConfig": {
+        "questionCount": 2,
+        "difficulty": "medium",
+        "questionTypes": ["single", "multiple", "short_answer"]
+      }
     }
   },
   {
@@ -248,7 +308,9 @@ You must output a JSON array where each element is a scene outline object:
 | suggestedImageIds | string[]                 | ❌       | Suggested image IDs to use                                                                       |
 | mediaGenerations  | MediaGenerationRequest[] | ❌       | AI image/video generation requests when PDF images insufficient                                  |
 | quizConfig        | object                   | ❌       | Required for quiz type, contains questionCount/difficulty/questionTypes                          |
-| interactiveConfig | object                   | ❌       | Required for interactive type, contains conceptName/conceptOverview/designIdea/subject           |
+| interactiveConfig | object                   | ❌ (deprecated) | Legacy: use widgetType + widgetOutline instead                                                                                       |
+| widgetType        | string                   | ✅ (for interactive) | Widget type: "simulation", "diagram", "code", "game", "visualization3d"                                                 |
+| widgetOutline     | object                   | ✅ (for interactive) | Widget-specific configuration (see Widget Type Selection)                                                               |
 | pblConfig         | object                   | ❌       | Required for pbl type, contains projectTopic/projectDescription/targetSkills/issueCount/language |
 
 ### quizConfig Structure

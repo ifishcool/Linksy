@@ -16,6 +16,7 @@ import {
   ChevronUp,
   MoreHorizontal,
   Upload,
+  Atom,
 } from 'lucide-react';
 import { useI18n } from '@/lib/hooks/use-i18n';
 import { supportedLocales } from '@/lib/i18n';
@@ -52,12 +53,14 @@ const log = createLogger('Home');
 const WEB_SEARCH_STORAGE_KEY = 'webSearchEnabled';
 const LANGUAGE_STORAGE_KEY = 'generationLanguage';
 const SETUP_AUTO_REFRESH_KEY = 'setupAutoRefreshed';
+const INTERACTIVE_MODE_STORAGE_KEY = 'interactiveModeEnabled';
 
 interface FormState {
   pdfFile: File | null;
   requirement: string;
   language: 'zh-CN' | 'en-US' | 'ja-JP' | 'ru-RU';
   webSearch: boolean;
+  interactiveMode: boolean;
 }
 
 const initialFormState: FormState = {
@@ -65,6 +68,7 @@ const initialFormState: FormState = {
   requirement: '',
   language: 'zh-CN',
   webSearch: false,
+  interactiveMode: false,
 };
 
 type BillingCycle = 'monthly' | 'yearly';
@@ -168,8 +172,10 @@ function HomePage() {
     try {
       const savedWebSearch = localStorage.getItem(WEB_SEARCH_STORAGE_KEY);
       const savedLanguage = localStorage.getItem(LANGUAGE_STORAGE_KEY);
+      const savedInteractiveMode = localStorage.getItem(INTERACTIVE_MODE_STORAGE_KEY);
       const updates: Partial<FormState> = {};
       if (savedWebSearch === 'true') updates.webSearch = true;
+      if (savedInteractiveMode === 'true') updates.interactiveMode = true;
       if (
         savedLanguage === 'zh-CN' ||
         savedLanguage === 'en-US' ||
@@ -667,6 +673,9 @@ function HomePage() {
     try {
       if (field === 'webSearch') localStorage.setItem(WEB_SEARCH_STORAGE_KEY, String(value));
       if (field === 'language') localStorage.setItem(LANGUAGE_STORAGE_KEY, String(value));
+      if (field === 'interactiveMode')
+        localStorage.setItem(INTERACTIVE_MODE_STORAGE_KEY, String(value));
+      if (field === 'language') localStorage.setItem(LANGUAGE_STORAGE_KEY, String(value));
       if (field === 'requirement') updateRequirementCache(value as string);
     } catch {
       /* ignore */
@@ -773,6 +782,7 @@ function HomePage() {
         userNickname: userProfile.nickname || undefined,
         userBio: userProfile.bio || undefined,
         webSearch: form.webSearch || undefined,
+        interactiveMode: form.interactiveMode,
       };
 
       let pdfStorageKey: string | undefined;
@@ -1534,6 +1544,36 @@ function HomePage() {
                         onPdfError={setError}
                       />
                     </div>
+
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <motion.button
+                          whileTap={{ scale: 0.95 }}
+                          transition={{ type: 'spring', stiffness: 400, damping: 17 }}
+                          onClick={() => updateForm('interactiveMode', !form.interactiveMode)}
+                          className={cn(
+                            'relative shrink-0 inline-flex h-11 items-center gap-1.5 rounded-full border-[3px] px-4 text-sm font-black transition-colors cursor-pointer',
+                            form.interactiveMode
+                              ? 'border-cyan-500 bg-cyan-100 text-cyan-700 shadow-[0_0_12px_rgba(6,182,212,0.25)]'
+                              : 'border-slate-900/70 bg-white text-slate-700 hover:bg-cyan-50',
+                          )}
+                        >
+                          {form.interactiveMode && (
+                            <span
+                              className="absolute inset-[-4px] rounded-full border border-cyan-400/40"
+                              style={{
+                                animation: 'interactive-mode-breathe 2s ease-in-out infinite',
+                              }}
+                            />
+                          )}
+                          <Atom className="relative z-10 size-4 animate-[spin_3s_linear_infinite]" />
+                          <span className="relative z-10">{t('toolbar.interactiveModeLabel')}</span>
+                        </motion.button>
+                      </TooltipTrigger>
+                      <TooltipContent side="top" className="text-xs">
+                        {t('toolbar.interactiveModeHint')}
+                      </TooltipContent>
+                    </Tooltip>
 
                     {/* Voice input */}
                     <SpeechButton

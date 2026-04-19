@@ -68,6 +68,7 @@ export interface UserRequirements {
   userNickname?: string; // Student nickname for personalization
   userBio?: string; // Student background for personalization
   webSearch?: boolean; // Enable web search for richer context
+  interactiveMode?: boolean; // Enable Interactive Mode for interactive-first generation
 }
 
 /**
@@ -86,6 +87,28 @@ export interface LegacyUserRequirements {
 }
 
 // ==================== Stage 1 Output: Scene Outlines (Simplified) ====================
+
+/**
+ * Widget outline configuration for interactive scenes
+ * Unified for both normal and ultra modes
+ */
+export interface WidgetOutline {
+  // Common field
+  concept?: string;
+
+  // Type-specific fields
+  keyVariables?: string[]; // simulation
+  diagramType?: 'flowchart' | 'mindmap' | 'hierarchy' | 'system'; // diagram
+  language?: 'python' | 'javascript' | 'typescript' | 'java' | 'cpp'; // code
+  gameType?: 'quiz' | 'puzzle' | 'strategy' | 'card' | 'action'; // game
+  visualizationType?: 'molecular' | 'solar' | 'anatomy' | 'geometry' | 'physics' | 'custom'; // visualization3d
+  objects?: string[]; // visualization3d
+  interactions?: string[]; // visualization3d
+  challenge?: string; // game - description of what player does
+  playerControls?: string[]; // game - what player controls
+  nodeCount?: number; // diagram - approximate node count
+  challengeType?: string; // code - type of coding challenge
+}
 
 /**
  * Simplified scene outline
@@ -111,7 +134,10 @@ export interface SceneOutline {
     difficulty: 'easy' | 'medium' | 'hard';
     questionTypes: ('single' | 'multiple' | 'text')[];
   };
-  // Interactive-specific config
+  /**
+   * @deprecated Use widgetType + widgetOutline instead
+   * Legacy interactive config - kept for backward compatibility only
+   */
   interactiveConfig?: {
     conceptName: string;
     conceptOverview: string;
@@ -126,6 +152,9 @@ export interface SceneOutline {
     issueCount?: number;
     language: 'zh-CN' | 'en-US' | 'ja-JP' | 'ru-RU';
   };
+  // Widget fields (required for type === 'interactive' in unified mode)
+  widgetType?: WidgetType;
+  widgetOutline?: WidgetOutline;
 }
 
 // ==================== Stage 3 Output: Generated Content ====================
@@ -162,6 +191,8 @@ export interface GeneratedPBLContent {
 
 // ==================== Interactive Generation Types ====================
 
+import type { WidgetConfig, TeacherAction, WidgetType } from './widgets';
+
 /**
  * Scientific model output from scientific modeling stage
  */
@@ -178,6 +209,9 @@ export interface ScientificModel {
 export interface GeneratedInteractiveContent {
   html: string;
   scientificModel?: ScientificModel;
+  widgetType?: WidgetType;
+  widgetConfig?: WidgetConfig;
+  teacherActions?: TeacherAction[];
 }
 
 // ==================== Legacy Types (for compatibility) ====================

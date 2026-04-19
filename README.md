@@ -110,11 +110,7 @@ providers:
     apiKey: sk-ant-...
 ```
 
-<<<<<<< HEAD
 Supported providers: **OpenAI**, **Anthropic**, **Google Gemini**, **DeepSeek**, **MiniMax**, **Grok (xAI)**, **Doubao**, **GLM (Zhipu)**, **Ollama** (local), and any OpenAI-compatible API.
-=======
-Supported providers: **OpenAI**, **Anthropic**, **Google Gemini**, **DeepSeek**, **MiniMax**, **Grok (xAI)**, **Doubao**, **GLM (Zhipu)**, **Ollama** (local), and any OpenAI-compatible API.
->>>>>>> 2f542cf (feat(providers): add international base URL chips for GLM/Kimi/MiniMax (#449))
 
 MiniMax quick examples:
 

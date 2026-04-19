@@ -341,6 +341,7 @@ async function generateTTSForScene(
   const concurrencyCap = providerId === 'qwen-tts' ? QWEN_TTS_CONCURRENCY : CLIENT_TTS_CONCURRENCY;
   const concurrency = Math.min(concurrencyCap, speechActions.length);
   let nextActionIndex = 0;
+  const sceneOrder = scene.order;
 
   const runWorker = async () => {
     while (true) {
@@ -348,7 +349,7 @@ async function generateTTSForScene(
       if (index >= speechActions.length) return;
 
       const action = speechActions[index];
-      const audioId = `tts_${action.id}`;
+      const audioId = `tts_s${sceneOrder}_${action.id}`;
       action.audioId = audioId;
       const ttsStart = performance.now();
       const ttsResult = await generateAndStoreTTSWithRetry(audioId, action.text, signal, {

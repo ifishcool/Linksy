@@ -110,11 +110,7 @@ providers:
     apiKey: sk-ant-...
 ```
 
-<<<<<<< HEAD
 支持的服务商：**OpenAI**、**Anthropic**、**Google Gemini**、**DeepSeek**、**MiniMax**、**Grok (xAI)**、**豆包**、**智谱 GLM**、**Ollama**（本地）以及任何兼容 OpenAI API 的服务。
-=======
-支持的服务商：**OpenAI**、**Anthropic**、**Google Gemini**、**DeepSeek**、**MiniMax**、**Grok (xAI)**、**豆包**、**智谱 GLM**、**Ollama**（本地）以及任何兼容 OpenAI API 的服务。
->>>>>>> 2f542cf (feat(providers): add international base URL chips for GLM/Kimi/MiniMax (#449))
 
 MiniMax 快速示例：
 
