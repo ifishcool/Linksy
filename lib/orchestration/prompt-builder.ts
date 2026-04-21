@@ -453,6 +453,12 @@ function summarizeElement(el: any): string {
       return `${id} video ${pos}${size}`;
     case 'audio':
       return `${id} audio ${pos}${size}`;
+    case 'code': {
+      const lineCount = Array.isArray(el.lines) ? el.lines.length : 0;
+      const lang = el.language || '?';
+      const file = el.fileName ? ` "${el.fileName}"` : '';
+      return `${id} code${file} (${lang}, ${lineCount} lines) ${pos}${size}`;
+    }
     default:
       return `${id} ${el.type || 'unknown'} ${pos}${size}`;
   }
@@ -584,13 +590,43 @@ function buildVirtualWhiteboardContext(
         const ex = record.params.endX ?? '?';
         const ey = record.params.endY ?? '?';
         const pts = record.params.points as string[] | undefined;
-        const hasArrow = pts?.includes('arrow') ? ' (arrow)' : '';
+        const hasArrow = pts?.includes('arrow') ? ' arrow' : '';
         elements.push({
           agentName: record.agentName,
           summary: `line${hasArrow}: (${sx},${sy}) → (${ex},${ey})`,
         });
         break;
       }
+      case 'wb_draw_code': {
+        const x = record.params.x ?? '?';
+        const y = record.params.y ?? '?';
+        const w = record.params.width ?? 500;
+        const h = record.params.height ?? 300;
+        const lang = String(record.params.language || '?');
+        const code = String(record.params.code || '');
+        const lineCount = code.split('\n').length;
+        const codeFileName = record.params.fileName ? ` "${record.params.fileName}"` : '';
+        elements.push({
+          agentName: record.agentName,
+          summary: `code block${codeFileName} (${lang}, ${lineCount} lines) at (${x},${y}), size ${w}x${h}`,
+        });
+        break;
+      }
+      case 'wb_edit_code': {
+        const op = record.params.operation || 'edit';
+        const targetId = record.params.elementId || '?';
+        elements.push({
+          agentName: record.agentName,
+          summary: `edited code "${targetId}" (${op})`,
+        });
+        break;
+      }
+      case 'wb_clear':
+        elements.push({
+          agentName: record.agentName,
+          summary: 'CLEARED whiteboard',
+        });
+        break;
       // wb_open, wb_close — skip
     }
   }
