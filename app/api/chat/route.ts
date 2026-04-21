@@ -64,7 +64,7 @@ export async function POST(req: NextRequest) {
       model: languageModel,
       apiKey: resolvedApiKey,
       providerId,
-    } = resolveModel({
+    } = await resolveModel({
       modelString: body.model,
       apiKey: body.apiKey,
       baseUrl: body.baseUrl,

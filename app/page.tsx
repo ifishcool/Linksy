@@ -15,6 +15,7 @@ import {
   BotOff,
   ChevronUp,
   MoreHorizontal,
+  Upload,
 } from 'lucide-react';
 import { useI18n } from '@/lib/hooks/use-i18n';
 import { supportedLocales } from '@/lib/i18n';
@@ -44,6 +45,7 @@ import {
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog';
 import { getSupabaseClient } from '@/lib/supabase/client';
+import { useImportClassroom } from '@/lib/import/use-import-classroom';
 const now = Date.now();
 const log = createLogger('Home');
 
@@ -161,8 +163,6 @@ function HomePage() {
   const profileNickname = useUserProfileStore((s) => s.nickname);
   const [storeHydrated, setStoreHydrated] = useState(false);
 
-  // Hydrate client-only state after mount (avoids SSR mismatch)
-  /* eslint-disable react-hooks/set-state-in-effect -- Hydration from localStorage must happen in effect */
   useEffect(() => {
     setStoreHydrated(true);
     try {
@@ -193,7 +193,6 @@ function HomePage() {
       /* localStorage unavailable */
     }
   }, []);
-  /* eslint-enable react-hooks/set-state-in-effect */
 
   // Restore requirement draft from cache (derived state pattern — no effect needed)
   const [prevCachedRequirement, setPrevCachedRequirement] = useState(cachedRequirement);
@@ -209,6 +208,11 @@ function HomePage() {
   const [error, setError] = useState<string | null>(null);
   const [classrooms, setClassrooms] = useState<StageListItem[]>([]);
   const supabaseClient = useMemo(() => getSupabaseClient(), []);
+  const { importing, fileInputRef, triggerFileSelect, handleFileChange } = useImportClassroom(
+    () => {
+      loadClassrooms();
+    },
+  );
   const [authEmail, setAuthEmail] = useState<string | null>(null);
   const [aiLearningScore, setAiLearningScore] = useState(0);
   const [accountPlan, setAccountPlan] = useState<AccountPlan>({
@@ -645,7 +649,6 @@ function HomePage() {
     useMediaGenerationStore.getState().revokeObjectUrls();
     useMediaGenerationStore.setState({ tasks: {} });
 
-    // eslint-disable-next-line react-hooks/set-state-in-effect -- Store hydration on mount
     loadClassrooms();
   }, []);
 
@@ -869,9 +872,18 @@ function HomePage() {
   return (
     <div className="relative min-h-[100dvh] w-full overflow-x-hidden">
       <div className="fixed inset-0 -z-10 bg-[url('/bg.png')] bg-cover bg-center bg-no-repeat pointer-events-none" />
+      <input
+        ref={fileInputRef}
+        type="file"
+        accept=".maic.zip,.zip"
+        onChange={handleFileChange}
+        className="hidden"
+      />
       <HomeSidebar
         sections={sidebarSections}
         locale={locale}
+        importing={importing}
+        onImportClassroom={triggerFileSelect}
         onOpenClassroom={(id) => {
           if (!ensureAuthenticated()) return;
           if (id.startsWith('comic_')) {
@@ -1580,6 +1592,21 @@ function HomePage() {
                   </motion.div>
                 )}
               </AnimatePresence>
+
+              {!needsSetup && !error && (!classrooms || classrooms.length === 0) && (
+                <motion.button
+                  type="button"
+                  initial={{ opacity: 0, y: 4 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.22, duration: 0.2 }}
+                  onClick={triggerFileSelect}
+                  disabled={importing}
+                  className="mt-6 inline-flex items-center gap-2 rounded-full border-[3px] border-slate-900/70 bg-white px-4 py-2 text-[12px] font-bold text-slate-600 shadow-[0_2px_0_rgba(15,23,42,0.15)] transition-colors hover:bg-sky-50 disabled:cursor-not-allowed disabled:opacity-60"
+                >
+                  <Upload className="size-3.5" />
+                  <span>{t('import.classroom')}</span>
+                </motion.button>
+              )}
             </div>
           </div>
         </motion.div>
@@ -1596,11 +1623,15 @@ function HomePage() {
 function HomeSidebar({
   sections,
   locale,
+  importing,
+  onImportClassroom,
   onOpenClassroom,
   onDeleteClassroom,
 }: {
   sections: Array<{ key: string; label: string; items: StageListItem[] }>;
   locale: string;
+  importing: boolean;
+  onImportClassroom: () => void;
   onOpenClassroom: (id: string) => void;
   onDeleteClassroom: (id: string) => void;
 }) {
@@ -1608,8 +1639,17 @@ function HomeSidebar({
   return (
     <aside className="fixed left-0 top-0 bottom-0 z-30 w-[180px] sm:w-[200px] lg:w-[272px] rounded-none bg-sky-200/75 border-r-[4px] border-r-slate-900/90 backdrop-blur-sm shadow-[0_2px_0_rgba(15,23,42,0.2)] flex-col overflow-hidden">
       <div className="px-4 pt-4 pb-3 border-b-[3px] border-slate-900/70 bg-sky-100/35">
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 justify-between">
           <img src={getSidebarLogo(locale)} alt="Linksy" className="h-10 sm:h-12 w-auto" />
+          <button
+            type="button"
+            onClick={onImportClassroom}
+            disabled={importing}
+            className="inline-flex items-center gap-1 rounded-full border-[3px] border-slate-900/60 bg-white/80 px-2 py-1 text-[10px] font-semibold text-slate-700 transition-colors hover:bg-sky-50 disabled:cursor-not-allowed disabled:opacity-60"
+          >
+            <Upload className="size-3" />
+            <span>{t('import.classroom')}</span>
+          </button>
         </div>
         {/* <p className="mt-1 text-[11px] text-slate-700/85">{t('home.slogan')}</p> */}
       </div>

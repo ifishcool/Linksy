@@ -86,8 +86,10 @@ export function GenerationToolbar({
   const configuredProviders = providersConfig
     ? Object.entries(providersConfig)
         .filter(
-          ([, config]) =>
-            (!config.requiresApiKey || config.apiKey || config.isServerConfigured) &&
+          ([_, config]) =>
+            (config.requiresApiKey
+              ? config.apiKey || config.isServerConfigured
+              : config.isServerConfigured || config.baseUrl) &&
             config.models.length >= 1 &&
             (config.baseUrl || config.defaultBaseUrl || config.serverBaseUrl),
         )

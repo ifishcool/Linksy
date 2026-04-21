@@ -68,7 +68,7 @@ export async function POST(req: NextRequest) {
       return apiError('MISSING_REQUIRED_FIELD', 400, 'language is required');
     }
 
-    const { model: languageModel, modelString } = resolveModelFromHeaders(req);
+    const { model: languageModel, modelString } = await resolveModelFromHeaders(req);
 
     const previousPages = Array.isArray(body.previousPages) ? body.previousPages : [];
     const previousSummary = previousPages.length

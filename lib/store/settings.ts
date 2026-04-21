@@ -18,6 +18,7 @@ import { VIDEO_PROVIDERS } from '@/lib/media/video-providers';
 import { WEB_SEARCH_PROVIDERS } from '@/lib/web-search/constants';
 import type { WebSearchProviderId } from '@/lib/web-search/types';
 import { createLogger } from '@/lib/logger';
+import { isProviderUsable } from '@/lib/store/settings-validation';
 
 const log = createLogger('Settings');
 
@@ -787,12 +788,7 @@ export const useSettingsStore = create<SettingsState>()(
                 const selectedCfg = newProvidersConfig[selectedProviderId];
                 const serverInfo = data.providers[selectedProviderId as string];
                 const hasServerConfig = !!serverInfo;
-                const isUsable =
-                  selectedCfg &&
-                  (!selectedCfg.requiresApiKey ||
-                    !!selectedCfg.apiKey ||
-                    !!selectedCfg.isServerConfigured ||
-                    hasServerConfig);
+                const isUsable = selectedCfg && (isProviderUsable(selectedCfg) || hasServerConfig);
                 if (!isUsable) {
                   clearedProviderId = '' as ProviderId;
                   clearedModelId = '';

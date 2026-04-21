@@ -66,7 +66,7 @@ export async function POST(req: NextRequest) {
       return apiError('MISSING_REQUIRED_FIELD', 400, 'language is required');
     }
 
-    const { model: languageModel, modelString } = resolveModelFromHeaders(req);
+    const { model: languageModel, modelString } = await resolveModelFromHeaders(req);
 
     const agents = Array.isArray(body.agents) ? body.agents : [];
     const agentContext = agents.length

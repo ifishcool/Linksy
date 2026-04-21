@@ -1,12 +1,22 @@
 'use client';
 
-import { Loader2, Download, FileDown, Maximize2, Minimize2, Package, List } from 'lucide-react';
+import {
+  Loader2,
+  Download,
+  FileDown,
+  Maximize2,
+  Minimize2,
+  Package,
+  List,
+  Archive,
+} from 'lucide-react';
 import { useI18n } from '@/lib/hooks/use-i18n';
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { cn } from '@/lib/utils';
 import { useStageStore } from '@/lib/store/stage';
 import { useMediaGenerationStore } from '@/lib/store/media-generation';
 import { useExportPPTX } from '@/lib/export/use-export-pptx';
+import { useExportClassroom } from '@/lib/export/use-export-classroom';
 
 interface HeaderProps {
   readonly currentSceneTitle: string;
@@ -29,6 +39,7 @@ export function Header({
 
   // Export
   const { exporting: isExporting, exportPPTX, exportResourcePack } = useExportPPTX();
+  const { exporting: isExportingZip, exportClassroomZip } = useExportClassroom();
   const [exportMenuOpen, setExportMenuOpen] = useState(false);
   const exportRef = useRef<HTMLDivElement>(null);
   const scenes = useStageStore((s) => s.scenes);
@@ -112,24 +123,24 @@ export function Header({
         <div className="relative" ref={exportRef}>
           <button
             onClick={() => {
-              if (canExport && !isExporting) setExportMenuOpen(!exportMenuOpen);
+              if (canExport && !isExporting && !isExportingZip) setExportMenuOpen(!exportMenuOpen);
             }}
-            disabled={!canExport || isExporting}
+            disabled={!canExport || isExporting || isExportingZip}
             title={
               canExport
-                ? isExporting
+                ? isExporting || isExportingZip
                   ? t('export.exporting')
                   : t('export.pptx')
                 : t('share.notReady')
             }
             className={cn(
               'shrink-0 h-10 w-10 rounded-full border-[4px] border-slate-900 transition-all flex items-center justify-center bg-white',
-              canExport && !isExporting
+              canExport && !isExporting && !isExportingZip
                 ? 'text-slate-600 hover:bg-sky-50 hover:text-sky-700'
                 : 'text-slate-300 cursor-not-allowed opacity-50 bg-slate-100',
             )}
           >
-            {isExporting ? (
+            {isExporting || isExportingZip ? (
               <Loader2 className="w-4 h-4 animate-spin" />
             ) : (
               <Download className="w-4 h-4" />
@@ -158,6 +169,20 @@ export function Header({
                 <div>
                   <div>{t('export.resourcePack')}</div>
                   <div className="text-[11px] text-slate-400">{t('export.resourcePackDesc')}</div>
+                </div>
+              </button>
+              <button
+                onClick={() => {
+                  setExportMenuOpen(false);
+                  exportClassroomZip();
+                }}
+                disabled={isExportingZip}
+                className="w-full px-4 py-2.5 text-left text-sm hover:bg-sky-50 transition-colors flex items-center gap-2.5"
+              >
+                <Archive className="w-4 h-4 text-slate-400 shrink-0" />
+                <div>
+                  <div>{t('export.classroomZip')}</div>
+                  <div className="text-[11px] text-slate-400">{t('export.classroomZipDesc')}</div>
                 </div>
               </button>
             </div>

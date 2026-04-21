@@ -144,12 +144,28 @@
     "ttsPreviewing": "再生中..."
   },
   "export": {
-    "pptx": "PPTXエクスポート",
-    "resourcePack": "リソースパックをエクスポート",
-    "resourcePackDesc": "PPTX＋インタラクティブページ",
+    "pptx": "PPTX をエクスポート",
+    "resourcePack": "教材パックをエクスポート",
+    "resourcePackDesc": "PPTX + インタラクティブページ",
     "exporting": "エクスポート中...",
-    "exportSuccess": "エクスポートが完了しました",
-    "exportFailed": "エクスポートに失敗しました"
+    "exportSuccess": "エクスポートに成功しました",
+    "exportFailed": "エクスポートに失敗しました",
+    "classroomZip": "教室 ZIP をエクスポート",
+    "classroomZipDesc": "コース構造とメディアファイル"
+  },
+  "import": {
+    "classroom": "教室をインポート",
+    "parsing": "ZIP を解析しています...",
+    "validating": "データを検証しています...",
+    "writingMedia": "メディアファイルを書き込み中...",
+    "writingCourse": "コースデータを書き込み中...",
+    "success": "教室のインポートが完了しました",
+    "error": {
+      "invalidZip": "無効なファイルです。正しい .maic.zip ファイルを選択してください。",
+      "invalidManifest": "教室ファイルが無効です: manifest.json が存在しないか破損しています。",
+      "missingData": "教室ファイルが無効です: 必要なコースデータが不足しています。",
+      "storageFull": "インポートに失敗しました: ブラウザのストレージがいっぱいです。古い教室を削除してください。"
+    }
   },
   "chat": {
     "lecture": "講義",
