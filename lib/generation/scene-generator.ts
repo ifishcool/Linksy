@@ -288,7 +288,7 @@ export async function generateSceneContent(
     return generateWidgetContent(
       outline,
       aiCall,
-      (outline.language || 'zh-CN') as 'zh-CN' | 'en-US',
+      (outline.language || 'zh-CN') as 'zh-CN' | 'en-US' | 'ja-JP' | 'ru-RU' | 'ar-SA',
     );
   }
 
@@ -928,7 +928,7 @@ function extractHtml(response: string): string | null {
 async function generateWidgetContent(
   outline: SceneOutline,
   aiCall: AICallFn,
-  language: 'zh-CN' | 'en-US' | 'ja-JP' | 'ru-RU',
+  language: 'zh-CN' | 'en-US' | 'ja-JP' | 'ru-RU' | 'ar-SA',
 ): Promise<GeneratedInteractiveContent | null> {
   const widgetType = outline.widgetType;
   const widgetOutline = outline.widgetOutline;
@@ -1077,7 +1077,7 @@ async function generateWidgetTeacherActions(
   outline: SceneOutline,
   widgetConfig: WidgetConfig | undefined,
   aiCall: AICallFn,
-  language: 'zh-CN' | 'en-US' | 'ja-JP' | 'ru-RU',
+  language: 'zh-CN' | 'en-US' | 'ja-JP' | 'ru-RU' | 'ar-SA',
 ): Promise<TeacherAction[] | undefined> {
   const prompts = buildPrompt(PROMPT_IDS.WIDGET_TEACHER_ACTIONS, {
     widgetType,

@@ -58,7 +58,7 @@ const INTERACTIVE_MODE_STORAGE_KEY = 'interactiveModeEnabled';
 interface FormState {
   pdfFile: File | null;
   requirement: string;
-  language: 'zh-CN' | 'en-US' | 'ja-JP' | 'ru-RU';
+  language: 'zh-CN' | 'en-US' | 'ja-JP' | 'ru-RU' | 'ar-SA';
   webSearch: boolean;
   interactiveMode: boolean;
 }
@@ -180,7 +180,8 @@ function HomePage() {
         savedLanguage === 'zh-CN' ||
         savedLanguage === 'en-US' ||
         savedLanguage === 'ja-JP' ||
-        savedLanguage === 'ru-RU'
+        savedLanguage === 'ru-RU' ||
+        savedLanguage === 'ar-SA'
       ) {
         updates.language = savedLanguage;
       } else {
@@ -189,6 +190,8 @@ function HomePage() {
           ? 'zh-CN'
           : navLanguage.startsWith('ja')
             ? 'ja-JP'
+            : navLanguage.startsWith('ar')
+              ? 'ar-SA'
             : 'en-US';
         updates.language = detected;
       }

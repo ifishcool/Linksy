@@ -17,10 +17,10 @@ import type {
   ComicTTSSegment,
 } from './types';
 
-type SupportedGenerationLanguage = 'zh-CN' | 'en-US' | 'ja-JP' | 'ru-RU';
+type SupportedGenerationLanguage = 'zh-CN' | 'en-US' | 'ja-JP' | 'ru-RU' | 'ar-SA';
 
 function normalizeGenerationLanguage(language?: string): SupportedGenerationLanguage {
-  if (language === 'en-US' || language === 'ja-JP' || language === 'ru-RU') {
+  if (language === 'en-US' || language === 'ja-JP' || language === 'ru-RU' || language === 'ar-SA') {
     return language;
   }
   return 'zh-CN';
@@ -35,6 +35,8 @@ function fallbackPageTitle(pageIndex: number, language?: string): string {
       return `${pageIndex}ページ`;
     case 'ru-RU':
       return `Страница ${pageIndex}`;
+    case 'ar-SA':
+      return `الصفحة ${pageIndex}`;
     default:
       return `Page ${pageIndex}`;
   }

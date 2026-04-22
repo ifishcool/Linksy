@@ -12,7 +12,7 @@ type AgentInfo = { id: string; name: string; role: string; persona?: string };
 
 type RequestBody = {
   requirement: string;
-  language: 'zh-CN' | 'en-US' | 'ja-JP' | 'ru-RU';
+  language: 'zh-CN' | 'en-US' | 'ja-JP' | 'ru-RU' | 'ar-SA';
   panelCount?: number;
   agents?: AgentInfo[];
 };
@@ -25,6 +25,8 @@ function getLanguageRule(language: RequestBody['language']): string {
         ? 'Japanese'
         : language === 'ru-RU'
           ? 'Russian'
+          : language === 'ar-SA'
+            ? 'Arabic'
           : 'English (US)';
 
   return [
