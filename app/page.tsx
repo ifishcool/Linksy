@@ -1701,7 +1701,7 @@ function HomeSidebar({
   const isSearching = normalizedSearchQuery.length > 0;
 
   return (
-    <aside className="fixed left-0 top-0 bottom-0 z-30 w-[180px] sm:w-[200px] lg:w-[272px] rounded-none bg-sky-200/75 border-r-[4px] border-r-slate-900/90 backdrop-blur-sm shadow-[0_2px_0_rgba(15,23,42,0.2)] flex-col overflow-hidden">
+    <aside className="fixed left-0 top-0 bottom-0 z-30 flex w-[180px] sm:w-[200px] lg:w-[272px] rounded-none bg-sky-200/75 border-r-[4px] border-r-slate-900/90 backdrop-blur-sm shadow-[0_2px_0_rgba(15,23,42,0.2)] flex-col overflow-hidden">
       <div className="px-4 pt-4 pb-3 border-b-[3px] border-slate-900/70 bg-sky-100/35">
         <div className="flex items-center gap-2 justify-between">
           <img src={getSidebarLogo(locale)} alt="Linksy" className="h-10 sm:h-12 w-auto" />
