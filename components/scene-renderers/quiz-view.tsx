@@ -110,70 +110,73 @@ function QuizCover({
   const { t } = useI18n();
 
   return (
-    <div className="w-full h-full flex flex-col items-center justify-center gap-4 relative overflow-hidden">
+    <div className="relative flex h-full w-full items-center justify-center overflow-hidden bg-gradient-to-br from-[#fff7e8] via-[#fffdf7] to-[#ffeed6] px-4 py-6 sm:px-6 sm:py-8">
       {/* Background decoration */}
-      <div className="absolute top-0 right-0 p-6 opacity-[0.03]">
-        <PieChart className="w-52 h-52 text-violet-500" />
+      <div className="absolute top-0 right-0 p-6 opacity-[0.06]">
+        <PieChart className="h-52 w-52 text-sky-400" />
       </div>
-      <div className="absolute bottom-0 left-0 p-6 opacity-[0.02]">
-        <BookOpenText className="w-40 h-40 text-violet-500 rotate-12" />
+      <div className="absolute bottom-0 left-0 p-6 opacity-[0.05]">
+        <BookOpenText className="h-40 w-40 rotate-12 text-amber-400" />
       </div>
 
-      <motion.div
-        initial={{ scale: 0.8, opacity: 0 }}
-        animate={{ scale: 1, opacity: 1 }}
-        transition={{ type: 'spring', stiffness: 200, damping: 20 }}
-        className="w-16 h-16 bg-gradient-to-br from-violet-100 to-purple-50 dark:from-violet-900/50 dark:to-purple-900/30 rounded-2xl flex items-center justify-center shadow-lg shadow-violet-100 dark:shadow-violet-900/30 ring-1 ring-violet-200/50 dark:ring-violet-700/50"
-      >
-        <PieChart className="w-8 h-8 text-violet-500" />
-      </motion.div>
+      <div className="relative flex w-full max-w-xl flex-col items-center gap-5 rounded-[28px] border-[4px] border-slate-900/80 bg-[#fffdf5]/95 px-5 py-8 text-center shadow-[0_10px_0_rgba(15,23,42,0.2)] backdrop-blur-[2px] sm:px-8 sm:py-10">
+        <motion.div
+          initial={{ scale: 0.8, opacity: 0 }}
+          animate={{ scale: 1, opacity: 1 }}
+          transition={{ type: 'spring', stiffness: 200, damping: 20 }}
+          className="flex h-16 w-16 items-center justify-center rounded-2xl border-[3px] border-slate-900/60 bg-gradient-to-br from-amber-200 to-orange-100 shadow-[0_4px_0_rgba(15,23,42,0.12)]"
+        >
+          <PieChart className="h-8 w-8 text-amber-600" />
+        </motion.div>
 
-      <motion.div
-        initial={{ y: 10, opacity: 0 }}
-        animate={{ y: 0, opacity: 1 }}
-        transition={{ delay: 0.1 }}
-        className="text-center z-10"
-      >
-        <h3 className="text-xl font-bold text-gray-800 dark:text-gray-100">{t('quiz.title')}</h3>
-        <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">{t('quiz.subtitle')}</p>
-      </motion.div>
+        <motion.div
+          initial={{ y: 10, opacity: 0 }}
+          animate={{ y: 0, opacity: 1 }}
+          transition={{ delay: 0.1 }}
+          className="z-10 text-center"
+        >
+          <h3 className="text-3xl font-black tracking-tight text-slate-900">{t('quiz.title')}</h3>
+          <p className="mt-1 text-sm font-medium text-slate-500">{t('quiz.subtitle')}</p>
+        </motion.div>
 
-      <motion.div
-        initial={{ y: 10, opacity: 0 }}
-        animate={{ y: 0, opacity: 1 }}
-        transition={{ delay: 0.2 }}
-        className="flex gap-5 text-sm z-10"
-      >
-        <div className="flex items-center gap-2 text-gray-500 dark:text-gray-400">
-          <div className="w-7 h-7 rounded-lg bg-violet-50 dark:bg-violet-900/30 flex items-center justify-center">
-            <BookOpenText className="w-3.5 h-3.5 text-violet-500" />
+        <motion.div
+          initial={{ y: 10, opacity: 0 }}
+          animate={{ y: 0, opacity: 1 }}
+          transition={{ delay: 0.2 }}
+          className="z-10 flex flex-wrap items-center justify-center gap-3 text-sm"
+        >
+          <div className="flex items-center gap-2 rounded-full border-[2px] border-slate-900/15 bg-white/90 px-3 py-1.5 text-slate-600 shadow-[0_2px_0_rgba(148,163,184,0.22)]">
+            <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-amber-50">
+              <BookOpenText className="h-3.5 w-3.5 text-amber-600" />
+            </div>
+            <span className="font-semibold">
+              {questionCount} {t('quiz.questionsCount')}
+            </span>
           </div>
-          <span>
-            {questionCount} {t('quiz.questionsCount')}
-          </span>
-        </div>
-        <div className="flex items-center gap-2 text-gray-500 dark:text-gray-400">
-          <div className="w-7 h-7 rounded-lg bg-violet-50 dark:bg-violet-900/30 flex items-center justify-center">
-            <PieChart className="w-3.5 h-3.5 text-violet-500" />
-          </div>
-          <span>
-            {t('quiz.totalPrefix')} {totalPoints} {t('quiz.pointsSuffix')}
-          </span>
-        </div>
-      </motion.div>
 
-      <motion.button
-        initial={{ y: 10, opacity: 0 }}
-        animate={{ y: 0, opacity: 1 }}
-        transition={{ delay: 0.3 }}
-        whileHover={{ scale: 1.05 }}
-        whileTap={{ scale: 0.95 }}
-        onClick={onStart}
-        className="mt-1 px-8 py-2.5 bg-gradient-to-r from-violet-500 to-purple-500 text-white rounded-full font-medium shadow-lg shadow-violet-200/50 dark:shadow-violet-900/50 hover:shadow-violet-300/50 transition-shadow z-10 flex items-center gap-2"
-      >
-        {t('quiz.startQuiz')}
-        <ChevronRight className="w-4 h-4" />
-      </motion.button>
+          <div className="flex items-center gap-2 rounded-full border-[2px] border-slate-900/15 bg-white/90 px-3 py-1.5 text-slate-600 shadow-[0_2px_0_rgba(148,163,184,0.22)]">
+            <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-sky-50">
+              <PieChart className="h-3.5 w-3.5 text-sky-600" />
+            </div>
+            <span className="font-semibold">
+              {t('quiz.totalPrefix')} {totalPoints} {t('quiz.pointsSuffix')}
+            </span>
+          </div>
+        </motion.div>
+
+        <motion.button
+          initial={{ y: 10, opacity: 0 }}
+          animate={{ y: 0, opacity: 1 }}
+          transition={{ delay: 0.3 }}
+          whileHover={{ scale: 1.04 }}
+          whileTap={{ scale: 0.97 }}
+          onClick={onStart}
+          className="z-10 mt-1 inline-flex items-center gap-2 rounded-full border-[3px] border-slate-900/70 bg-gradient-to-r from-amber-400 via-orange-400 to-amber-500 px-8 py-2.5 text-base font-black text-white shadow-[0_4px_0_rgba(15,23,42,0.16)] transition-all hover:brightness-105"
+        >
+          {t('quiz.startQuiz')}
+          <ChevronRight className="h-4 w-4" />
+        </motion.button>
+      </div>
     </div>
   );
 }
@@ -209,51 +212,33 @@ function SingleChoiceQuestion({
               disabled={disabled}
               onClick={() => !disabled && onChange(opt.value)}
               className={cn(
-                'flex items-center gap-3 px-4 py-3 rounded-xl border text-left transition-all text-sm',
+                'flex items-center gap-3 rounded-2xl border-[2px] px-4 py-3 text-left text-sm transition-all',
                 // Default state
                 !isReview &&
                   !selected &&
-                  'border-gray-200 dark:border-gray-600 hover:border-violet-200 dark:hover:border-violet-700 hover:bg-violet-50/50 dark:hover:bg-violet-900/30',
-                !isReview &&
-                  selected &&
-                  'border-violet-400 bg-violet-50 dark:bg-violet-900/30 ring-1 ring-violet-200 dark:ring-violet-700',
+                  'border-slate-900/15 bg-white/90 text-slate-700 hover:border-amber-300 hover:bg-amber-50/70',
+                !isReview && selected && 'border-amber-400 bg-amber-50 ring-1 ring-amber-200',
                 // Review states
-                isReview &&
-                  isCorrectOpt &&
-                  'border-emerald-400 bg-emerald-50 dark:bg-emerald-900/30',
-                isReview &&
-                  isWrong &&
-                  !isCorrectOpt &&
-                  'border-red-300 bg-red-50 dark:bg-red-900/30',
-                isReview &&
-                  !isCorrectOpt &&
-                  !selected &&
-                  'border-gray-100 dark:border-gray-700 opacity-60',
+                isReview && isCorrectOpt && 'border-emerald-400 bg-emerald-50',
+                isReview && isWrong && !isCorrectOpt && 'border-red-300 bg-red-50',
+                isReview && !isCorrectOpt && !selected && 'border-slate-900/10 opacity-60',
                 disabled && !isReview && 'cursor-default',
               )}
             >
               <span
                 className={cn(
-                  'w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold shrink-0 transition-colors',
-                  !isReview &&
-                    !selected &&
-                    'bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400',
-                  !isReview && selected && 'bg-violet-500 text-white',
+                  'flex h-8 w-8 shrink-0 items-center justify-center rounded-xl text-xs font-black transition-colors',
+                  !isReview && !selected && 'bg-slate-100 text-slate-500',
+                  !isReview && selected && 'bg-amber-500 text-white',
                   isReview && isCorrectOpt && 'bg-emerald-500 text-white',
                   isReview && isWrong && !isCorrectOpt && 'bg-red-400 text-white',
-                  isReview &&
-                    !isCorrectOpt &&
-                    !selected &&
-                    'bg-gray-100 dark:bg-gray-700 text-gray-400 dark:text-gray-500',
+                  isReview && !isCorrectOpt && !selected && 'bg-slate-100 text-slate-400',
                 )}
               >
                 {opt.value}
               </span>
               <span
-                className={cn(
-                  'flex-1',
-                  isReview && !isCorrectOpt && !selected && 'text-gray-400 dark:text-gray-500',
-                )}
+                className={cn('flex-1', isReview && !isCorrectOpt && !selected && 'text-slate-400')}
               >
                 {opt.label}
               </span>
@@ -302,11 +287,7 @@ function MultipleChoiceQuestion({
 
   return (
     <QuestionCard question={question} index={index} result={result}>
-      {!isReview && (
-        <p className="text-xs text-gray-400 dark:text-gray-500 mb-2">
-          {t('quiz.multipleChoiceHint')}
-        </p>
-      )}
+      {!isReview && <p className="mb-2 text-xs text-slate-400">{t('quiz.multipleChoiceHint')}</p>}
       <div className="grid gap-2">
         {question.options?.map((opt) => {
           const isSelected = selected.includes(opt.value);
@@ -319,37 +300,25 @@ function MultipleChoiceQuestion({
               disabled={disabled}
               onClick={() => toggle(opt.value)}
               className={cn(
-                'flex items-center gap-3 px-4 py-3 rounded-xl border text-left transition-all text-sm',
+                'flex items-center gap-3 rounded-2xl border-[2px] px-4 py-3 text-left text-sm transition-all',
                 !isReview &&
                   !isSelected &&
-                  'border-gray-200 dark:border-gray-600 hover:border-violet-200 dark:hover:border-violet-700 hover:bg-violet-50/50 dark:hover:bg-violet-900/30',
-                !isReview &&
-                  isSelected &&
-                  'border-violet-400 bg-violet-50 dark:bg-violet-900/30 ring-1 ring-violet-200 dark:ring-violet-700',
-                isReview &&
-                  isCorrectOpt &&
-                  'border-emerald-400 bg-emerald-50 dark:bg-emerald-900/30',
-                isReview && isWrong && 'border-red-300 bg-red-50 dark:bg-red-900/30',
-                isReview &&
-                  !isCorrectOpt &&
-                  !isSelected &&
-                  'border-gray-100 dark:border-gray-700 opacity-60',
+                  'border-slate-900/15 bg-white/90 text-slate-700 hover:border-amber-300 hover:bg-amber-50/70',
+                !isReview && isSelected && 'border-amber-400 bg-amber-50 ring-1 ring-amber-200',
+                isReview && isCorrectOpt && 'border-emerald-400 bg-emerald-50',
+                isReview && isWrong && 'border-red-300 bg-red-50',
+                isReview && !isCorrectOpt && !isSelected && 'border-slate-900/10 opacity-60',
                 disabled && !isReview && 'cursor-default',
               )}
             >
               <span
                 className={cn(
-                  'w-7 h-7 rounded-lg flex items-center justify-center text-xs font-bold shrink-0 transition-colors',
-                  !isReview &&
-                    !isSelected &&
-                    'bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400',
-                  !isReview && isSelected && 'bg-violet-500 text-white',
+                  'flex h-8 w-8 shrink-0 items-center justify-center rounded-xl text-xs font-black transition-colors',
+                  !isReview && !isSelected && 'bg-slate-100 text-slate-500',
+                  !isReview && isSelected && 'bg-amber-500 text-white',
                   isReview && isCorrectOpt && 'bg-emerald-500 text-white',
                   isReview && isWrong && 'bg-red-400 text-white',
-                  isReview &&
-                    !isCorrectOpt &&
-                    !isSelected &&
-                    'bg-gray-100 dark:bg-gray-700 text-gray-400 dark:text-gray-500',
+                  isReview && !isCorrectOpt && !isSelected && 'bg-slate-100 text-slate-400',
                 )}
               >
                 {!isReview && isSelected ? <Check className="w-3.5 h-3.5" /> : opt.value}
@@ -357,7 +326,7 @@ function MultipleChoiceQuestion({
               <span
                 className={cn(
                   'flex-1',
-                  isReview && !isCorrectOpt && !isSelected && 'text-gray-400 dark:text-gray-500',
+                  isReview && !isCorrectOpt && !isSelected && 'text-slate-400',
                 )}
               >
                 {opt.label}
@@ -406,7 +375,7 @@ function ShortAnswerQuestion({
             onChange={(e) => onChange(e.target.value)}
             disabled={disabled}
             placeholder={t('quiz.inputPlaceholder')}
-            className="w-full min-h-[100px] p-3 pb-10 rounded-xl border border-gray-200 dark:border-gray-600 text-sm resize-none focus:outline-none focus:border-violet-300 dark:focus:border-violet-600 focus:ring-2 focus:ring-violet-100 dark:focus:ring-violet-900/50 transition-all disabled:bg-gray-50 dark:disabled:bg-gray-800 disabled:text-gray-500 dark:bg-gray-800/50 dark:text-gray-200 dark:placeholder:text-gray-500"
+            className="w-full min-h-[100px] resize-none rounded-2xl border-[2px] border-slate-900/15 bg-white/90 p-3 pb-10 text-sm text-slate-700 transition-all focus:border-amber-300 focus:outline-none focus:ring-2 focus:ring-amber-100 disabled:cursor-not-allowed disabled:bg-slate-50 disabled:text-slate-400"
           />
           <SpeechButton
             size="sm"
@@ -417,32 +386,24 @@ function ShortAnswerQuestion({
               onChange(cur + (cur ? ' ' : '') + text);
             }}
           />
-          <span className="absolute bottom-3 right-3 text-xs text-gray-300 dark:text-gray-600">
+          <span className="absolute bottom-3 right-3 text-xs text-slate-300">
             {(value ?? '').length} {t('quiz.charCount')}
           </span>
         </div>
       ) : (
         <div className="space-y-3">
-          <div className="p-3 rounded-xl bg-gray-50 dark:bg-gray-800/50 border border-gray-100 dark:border-gray-700 text-sm text-gray-700 dark:text-gray-300">
-            <p className="text-xs text-gray-400 dark:text-gray-500 mb-1">{t('quiz.yourAnswer')}</p>
-            {value || (
-              <span className="text-gray-400 dark:text-gray-500 italic">
-                {t('quiz.notAnswered')}
-              </span>
-            )}
+          <div className="rounded-2xl border-[2px] border-slate-900/10 bg-white/80 p-3 text-sm text-slate-700">
+            <p className="mb-1 text-xs text-slate-400">{t('quiz.yourAnswer')}</p>
+            {value || <span className="italic text-slate-400">{t('quiz.notAnswered')}</span>}
           </div>
           {result.aiComment && (
-            <div className="flex items-start gap-2 px-3 py-2 rounded-lg bg-violet-50 dark:bg-violet-900/30 border border-violet-100 dark:border-violet-800">
-              <Sparkles className="w-4 h-4 text-violet-500 shrink-0 mt-0.5" />
+            <div className="flex items-start gap-2 rounded-xl border-[2px] border-amber-200 bg-amber-50 px-3 py-2">
+              <Sparkles className="mt-0.5 h-4 w-4 shrink-0 text-amber-500" />
               <div>
-                <p className="text-xs font-medium text-violet-600 dark:text-violet-400 mb-0.5">
-                  {t('quiz.aiComment')}
-                </p>
-                <p className="text-xs text-violet-600/80 dark:text-violet-400/80">
-                  {result.aiComment}
-                </p>
+                <p className="mb-0.5 text-xs font-bold text-amber-700">{t('quiz.aiComment')}</p>
+                <p className="text-xs text-amber-700/85">{result.aiComment}</p>
               </div>
-              <span className="ml-auto text-xs font-bold text-violet-600 dark:text-violet-400 shrink-0">
+              <span className="ml-auto shrink-0 text-xs font-black text-amber-700">
                 {result.earned}/{question.points ?? 1}
                 {t('quiz.pointsSuffix')}
               </span>
@@ -476,20 +437,21 @@ function QuestionCard({
       transition={{ delay: index * 0.05 }}
       className={cn(
         'bg-white dark:bg-gray-800 rounded-2xl border p-5 relative overflow-hidden',
-        !isReview && 'border-gray-150 dark:border-gray-700 shadow-sm',
+        !isReview &&
+          'border-[3px] border-slate-900/20 bg-white/95 shadow-[0_4px_0_rgba(148,163,184,0.25)]',
         isReview &&
           result.status === 'correct' &&
-          'border-emerald-200 dark:border-emerald-800 shadow-sm shadow-emerald-50 dark:shadow-emerald-900/20',
+          'border-[3px] border-emerald-300 bg-emerald-50/40 shadow-[0_4px_0_rgba(110,231,183,0.28)]',
         isReview &&
           result.status === 'incorrect' &&
-          'border-red-200 dark:border-red-800 shadow-sm shadow-red-50 dark:shadow-red-900/20',
+          'border-[3px] border-red-300 bg-red-50/40 shadow-[0_4px_0_rgba(252,165,165,0.3)]',
       )}
     >
       {/* Left accent */}
       <div
         className={cn(
-          'absolute left-0 top-0 bottom-0 w-1 rounded-l-2xl',
-          !isReview && 'bg-violet-400',
+          'absolute bottom-0 left-0 top-0 w-1.5 rounded-l-2xl',
+          !isReview && 'bg-amber-400',
           isReview && result.status === 'correct' && 'bg-emerald-400',
           isReview && result.status === 'incorrect' && 'bg-red-400',
         )}
@@ -500,24 +462,19 @@ function QuestionCard({
         <div className="flex items-start gap-3">
           <span
             className={cn(
-              'w-7 h-7 rounded-lg flex items-center justify-center text-xs font-bold shrink-0',
-              !isReview &&
-                'bg-violet-100 dark:bg-violet-900/50 text-violet-600 dark:text-violet-400',
-              isReview &&
-                result.status === 'correct' &&
-                'bg-emerald-100 dark:bg-emerald-900/50 text-emerald-600 dark:text-emerald-400',
-              isReview &&
-                result.status === 'incorrect' &&
-                'bg-red-100 dark:bg-red-900/50 text-red-600 dark:text-red-400',
+              'flex h-8 w-8 shrink-0 items-center justify-center rounded-xl text-xs font-black',
+              !isReview && 'bg-amber-100 text-amber-700',
+              isReview && result.status === 'correct' && 'bg-emerald-100 text-emerald-700',
+              isReview && result.status === 'incorrect' && 'bg-red-100 text-red-700',
             )}
           >
             {index + 1}
           </span>
           <div>
-            <p className="text-sm font-medium text-gray-800 dark:text-gray-100 leading-relaxed">
+            <p className="text-sm font-semibold leading-relaxed text-slate-800">
               {question.question}
             </p>
-            <p className="text-xs text-gray-400 mt-0.5">
+            <p className="mt-0.5 text-xs font-medium text-slate-400">
               {question.type === 'single'
                 ? t('quiz.singleChoice')
                 : question.type === 'multiple'
@@ -530,8 +487,8 @@ function QuestionCard({
         </div>
         {isReview && (
           <div className="shrink-0 ml-2">
-            {result.status === 'correct' && <CheckCircle2 className="w-6 h-6 text-emerald-500" />}
-            {result.status === 'incorrect' && <XCircle className="w-6 h-6 text-red-400" />}
+            {result.status === 'correct' && <CheckCircle2 className="h-6 w-6 text-emerald-500" />}
+            {result.status === 'incorrect' && <XCircle className="h-6 w-6 text-red-400" />}
           </div>
         )}
       </div>
@@ -541,7 +498,7 @@ function QuestionCard({
 
       {/* Analysis (review only) */}
       {isReview && question.analysis && (
-        <div className="mt-3 p-3 rounded-lg bg-blue-50/70 dark:bg-blue-900/30 border border-blue-100 dark:border-blue-800 text-xs text-blue-700 dark:text-blue-300 leading-relaxed">
+        <div className="mt-3 rounded-xl border-[2px] border-sky-200 bg-sky-50/70 p-3 text-xs leading-relaxed text-sky-700">
           <span className="font-medium">{t('quiz.analysis')}</span>
           {question.analysis}
         </div>
@@ -774,7 +731,7 @@ export function QuizView({ questions, sceneId }: QuizViewProps) {
   }, [results]);
 
   return (
-    <div className="w-full h-full bg-gradient-to-b from-gray-50 to-white dark:from-gray-900 dark:to-gray-900 overflow-hidden flex flex-col">
+    <div className="flex h-full w-full flex-col overflow-hidden bg-gradient-to-br from-[#fff7e8] via-[#fffdf7] to-[#ffeed6]">
       <AnimatePresence mode="wait">
         {phase === 'not_started' && (
           <motion.div
@@ -798,46 +755,66 @@ export function QuizView({ questions, sceneId }: QuizViewProps) {
             initial={{ opacity: 0, x: 20 }}
             animate={{ opacity: 1, x: 0 }}
             exit={{ opacity: 0, x: -20 }}
-            className="flex-1 flex flex-col min-h-0"
+            className="flex min-h-0 flex-1 flex-col"
           >
-            {/* Header bar */}
-            <div className="flex items-center justify-between px-6 py-3 border-b border-gray-100 dark:border-gray-700 bg-white/80 dark:bg-gray-900/80 backdrop-blur shrink-0">
-              <div className="flex items-center gap-2">
-                <PieChart className="w-4 h-4 text-violet-500" />
-                <span className="text-sm font-semibold text-gray-700 dark:text-gray-200">
-                  {t('quiz.answering')}
-                </span>
-                <span className="text-xs text-gray-400 ml-1">
-                  {
-                    Object.keys(answers).filter((k) => {
-                      const a = answers[k];
-                      if (Array.isArray(a)) return a.length > 0;
-                      return typeof a === 'string' && a.trim().length > 0;
-                    }).length
-                  }{' '}
-                  / {questions.length}
-                </span>
+            <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
+              {/* Header bar */}
+              <div className="flex shrink-0 items-center justify-between border-b-[3px] border-slate-900/10 bg-white/70 px-5 py-3 backdrop-blur">
+                <div className="flex items-center gap-2">
+                  <PieChart className="h-4 w-4 text-amber-500" />
+                  <span className="text-sm font-black text-slate-700">{t('quiz.answering')}</span>
+                  <span className="ml-1 text-xs font-semibold text-slate-400">
+                    {
+                      Object.keys(answers).filter((k) => {
+                        const a = answers[k];
+                        if (Array.isArray(a)) return a.length > 0;
+                        return typeof a === 'string' && a.trim().length > 0;
+                      }).length
+                    }{' '}
+                    / {questions.length}
+                  </span>
+                </div>
+                <button
+                  onClick={handleSubmit}
+                  disabled={!allAnswered}
+                  className={cn(
+                    'rounded-xl border-[2px] px-4 py-1.5 text-xs font-black transition-all',
+                    allAnswered
+                      ? 'border-slate-900/70 bg-gradient-to-r from-amber-400 via-orange-400 to-amber-500 text-white shadow-[0_3px_0_rgba(15,23,42,0.16)] hover:brightness-105 active:translate-y-[1px]'
+                      : 'cursor-not-allowed border-slate-900/10 bg-slate-100 text-slate-400',
+                  )}
+                >
+                  {t('quiz.submitAnswers')}
+                </button>
               </div>
-              <button
-                onClick={handleSubmit}
-                disabled={!allAnswered}
-                className={cn(
-                  'px-4 py-1.5 rounded-lg text-xs font-medium transition-all',
-                  allAnswered
-                    ? 'bg-gradient-to-r from-violet-500 to-purple-500 text-white shadow-sm hover:shadow-md hover:shadow-violet-200/50 dark:hover:shadow-violet-900/50 active:scale-[0.97]'
-                    : 'bg-gray-100 dark:bg-gray-700 text-gray-400 dark:text-gray-500 cursor-not-allowed',
-                )}
-              >
-                {t('quiz.submitAnswers')}
-              </button>
-            </div>
 
-            {/* Questions */}
-            <div className="flex-1 overflow-y-auto px-6 py-4 space-y-4">
-              {questions.map((q, i) => {
-                if (q.type === 'single') {
+              {/* Questions */}
+              <div className="flex-1 space-y-4 overflow-y-auto px-5 py-4">
+                {questions.map((q, i) => {
+                  if (q.type === 'single') {
+                    return (
+                      <SingleChoiceQuestion
+                        key={q.id}
+                        question={q}
+                        index={i}
+                        value={answers[q.id] as string | undefined}
+                        onChange={(v) => handleSetAnswer(q.id, v)}
+                      />
+                    );
+                  }
+                  if (q.type === 'multiple') {
+                    return (
+                      <MultipleChoiceQuestion
+                        key={q.id}
+                        question={q}
+                        index={i}
+                        value={answers[q.id] as string[] | undefined}
+                        onChange={(v) => handleSetAnswer(q.id, v)}
+                      />
+                    );
+                  }
                   return (
-                    <SingleChoiceQuestion
+                    <ShortAnswerQuestion
                       key={q.id}
                       question={q}
                       index={i}
@@ -845,28 +822,8 @@ export function QuizView({ questions, sceneId }: QuizViewProps) {
                       onChange={(v) => handleSetAnswer(q.id, v)}
                     />
                   );
-                }
-                if (q.type === 'multiple') {
-                  return (
-                    <MultipleChoiceQuestion
-                      key={q.id}
-                      question={q}
-                      index={i}
-                      value={answers[q.id] as string[] | undefined}
-                      onChange={(v) => handleSetAnswer(q.id, v)}
-                    />
-                  );
-                }
-                return (
-                  <ShortAnswerQuestion
-                    key={q.id}
-                    question={q}
-                    index={i}
-                    value={answers[q.id] as string | undefined}
-                    onChange={(v) => handleSetAnswer(q.id, v)}
-                  />
-                );
-              })}
+                })}
+              </div>
             </div>
           </motion.div>
         )}
@@ -913,34 +870,58 @@ export function QuizView({ questions, sceneId }: QuizViewProps) {
             key="reviewing"
             initial={{ opacity: 0, x: 20 }}
             animate={{ opacity: 1, x: 0 }}
-            className="flex-1 flex flex-col min-h-0"
+            className="flex min-h-0 flex-1 flex-col"
           >
-            {/* Header bar */}
-            <div className="flex items-center justify-between px-6 py-3 border-b border-gray-100 dark:border-gray-700 bg-white/80 dark:bg-gray-900/80 backdrop-blur shrink-0">
-              <div className="flex items-center gap-2">
-                <CheckCircle2 className="w-4 h-4 text-emerald-500" />
-                <span className="text-sm font-semibold text-gray-700 dark:text-gray-200">
-                  {t('quiz.quizReport')}
-                </span>
+            <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
+              {/* Header bar */}
+              <div className="flex shrink-0 items-center justify-between border-b-[3px] border-slate-900/10 bg-white/70 px-5 py-3 backdrop-blur">
+                <div className="flex items-center gap-2">
+                  <CheckCircle2 className="h-4 w-4 text-emerald-500" />
+                  <span className="text-sm font-black text-slate-700">{t('quiz.quizReport')}</span>
+                </div>
+                <button
+                  onClick={handleRetry}
+                  className="flex items-center gap-1.5 rounded-xl border-[2px] border-slate-900/15 bg-white/80 px-2.5 py-1 text-xs font-bold text-slate-500 transition-colors hover:text-amber-600"
+                >
+                  <RotateCcw className="w-3.5 h-3.5" />
+                  {t('quiz.retry')}
+                </button>
               </div>
-              <button
-                onClick={handleRetry}
-                className="flex items-center gap-1.5 text-xs text-gray-500 dark:text-gray-400 hover:text-violet-600 dark:hover:text-violet-400 transition-colors"
-              >
-                <RotateCcw className="w-3.5 h-3.5" />
-                {t('quiz.retry')}
-              </button>
-            </div>
 
-            {/* Results */}
-            <div className="flex-1 overflow-y-auto px-6 py-4 space-y-4">
-              <ScoreBanner score={earnedScore} total={totalPoints} results={results} />
+              {/* Results */}
+              <div className="flex-1 space-y-4 overflow-y-auto px-5 py-4">
+                <ScoreBanner score={earnedScore} total={totalPoints} results={results} />
 
-              {questions.map((q, i) => {
-                const r = resultMap[q.id];
-                if (q.type === 'single') {
+                {questions.map((q, i) => {
+                  const r = resultMap[q.id];
+                  if (q.type === 'single') {
+                    return (
+                      <SingleChoiceQuestion
+                        key={q.id}
+                        question={q}
+                        index={i}
+                        value={answers[q.id] as string | undefined}
+                        onChange={() => {}}
+                        disabled
+                        result={r}
+                      />
+                    );
+                  }
+                  if (q.type === 'multiple') {
+                    return (
+                      <MultipleChoiceQuestion
+                        key={q.id}
+                        question={q}
+                        index={i}
+                        value={answers[q.id] as string[] | undefined}
+                        onChange={() => {}}
+                        disabled
+                        result={r}
+                      />
+                    );
+                  }
                   return (
-                    <SingleChoiceQuestion
+                    <ShortAnswerQuestion
                       key={q.id}
                       question={q}
                       index={i}
@@ -950,32 +931,8 @@ export function QuizView({ questions, sceneId }: QuizViewProps) {
                       result={r}
                     />
                   );
-                }
-                if (q.type === 'multiple') {
-                  return (
-                    <MultipleChoiceQuestion
-                      key={q.id}
-                      question={q}
-                      index={i}
-                      value={answers[q.id] as string[] | undefined}
-                      onChange={() => {}}
-                      disabled
-                      result={r}
-                    />
-                  );
-                }
-                return (
-                  <ShortAnswerQuestion
-                    key={q.id}
-                    question={q}
-                    index={i}
-                    value={answers[q.id] as string | undefined}
-                    onChange={() => {}}
-                    disabled
-                    result={r}
-                  />
-                );
-              })}
+                })}
+              </div>
             </div>
           </motion.div>
         )}

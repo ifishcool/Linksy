@@ -334,7 +334,7 @@ export function ClassroomCompletePage({ scenes, title }: ClassroomCompletePagePr
   return (
     <MotionConfig reducedMotion={prefersReducedMotion ? 'always' : 'user'}>
       <section
-        className="absolute inset-0 z-[105] flex items-center justify-center overflow-auto"
+        className="absolute inset-0 z-[105] overflow-y-auto px-4 py-6 sm:px-6 sm:py-8"
         aria-label={t('classroomComplete.title')}
       >
         {/* Single-shot announcement for screen readers — replaces the noisy
@@ -343,7 +343,7 @@ export function ClassroomCompletePage({ scenes, title }: ClassroomCompletePagePr
           {t('classroomComplete.title')}
         </span>
         {/* Base background */}
-        <div className="absolute inset-0 bg-gradient-to-br from-amber-50 via-white to-orange-50 dark:from-gray-900 dark:via-gray-900 dark:to-amber-950/30" />
+        <div className="absolute inset-0 bg-gradient-to-br from-[#fff7e8] via-[#fffdf7] to-[#ffeed6] dark:from-gray-900 dark:via-gray-900 dark:to-amber-950/30" />
         {/* Radial glow */}
         <motion.div
           aria-hidden
@@ -360,7 +360,7 @@ export function ClassroomCompletePage({ scenes, title }: ClassroomCompletePagePr
         <Confetti />
 
         {/* Content */}
-        <div className="relative flex flex-col items-center gap-6 max-w-2xl w-full px-8 py-10">
+        <div className="relative mx-auto flex w-full max-w-3xl flex-col items-center gap-6 rounded-[32px] border-[4px] border-slate-900/80 bg-[#fffdf5]/95 px-4 py-8 shadow-[0_10px_0_rgba(15,23,42,0.2)] backdrop-blur-[2px] sm:px-8 sm:py-10">
           {/* Trophy + halo + sparkles */}
           <div className="relative" style={{ width: 200, height: 200 }}>
             <motion.div
@@ -404,7 +404,7 @@ export function ClassroomCompletePage({ scenes, title }: ClassroomCompletePagePr
             initial={{ opacity: 0, scale: 0.7, y: 10 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
             transition={{ delay: 0.65, type: 'spring', stiffness: 280, damping: 18 }}
-            className="inline-flex items-center gap-1.5 px-4 py-1.5 rounded-full bg-gradient-to-r from-amber-400 via-orange-400 to-amber-500 text-white text-xs font-bold uppercase tracking-wider shadow-lg shadow-amber-500/30"
+            className="inline-flex items-center gap-1.5 rounded-full border-[3px] border-slate-900/70 bg-gradient-to-r from-amber-400 via-orange-400 to-amber-500 px-4 py-1.5 text-[11px] font-black tracking-wider text-white shadow-[0_3px_0_rgba(15,23,42,0.16)]"
           >
             <Sparkle className="w-3 h-3" />
             {t('classroomComplete.title')}
@@ -418,10 +418,10 @@ export function ClassroomCompletePage({ scenes, title }: ClassroomCompletePagePr
             transition={{ delay: 0.78, duration: 0.4, ease: 'easeOut' }}
             className="text-center space-y-1.5"
           >
-            <h2 className="text-3xl md:text-4xl font-black leading-tight bg-gradient-to-br from-amber-700 via-orange-600 to-amber-800 dark:from-amber-200 dark:via-orange-200 dark:to-amber-300 bg-clip-text text-transparent">
+            <h2 className="bg-gradient-to-br from-amber-700 via-orange-600 to-amber-800 bg-clip-text text-center text-3xl font-black leading-tight text-transparent dark:from-amber-200 dark:via-orange-200 dark:to-amber-300 md:text-4xl">
               {title || t('classroomComplete.title')}
             </h2>
-            <p className="text-sm text-gray-500 dark:text-gray-400">{dateLabel}</p>
+            <p className="text-sm font-semibold text-slate-500 dark:text-gray-400">{dateLabel}</p>
           </motion.div>
 
           {/* Stats cards */}
@@ -448,16 +448,16 @@ export function ClassroomCompletePage({ scenes, title }: ClassroomCompletePagePr
                       stiffness: 260,
                       damping: 20,
                     }}
-                    className="rounded-2xl bg-white/90 dark:bg-gray-900/70 border border-amber-100 dark:border-amber-900/40 shadow-sm px-4 py-4 flex flex-col items-center gap-1.5 backdrop-blur-sm"
+                    className="flex flex-col items-center gap-1.5 rounded-2xl border-[3px] border-slate-900/20 bg-white/95 px-4 py-4 shadow-[0_4px_0_rgba(148,163,184,0.25)] backdrop-blur-sm dark:border-amber-900/40 dark:bg-gray-900/70"
                   >
                     <Icon
                       className="w-6 h-6 text-amber-500 dark:text-amber-400"
                       strokeWidth={1.8}
                     />
-                    <div className="text-3xl font-black text-gray-900 dark:text-gray-100 leading-none">
+                    <div className="text-3xl font-black leading-none text-slate-900 dark:text-gray-100">
                       <AnimatedCounter value={count} delay={cardDelay + 0.15} />
                     </div>
-                    <div className="text-[11px] text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                    <div className="text-[11px] font-bold uppercase tracking-wider text-slate-500 dark:text-gray-400">
                       {label}
                     </div>
                   </motion.div>
@@ -472,7 +472,7 @@ export function ClassroomCompletePage({ scenes, title }: ClassroomCompletePagePr
               initial={{ opacity: 0, y: 14, scale: 0.95 }}
               animate={{ opacity: 1, y: 0, scale: 1 }}
               transition={{ delay: 1.2, type: 'spring', stiffness: 220, damping: 20 }}
-              className="w-full rounded-2xl bg-gradient-to-br from-amber-100 via-orange-50 to-amber-100 dark:from-amber-950/50 dark:via-orange-950/30 dark:to-amber-950/50 border border-amber-200 dark:border-amber-900/50 px-6 py-5 shadow-md shadow-amber-200/30 dark:shadow-amber-950/20"
+              className="w-full rounded-2xl border-[3px] border-amber-300/90 bg-gradient-to-br from-amber-100 via-orange-50 to-amber-100 px-5 py-5 shadow-[0_6px_0_rgba(251,191,36,0.25)] dark:border-amber-900/50 dark:from-amber-950/50 dark:via-orange-950/30 dark:to-amber-950/50 dark:shadow-amber-950/20 sm:px-6"
             >
               <div className="flex items-center gap-5">
                 <QuizRing pct={summary.quiz.pct} delay={1.3} />
