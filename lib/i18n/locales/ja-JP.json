@@ -583,6 +583,10 @@
       "glm": "GLM",
       "siliconflow": "SiliconFlow",
       "doubao": "豆包",
+      "openrouter": "OpenRouter",
+      "grok": "Grok",
+      "tencent-hunyuan": "Tencent Hunyuan",
+      "xiaomi": "Xiaomi MiMo",
       "ollama": "Ollama（ローカルモデル）"
     },
     "providerTypes": {
@@ -669,7 +673,6 @@
     "deleteModel": "削除",
     "cancelEdit": "キャンセル",
     "saveModel": "保存",
-    "modelsManagementDescription": "このプロバイダーのモデルを管理します。使用するモデルの選択は「一般」から行ってください。",
     "howToUse": "使い方",
     "step1ConfigureProvider": "「モデルプロバイダー」でプロバイダーを選択または追加し、接続設定（APIキー、ベースURLなど）を設定します",
     "step2SelectModel": "下の「使用中のモデル」で使用するモデルを選択します",
@@ -966,6 +969,7 @@
     "imageProvider": "画像生成プロバイダー",
     "imageModel": "画像生成モデル",
     "providerSeedream": "Seedream（ByteDance）",
+    "providerOpenAIImage": "OpenAI Image",
     "providerQwenImage": "Qwen Image（Alibaba）",
     "providerNanoBanana": "Nano Banana（Gemini）",
     "providerMiniMaxImage": "MiniMax Image",
