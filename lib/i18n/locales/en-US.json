@@ -396,7 +396,11 @@
     "delete": "Delete",
     "rename": "Rename",
     "renamePlaceholder": "Enter classroom name",
-    "renameFailed": "Failed to rename classroom"
+    "renameFailed": "Failed to rename classroom",
+    "searchPlaceholder": "Search classrooms",
+    "searchAriaLabel": "Search classrooms",
+    "clearSearch": "Clear search",
+    "searchEmpty": "No classrooms found"
   },
   "upload": {
     "pdfSizeLimit": "Supports PDF files up to 50MB",

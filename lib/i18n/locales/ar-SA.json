@@ -396,7 +396,11 @@
     "delete": "حذف",
     "rename": "إعادة تسمية",
     "renamePlaceholder": "أدخل اسم الفصل",
-    "renameFailed": "فشلت إعادة تسمية الفصل"
+    "renameFailed": "فشلت إعادة تسمية الفصل",
+    "searchPlaceholder": "البحث في الفصول",
+    "searchAriaLabel": "البحث في الفصول",
+    "clearSearch": "مسح البحث",
+    "searchEmpty": "لم يتم العثور على فصول"
   },
   "upload": {
     "pdfSizeLimit": "يدعم ملفات PDF حتى 50 ميغابايت",

@@ -396,7 +396,11 @@
     "delete": "削除",
     "rename": "名前を変更",
     "renamePlaceholder": "教室名を入力",
-    "renameFailed": "教室名の変更に失敗しました"
+    "renameFailed": "教室名の変更に失敗しました",
+    "searchPlaceholder": "教室を検索",
+    "searchAriaLabel": "教室を検索",
+    "clearSearch": "検索をクリア",
+    "searchEmpty": "教室が見つかりません"
   },
   "upload": {
     "pdfSizeLimit": "50MBまでのPDFファイルに対応しています",

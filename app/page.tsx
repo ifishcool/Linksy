@@ -7,6 +7,7 @@ import {
   ArrowUp,
   Check,
   ChevronDown,
+  Search,
   ImagePlus,
   LogOut,
   Pencil,
@@ -17,6 +18,7 @@ import {
   MoreHorizontal,
   Upload,
   Atom,
+  X,
 } from 'lucide-react';
 import { useI18n } from '@/lib/hooks/use-i18n';
 import { supportedLocales } from '@/lib/i18n';
@@ -47,6 +49,7 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog';
 import { getSupabaseClient } from '@/lib/supabase/client';
 import { useImportClassroom } from '@/lib/import/use-import-classroom';
+import { InputGroup, InputGroupButton, InputGroupInput } from '@/components/ui/input-group';
 const now = Date.now();
 const log = createLogger('Home');
 
@@ -192,7 +195,7 @@ function HomePage() {
             ? 'ja-JP'
             : navLanguage.startsWith('ar')
               ? 'ar-SA'
-            : 'en-US';
+              : 'en-US';
         updates.language = detected;
       }
       if (Object.keys(updates).length > 0) {
@@ -1679,6 +1682,24 @@ function HomeSidebar({
   onDeleteClassroom: (id: string) => void;
 }) {
   const { t } = useI18n();
+  const [searchQuery, setSearchQuery] = useState('');
+
+  const normalizedSearchQuery = searchQuery.trim().toLocaleLowerCase(locale);
+  const filteredSections = useMemo(() => {
+    if (!normalizedSearchQuery) return sections;
+
+    return sections
+      .map((section) => ({
+        ...section,
+        items: section.items.filter((item) =>
+          item.name.toLocaleLowerCase(locale).includes(normalizedSearchQuery),
+        ),
+      }))
+      .filter((section) => section.items.length > 0);
+  }, [locale, normalizedSearchQuery, sections]);
+
+  const isSearching = normalizedSearchQuery.length > 0;
+
   return (
     <aside className="fixed left-0 top-0 bottom-0 z-30 w-[180px] sm:w-[200px] lg:w-[272px] rounded-none bg-sky-200/75 border-r-[4px] border-r-slate-900/90 backdrop-blur-sm shadow-[0_2px_0_rgba(15,23,42,0.2)] flex-col overflow-hidden">
       <div className="px-4 pt-4 pb-3 border-b-[3px] border-slate-900/70 bg-sky-100/35">
@@ -1698,12 +1719,37 @@ function HomeSidebar({
       </div>
 
       <div className="flex-1 overflow-y-auto px-3 py-3 space-y-3 scrollbar-hide">
-        {sections.length === 0 ? (
+        <InputGroup className="h-8 rounded-full border-[2px] border-slate-900/35 bg-white/70 shadow-none">
+          <InputGroupInput
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            placeholder={t('classroom.searchPlaceholder')}
+            aria-label={t('classroom.searchAriaLabel')}
+            className="h-8 px-3 text-[12px] placeholder:text-slate-500/70"
+          />
+          {searchQuery && (
+            <InputGroupButton
+              size="icon-xs"
+              aria-label={t('classroom.clearSearch')}
+              onMouseDown={(e) => e.preventDefault()}
+              onClick={() => setSearchQuery('')}
+            >
+              <X />
+            </InputGroupButton>
+          )}
+          {!searchQuery && (
+            <div className="pr-2 text-slate-500/75">
+              <Search className="size-3.5" />
+            </div>
+          )}
+        </InputGroup>
+
+        {filteredSections.length === 0 ? (
           <div className="rounded-2xl border-[3px] border-dashed border-slate-900/35 bg-white/65 p-3 text-[12px] leading-relaxed text-slate-600">
-            {t('history.empty')}
+            {isSearching ? t('classroom.searchEmpty') : t('history.empty')}
           </div>
         ) : (
-          sections.map((section) => (
+          filteredSections.map((section) => (
             <div key={section.key} className="space-y-1.5">
               <div className="px-1">
                 <p className="text-[11px] font-black tracking-wide text-sky-700/95">

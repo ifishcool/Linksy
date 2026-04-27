@@ -396,7 +396,11 @@
     "delete": "Удалить",
     "rename": "Переименовать",
     "renamePlaceholder": "Введите название класса",
-    "renameFailed": "Не удалось переименовать класс"
+    "renameFailed": "Не удалось переименовать класс",
+    "searchPlaceholder": "Поиск классов",
+    "searchAriaLabel": "Поиск классов",
+    "clearSearch": "Очистить поиск",
+    "searchEmpty": "Классы не найдены"
   },
   "upload": {
     "pdfSizeLimit": "Поддержка PDF до 50 МБ",
