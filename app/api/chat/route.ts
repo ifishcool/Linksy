@@ -113,6 +113,11 @@ export async function POST(req: NextRequest) {
       try {
         startHeartbeat();
 
+        // Default: thinking disabled for low-latency chat. Callers (e.g. eval
+        // harness) can opt in per-request by sending `thinking: { enabled: true }`
+        // in the body.
+        const thinkingConfig: ThinkingConfig = body.thinking ?? { enabled: false };
+
         const generator = statelessGenerate(
           {
             ...body,
@@ -120,7 +125,7 @@ export async function POST(req: NextRequest) {
           },
           signal,
           languageModel,
-          { enabled: false } satisfies ThinkingConfig,
+          thinkingConfig,
         );
 
         for await (const event of generator) {

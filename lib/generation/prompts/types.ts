@@ -20,12 +20,29 @@ export type PromptId =
   | 'game-content'
   | 'visualization3d-content'
   | 'widget-teacher-actions'
-  | 'pbl-actions';
+  | 'pbl-actions'
+  | 'agent-system'
+  | 'agent-system-wb-teacher'
+  | 'agent-system-wb-assistant'
+  | 'agent-system-wb-student'
+  | 'director'
+  | 'pbl-design';
 
 /**
  * Snippet identifier
  */
-export type SnippetId = 'json-output-rules' | 'element-types' | 'action-types';
+export type SnippetId =
+  | 'json-output-rules'
+  | 'element-types'
+  | 'action-types'
+  | 'image-instructions'
+  | 'video-instructions'
+  | 'media-safety-guidelines'
+  | 'slide-image-instructions'
+  | 'slide-generated-image-instructions'
+  | 'slide-video-instructions'
+  | 'speech-guidelines'
+  | 'whiteboard-reference';
 
 /**
  * Loaded prompt template
