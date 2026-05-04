@@ -3,14 +3,7 @@
 import { useCallback, useEffect, useState, Suspense, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'motion/react';
-import {
-  CheckCircle2,
-  Sparkles,
-  AlertCircle,
-  AlertTriangle,
-  ArrowLeft,
-  Bot,
-} from 'lucide-react';
+import { CheckCircle2, Sparkles, AlertCircle, AlertTriangle, ArrowLeft, Bot } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
@@ -240,7 +233,8 @@ function GenerationPreviewContent() {
   const pushNextApiLine = useCallback(
     (method: 'GET' | 'POST', path: string, status: number | 'ERR', durationMs: number) => {
       const label = getRequestLabel(path);
-      const rounded = durationMs < 1000 ? `${Math.round(durationMs)}ms` : `${(durationMs / 1000).toFixed(1)}s`;
+      const rounded =
+        durationMs < 1000 ? `${Math.round(durationMs)}ms` : `${(durationMs / 1000).toFixed(1)}s`;
       setGenerationLogs((prev) => {
         const next = [
           status === 'ERR' || status >= 400
@@ -263,7 +257,6 @@ function GenerationPreviewContent() {
       return String(payload);
     }
   }, []);
-
 
   // Compute active steps based on session state
   const activeSteps = getActiveSteps(session);
@@ -528,8 +521,8 @@ function GenerationPreviewContent() {
         setWebSearchSources([]);
 
         const wsSettings = useSettingsStore.getState();
-        const wsApiKey =
-          wsSettings.webSearchProvidersConfig?.[wsSettings.webSearchProviderId]?.apiKey;
+        const wsProviderId = wsSettings.webSearchProviderId;
+        const wsConfig = wsSettings.webSearchProvidersConfig?.[wsProviderId];
         const webSearchStart = performance.now();
         const res = await fetch('/api/web-search', {
           method: 'POST',
@@ -537,7 +530,9 @@ function GenerationPreviewContent() {
           body: JSON.stringify({
             query: currentSession.requirements.requirement,
             pdfText: currentSession.pdfText || undefined,
-            apiKey: wsApiKey || undefined,
+            providerId: wsProviderId,
+            apiKey: wsConfig?.apiKey || undefined,
+            baseUrl: wsConfig?.baseUrl || undefined,
           }),
           signal,
         });
@@ -1514,7 +1509,9 @@ function GenerationPreviewContent() {
                       <span
                         className={cn(
                           'mt-1 size-1.5 shrink-0 rounded-full',
-                          idx === 0 ? 'bg-sky-500 shadow-[0_0_0_3px_rgba(14,165,233,0.12)]' : 'bg-slate-300',
+                          idx === 0
+                            ? 'bg-sky-500 shadow-[0_0_0_3px_rgba(14,165,233,0.12)]'
+                            : 'bg-slate-300',
                         )}
                       />
                       <span>{line}</span>

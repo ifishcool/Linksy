@@ -354,6 +354,7 @@ const getDefaultWebSearchConfig = () => ({
   webSearchProviderId: 'tavily' as WebSearchProviderId,
   webSearchProvidersConfig: {
     tavily: { apiKey: '', baseUrl: '', enabled: true },
+    bocha: { apiKey: '', baseUrl: '', enabled: true },
   } as Record<WebSearchProviderId, { apiKey: string; baseUrl: string; enabled: boolean }>,
 });
 
@@ -464,6 +465,21 @@ function ensureBuiltInVideoProviders(state: Partial<SettingsState>): void {
     const providerId = pid as VideoProviderId;
     if (!state.videoProvidersConfig![providerId]) {
       state.videoProvidersConfig![providerId] = defaultConfig[providerId];
+    }
+  });
+}
+
+/**
+ * Ensure webSearchProvidersConfig includes all built-in web search providers.
+ * Called on every rehydrate so newly added providers appear automatically.
+ */
+function ensureBuiltInWebSearchProviders(state: Partial<SettingsState>): void {
+  if (!state.webSearchProvidersConfig) return;
+  const defaultConfig = getDefaultWebSearchConfig().webSearchProvidersConfig;
+  Object.keys(WEB_SEARCH_PROVIDERS).forEach((pid) => {
+    const providerId = pid as WebSearchProviderId;
+    if (!state.webSearchProvidersConfig![providerId]) {
+      state.webSearchProvidersConfig![providerId] = defaultConfig[providerId];
     }
   });
 }
@@ -1138,6 +1154,7 @@ export const useSettingsStore = create<SettingsState>()(
           const defaultAudioConfig = getDefaultAudioConfig();
           Object.assign(state, defaultAudioConfig);
         }
+        ensureBuiltInWebSearchProviders(state);
 
         if (!state.ttsModelId) {
           const providerId = state.ttsProviderId || ('browser-native-tts' as TTSProviderId);
@@ -1215,12 +1232,15 @@ export const useSettingsStore = create<SettingsState>()(
               enabled: true,
               isServerConfigured: oldIsServerConfigured,
             },
+            bocha: {
+              apiKey: '',
+              baseUrl: '',
+              enabled: true,
+            },
           } as SettingsState['webSearchProvidersConfig'];
           delete stateRecord.webSearchApiKey;
           delete stateRecord.webSearchIsServerConfigured;
         }
-
-        ensureValidProviderSelections(state);
 
         return state;
       },
@@ -1231,6 +1251,7 @@ export const useSettingsStore = create<SettingsState>()(
         ensureBuiltInProviders(merged as Partial<SettingsState>);
         ensureBuiltInImageProviders(merged as Partial<SettingsState>);
         ensureBuiltInVideoProviders(merged as Partial<SettingsState>);
+        ensureBuiltInWebSearchProviders(merged as Partial<SettingsState>);
         ensureValidProviderSelections(merged as Partial<SettingsState>);
         return merged as SettingsState;
       },

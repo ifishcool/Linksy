@@ -561,7 +561,9 @@
       "grok": "Grok",
       "tencent-hunyuan": "Tencent Hunyuan",
       "xiaomi": "Xiaomi MiMo",
-      "ollama": "Ollama (Локальный)"
+      "ollama": "Ollama (Локальный)",
+      "tavily": "Tavily",
+      "bocha": "Bocha"
     },
     "providerTypes": {
       "openai": "Протокол OpenAI",
@@ -1005,7 +1007,12 @@
     "clearCacheButton": "Удалить все данные навсегда",
     "clearCacheSuccess": "Кэш очищен, страница скоро обновится",
     "clearCacheFailed": "Не удалось очистить кэш, попробуйте снова",
-    "webSearchSettings": "Веб-поиск"
+    "webSearchSettings": "Веб-поиск",
+    "webSearchApiKey": "API-ключ поиска",
+    "webSearchApiKeyPlaceholder": "Введите API-ключ поиска",
+    "webSearchBaseUrl": "Base URL",
+    "webSearchServerConfigured": "Серверный API-ключ поиска настроен",
+    "optional": "Необязательно"
   },
   "comic": {
     "title": {

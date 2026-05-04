@@ -603,7 +603,9 @@
       "grok": "Grok",
       "tencent-hunyuan": "Tencent Hunyuan",
       "xiaomi": "Xiaomi MiMo",
-      "ollama": "Ollama（ローカルモデル）"
+      "ollama": "Ollama（ローカルモデル）",
+      "tavily": "Tavily",
+      "bocha": "Bocha"
     },
     "providerTypes": {
       "openai": "OpenAIプロトコル",
@@ -1047,7 +1049,12 @@
     "clearCacheButton": "すべてのデータを完全に削除",
     "clearCacheSuccess": "キャッシュをクリアしました。まもなくページが更新されます",
     "clearCacheFailed": "キャッシュのクリアに失敗しました。もう一度お試しください",
-    "webSearchSettings": "ウェブ検索"
+    "webSearchSettings": "ウェブ検索",
+    "webSearchApiKey": "検索APIキー",
+    "webSearchApiKeyPlaceholder": "検索APIキーを入力",
+    "webSearchBaseUrl": "ベースURL",
+    "webSearchServerConfigured": "サーバー側で検索APIキーが設定済みです",
+    "optional": "任意"
   },
   "comic": {
     "title": {
